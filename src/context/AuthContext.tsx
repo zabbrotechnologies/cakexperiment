@@ -26,8 +26,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchCurrentUser = async () => {
     try {
       const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) {
+        setUser(null);
+        return;
+      }
+
       const res = await fetch('/api/auth/me', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.ok) {
@@ -37,17 +42,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return;
         }
       }
-    } catch {
-      // API unavailable or network error, fallback to local storage
-    }
 
-    // Fallback to local storage if API not available
-    const localUser = storageService.getCurrentUser();
-    setUser(localUser);
+      // If token is expired or unauthorized, clear token
+      localStorage.removeItem(TOKEN_KEY);
+      setUser(null);
+    } catch {
+      setUser(null);
+    }
   };
 
   useEffect(() => {
-    storageService.init();
     fetchCurrentUser().finally(() => setLoading(false));
   }, []);
 
@@ -60,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await fetch('/api/auth/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: pass })
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password: pass })
       });
 
       const data = await res.json();
@@ -77,17 +81,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return {
         success: false,
-        message: data.error || 'Invalid credentials'
+        message: data.error || 'Invalid email or password.'
       };
     } catch (err: any) {
-      // Fallback for offline demo mode
-      const res = storageService.signIn(email, pass);
-      if (res.success && res.user) {
-        setUser(res.user);
-        const redirectTo = res.user.role === 'admin' ? '/admin/dashboard' : '/learn';
-        return { success: true, redirectTo };
-      }
-      return { success: false, message: res.message || err.message || 'Authentication error' };
+      return {
+        success: false,
+        message: 'Unable to connect to the authentication server. Please check your connection or try again.'
+      };
     }
   };
 
@@ -96,7 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password: pass, confirmPassword: pass })
+        body: JSON.stringify({ name: name.trim(), email: email.trim().toLowerCase(), password: pass, confirmPassword: pass })
       });
 
       const data = await res.json();
@@ -116,12 +116,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         message: data.error || 'Could not complete registration'
       };
     } catch (err: any) {
-      const res = storageService.signUp(name, email, pass);
-      if (res.success && res.user) {
-        setUser(res.user);
-        return { success: true, redirectTo: '/learn' };
-      }
-      return { success: false, message: res.message || err.message || 'Could not register' };
+      return {
+        success: false,
+        message: 'Unable to connect to the registration server. Please try again.'
+      };
     }
   };
 
