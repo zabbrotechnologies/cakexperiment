@@ -13,7 +13,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requireAdmin = false,
   requireStudent = false
 }) => {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, isAdmin } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -41,13 +41,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/signin" state={{ from: location }} replace />;
   }
 
-  // Admin access check
-  if (requireAdmin && user?.role !== 'admin') {
+  // Admin access check (server-verified role ADMIN)
+  if (requireAdmin && !isAdmin) {
     return <Navigate to="/learn" replace />;
   }
 
-  // Student-only route access: If admin visits, allow them with a friendly banner preview
-  if (requireStudent && user?.role !== 'student' && user?.role !== 'admin') {
+  // User route access
+  if (requireStudent && !user) {
     return <Navigate to="/" replace />;
   }
 

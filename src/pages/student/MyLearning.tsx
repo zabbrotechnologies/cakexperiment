@@ -91,7 +91,7 @@ export const MyLearning: React.FC = () => {
                         </div>
                       </td>
                       <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>
-                        {new Date(enr.purchasedAt).toLocaleDateString()}
+                        {enr.purchasedAt ? new Date(enr.purchasedAt).toLocaleDateString() : 'Active'}
                       </td>
                       <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>
                         {enr.completedLessonIds?.length || 0} / {course.lessonCount || 6}

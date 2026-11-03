@@ -32,49 +32,102 @@ export const CourseClassroom: React.FC = () => {
   const [progress, setProgress] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<'overview' | 'resources' | 'instructor'>('overview');
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
+  const [isAccessDenied, setIsAccessDenied] = useState<boolean>(false);
 
   useEffect(() => {
     if (!courseId) return;
 
-    // Load course
-    const loadedCourse = storageService.getCourseById(courseId) || storageService.getCourseBySlug(courseId);
-    if (!loadedCourse) {
-      navigate('/learn');
-      return;
-    }
+    const token = localStorage.getItem('cakexperiment_auth_token');
+    fetch(`/api/courses/${courseId}/classroom`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+      .then(async (res) => {
+        if (res.status === 403) {
+          setIsAccessDenied(true);
+          return null;
+        }
+        if (res.ok) {
+          return res.json();
+        }
+        return null;
+      })
+      .then((data) => {
+        if (data?.course) {
+          setCourse(data.course);
+          const firstMod = data.course.modules?.[0];
+          const firstLesson = firstMod?.lessons?.[0];
+          if (firstLesson) setActiveLesson(firstLesson);
 
-    // Role access check: must be admin or enrolled
-    if (user && !isAdmin && !hasCourseAccess(loadedCourse.id)) {
-      navigate(`/courses/${loadedCourse.slug}`);
-      return;
-    }
+          const expanded: Record<string, boolean> = {};
+          data.course.modules?.forEach((m: any) => { expanded[m.id] = true; });
+          setOpenModules(expanded);
 
-    setCourse(loadedCourse);
+          if (data.progress) {
+            const completed = data.progress.filter((p: any) => p.completed).map((p: any) => p.lesson_id);
+            setCompletedLessonIds(completed);
+          }
+          return;
+        }
 
-    // Load enrollment progress
-    if (user) {
-      const enrollments = storageService.getStudentEnrollments(user.id);
-      const enr = enrollments.find(e => e.courseId === loadedCourse.id);
-      if (enr) {
-        setCompletedLessonIds(enr.completedLessonIds || []);
-        setProgress(enr.progress || 0);
-      }
-    }
+        // Fallback to local storage if API returned no data
+        const loadedCourse = storageService.getCourseById(courseId) || storageService.getCourseBySlug(courseId);
+        if (!loadedCourse) {
+          navigate('/learn');
+          return;
+        }
 
-    // Select default active lesson
-    const firstMod = loadedCourse.modules?.[0];
-    const firstLesson = firstMod?.lessons?.[0];
-    if (firstLesson) {
-      setActiveLesson(firstLesson);
-    }
+        if (user && !isAdmin && !hasCourseAccess(loadedCourse.id)) {
+          setIsAccessDenied(true);
+          return;
+        }
 
-    // Expand all modules by default
-    const expanded: Record<string, boolean> = {};
-    loadedCourse.modules?.forEach(m => {
-      expanded[m.id] = true;
-    });
-    setOpenModules(expanded);
+        setCourse(loadedCourse);
+        if (user) {
+          const enrollments = storageService.getStudentEnrollments(user.id);
+          const enr = enrollments.find(e => e.courseId === loadedCourse.id);
+          if (enr) {
+            setCompletedLessonIds(enr.completedLessonIds || []);
+            setProgress(enr.progress || 0);
+          }
+        }
+
+        const firstMod = loadedCourse.modules?.[0];
+        const firstLesson = firstMod?.lessons?.[0];
+        if (firstLesson) setActiveLesson(firstLesson);
+
+        const expanded: Record<string, boolean> = {};
+        loadedCourse.modules?.forEach(m => { expanded[m.id] = true; });
+        setOpenModules(expanded);
+      })
+      .catch(() => {
+        const loadedCourse = storageService.getCourseById(courseId) || storageService.getCourseBySlug(courseId);
+        if (loadedCourse) setCourse(loadedCourse);
+      });
   }, [courseId, user, isAdmin, hasCourseAccess, navigate]);
+
+  if (isAccessDenied) {
+    return (
+      <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+        <div style={{ maxWidth: '500px', textAlign: 'center', backgroundColor: '#FFFFFF', padding: '3rem 2rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-card)' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#FFEBEE', color: '#C62828', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+            <Lock size={30} />
+          </div>
+          <h2 style={{ fontSize: '1.5rem', color: 'var(--color-plum)', marginBottom: '0.6rem' }}>Course Classroom Locked</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '2rem' }}>
+            Access to this masterclass requires an active enrollment verified by our administrator. If you have submitted a WhatsApp purchase request, access will unlock automatically as soon as payment is confirmed.
+          </p>
+          <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'center' }}>
+            <Link to="/my-purchases" className="btn btn-secondary">
+              View My Orders
+            </Link>
+            <Link to={`/checkout/${courseId}`} className="btn btn-primary">
+              Enroll via WhatsApp
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!course || !activeLesson) {
     return (
@@ -96,11 +149,32 @@ export const CourseClassroom: React.FC = () => {
 
   const isCurrentCompleted = completedLessonIds.includes(activeLesson.id);
 
-  const handleToggleCompletion = () => {
-    if (!user) return;
+  const handleToggleCompletion = async () => {
+    if (!user || !activeLesson || !course) return;
+    const isCompleted = completedLessonIds.includes(activeLesson.id);
+    const newCompleted = !isCompleted;
+
+    const updated = newCompleted
+      ? [...completedLessonIds, activeLesson.id]
+      : completedLessonIds.filter(id => id !== activeLesson.id);
+    setCompletedLessonIds(updated);
+
+    const token = localStorage.getItem('cakexperiment_auth_token');
+    fetch('/api/user/progress', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        courseId: course.id,
+        lessonId: activeLesson.id,
+        completed: newCompleted
+      })
+    }).catch(() => {});
+
     const updatedEnr = storageService.toggleLessonCompleted(user.id, course.id, activeLesson.id);
     if (updatedEnr) {
-      setCompletedLessonIds(updatedEnr.completedLessonIds);
       setProgress(updatedEnr.progress);
     }
   };

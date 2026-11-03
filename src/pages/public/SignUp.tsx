@@ -18,7 +18,7 @@ export const SignUp: React.FC = () => {
 
   React.useEffect(() => {
     if (isAuthenticated) {
-      navigate(isAdmin ? '/admin' : '/learn', { replace: true });
+      navigate(isAdmin ? '/admin/dashboard' : '/learn', { replace: true });
     }
   }, [isAuthenticated, isAdmin, navigate]);
 

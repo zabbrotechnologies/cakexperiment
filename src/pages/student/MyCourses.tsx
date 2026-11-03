@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { storageService } from '../../services/storage';
@@ -6,15 +6,49 @@ import { BookOpen, Play, Clock, Sparkles } from 'lucide-react';
 
 export const MyCourses: React.FC = () => {
   const { user } = useAuth();
-  const enrollments = user ? storageService.getStudentEnrollments(user.id) : [];
-  const allCourses = storageService.getCourses();
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const enrolledCourses = allCourses
-    .filter(c => enrollments.some(e => e.courseId === c.id))
-    .map(c => ({
-      ...c,
-      enrollment: enrollments.find(e => e.courseId === c.id)!
-    }));
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchMyCourses = async () => {
+      try {
+        const token = localStorage.getItem('cakexperiment_auth_token');
+        const res = await fetch('/api/user/courses', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.courses) {
+            setCourses(data.courses);
+            return;
+          }
+        }
+      } catch {
+        // Fallback
+      }
+
+      // Fallback: local storage
+      const enrollments = storageService.getStudentEnrollments(user.id);
+      const allCourses = storageService.getCourses();
+      const enrolledCourses = allCourses
+        .filter(c => enrollments.some(e => e.courseId === c.id))
+        .map(c => {
+          const enr = enrollments.find(e => e.courseId === c.id)!;
+          return {
+            ...c,
+            course_id: c.id,
+            progress: enr.progress || 0,
+            completed_lessons: enr.completedLessonIds || []
+          };
+        });
+      setCourses(enrolledCourses);
+    };
+
+    fetchMyCourses().finally(() => setLoading(false));
+  }, [user]);
 
   return (
     <div>
@@ -30,7 +64,11 @@ export const MyCourses: React.FC = () => {
         </Link>
       </div>
 
-      {enrolledCourses.length === 0 ? (
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '3rem' }}>
+          <p style={{ color: 'var(--text-muted)' }}>Loading your enrolled courses from database...</p>
+        </div>
+      ) : courses.length === 0 ? (
         <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '4rem 2rem', textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
           <div style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: 'var(--color-blush)', color: 'var(--color-berry)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
             <BookOpen size={26} />
@@ -45,54 +83,61 @@ export const MyCourses: React.FC = () => {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
-          {enrolledCourses.map((c) => (
-            <div key={c.id} className="cake-card" style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ position: 'relative', height: '200px' }}>
-                <img src={c.thumbnail} alt={c.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', top: '12px', right: '12px', backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '0.25rem 0.7rem', borderRadius: 'var(--radius-full)', fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-plum)' }}>
-                  {c.enrollment.progress}% Finished
-                </div>
-              </div>
+          {courses.map((c) => {
+            const courseId = c.course_id || c.id;
+            const progress = c.progress || 0;
+            const thumbnail = c.thumbnail || c.image || '/images/hero-cake.png';
 
-              <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--color-berry)', fontWeight: 600, marginBottom: '0.4rem' }}>
-                  {c.categoryName}
+            return (
+              <div key={courseId} className="cake-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ position: 'relative', height: '200px' }}>
+                  <img src={thumbnail} alt={c.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div style={{ position: 'absolute', top: '12px', right: '12px', backgroundColor: 'rgba(255, 255, 255, 0.95)', padding: '0.25rem 0.7rem', borderRadius: 'var(--radius-full)', fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-plum)' }}>
+                    {progress}% Finished
+                  </div>
                 </div>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '0.8rem', lineHeight: 1.3 }}>
-                  <Link to={`/learn/${c.id}`} style={{ color: 'var(--color-plum)' }}>
-                    {c.title}
+
+                <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--color-berry)', fontWeight: 600, marginBottom: '0.4rem' }}>
+                    {c.tag || c.category_name || 'Masterclass'}
+                  </div>
+                  <h3 style={{ fontSize: '1.25rem', marginBottom: '0.8rem', lineHeight: 1.3 }}>
+                    <Link to={`/learn/${courseId}`} style={{ color: 'var(--color-plum)' }}>
+                      {c.title}
+                    </Link>
+                  </h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', lineHeight: 1.5, marginBottom: '1.2rem', flex: 1 }}>
+                    {c.short_description || c.description || 'Master pastry art with this comprehensive studio masterclass.'}
+                  </p>
+
+                  {/* Progress */}
+                  <div style={{ marginBottom: '1.2rem' }}>
+                    <div style={{ height: '6px', backgroundColor: 'var(--color-blush)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          width: `${progress}%`,
+                          height: '100%',
+                          backgroundColor: progress === 100 ? '#2E7D32' : 'var(--color-berry)',
+                          borderRadius: '3px'
+                        }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-light)', marginTop: '0.4rem' }}>
+                      <span>{c.completed_lessons?.length || 0} lessons completed</span>
+                      <span>{progress}%</span>
+                    </div>
+                  </div>
+
+                  <Link to={`/learn/${courseId}`} className="btn btn-primary" style={{ width: '100%' }}>
+                    <Play size={15} fill="#FFF" /> Resume Lesson
                   </Link>
-                </h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', lineHeight: 1.5, marginBottom: '1.2rem', flex: 1 }}>
-                  {c.shortDescription}
-                </p>
-
-                {/* Progress */}
-                <div style={{ marginBottom: '1.2rem' }}>
-                  <div style={{ height: '6px', backgroundColor: 'var(--color-blush)', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        width: `${c.enrollment.progress}%`,
-                        height: '100%',
-                        backgroundColor: c.enrollment.progress === 100 ? '#2E7D32' : 'var(--color-berry)',
-                        borderRadius: '3px'
-                      }}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-light)', marginTop: '0.4rem' }}>
-                    <span>{c.enrollment.completedLessonIds?.length || 0} lessons completed</span>
-                    <span>{c.enrollment.progress}%</span>
-                  </div>
                 </div>
-
-                <Link to={`/learn/${c.id}`} className="btn btn-primary" style={{ width: '100%' }}>
-                  <Play size={15} fill="#FFF" /> Resume Lesson
-                </Link>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
   );
 };
+export default MyCourses;

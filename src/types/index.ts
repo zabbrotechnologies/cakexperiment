@@ -1,4 +1,4 @@
-export type Role = 'student' | 'admin';
+export type Role = 'USER' | 'ADMIN' | 'student' | 'admin';
 
 export interface User {
   id: string;
@@ -6,9 +6,10 @@ export interface User {
   email: string;
   role: Role;
   avatar?: string;
-  status: 'active' | 'suspended';
+  status?: 'active' | 'suspended';
+  emailVerified?: boolean;
   bio?: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export interface Category {
@@ -61,28 +62,42 @@ export interface Course {
   title: string;
   slug: string;
   shortDescription: string;
+  short_description?: string;
   description: string;
   thumbnail: string;
+  image?: string;
   previewMedia: string;
+  preview_media?: string;
   categoryId: string;
   categoryName?: string;
+  category_id?: string;
+  category_name?: string;
   instructorId: string;
   instructorName: string;
+  instructor_name?: string;
   instructorAvatar: string;
+  instructor_avatar?: string;
   instructorBio: string;
+  instructor_bio?: string;
   skillLevel: SkillLevel;
+  skill_level?: SkillLevel;
   learningOutcomes: string[];
   prerequisites: string[];
   equipmentNeeded: string[];
   price: number; // in INR
   originalPrice?: number;
+  original_price?: number;
   status: 'published' | 'draft' | 'archived';
   featured: boolean;
   totalDuration: string;
+  total_duration?: string;
   moduleCount: number;
+  modules_count?: number;
   lessonCount: number;
+  lessons_count?: number;
   rating: number;
   reviewCount: number;
+  reviews_count?: number;
   createdAt: string;
   updatedAt: string;
   modules?: Module[];
@@ -92,25 +107,44 @@ export interface Enrollment {
   id: string;
   userId: string;
   courseId: string;
-  orderId: string;
-  purchasedAt: string;
+  orderId?: string;
+  purchasedAt?: string;
+  activatedAt?: string;
+  status?: 'ACTIVE' | 'REVOKED' | 'active';
   progress: number; // 0 - 100 %
-  completedLessonIds: string[];
+  completedLessonIds?: string[];
   lastAccessedLessonId?: string;
+  title?: string;
+  slug?: string;
+  tag?: string;
+  thumbnail?: string;
+  image?: string;
+  instructorName?: string;
+  totalDuration?: string;
+  modulesCount?: number;
+  lessonsCount?: number;
 }
 
 export interface Order {
   id: string;
   orderNumber: string;
   userId: string;
-  userName: string;
-  userEmail: string;
-  courseId: string;
-  courseTitle: string;
-  courseThumbnail: string;
+  userName?: string;
+  userEmail?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  courseId?: string;
+  courseTitle?: string;
+  courseName?: string;
+  courseThumbnail?: string;
   amount: number;
-  paymentStatus: 'paid' | 'pending' | 'failed' | 'refunded';
-  orderStatus: 'completed' | 'processing' | 'cancelled' | 'refunded';
+  totalAmount?: number;
+  paymentStatus: 'paid' | 'pending' | 'failed' | 'refunded' | 'AWAITING_CONFIRMATION' | 'CONFIRMED' | 'NOT_CONFIRMED';
+  orderStatus: 'completed' | 'processing' | 'cancelled' | 'refunded' | 'PENDING' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED';
+  courseAccessStatus?: 'LOCKED' | 'ACTIVE' | 'UNLOCKED';
+  paymentMethod?: string;
+  whatsappUrl?: string;
   createdAt: string;
 }
 
@@ -122,10 +156,12 @@ export interface Payment {
   userName: string;
   courseTitle: string;
   amount: number;
-  provider: 'Stripe (Simulated)' | 'Razorpay (Simulated)' | 'UPI (Simulated)';
-  paymentMethod: 'Credit Card' | 'Debit Card' | 'UPI' | 'Net Banking';
+  provider?: string;
+  paymentMethod: string;
   transactionReference: string;
-  status: 'successful' | 'pending' | 'failed' | 'refunded';
+  status: 'successful' | 'pending' | 'failed' | 'refunded' | 'AWAITING_CONFIRMATION' | 'CONFIRMED' | 'NOT_CONFIRMED';
+  confirmedBy?: string;
+  confirmedAt?: string;
   createdAt: string;
 }
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth, DEMO_ADMIN, DEMO_STUDENT } from '../../context/AuthContext';
-import { Cake, Eye, EyeOff, ShieldCheck, UserCheck, AlertCircle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { Cake, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export const SignIn: React.FC = () => {
   const { signIn, isAuthenticated, isAdmin } = useAuth();
@@ -15,10 +15,10 @@ export const SignIn: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // If already logged in, redirect
+  // If already logged in, redirect based on securely stored server-side role
   React.useEffect(() => {
     if (isAuthenticated) {
-      navigate(isAdmin ? '/admin' : '/learn', { replace: true });
+      navigate(isAdmin ? '/admin/dashboard' : '/learn', { replace: true });
     }
   }, [isAuthenticated, isAdmin, navigate]);
 
@@ -41,18 +41,6 @@ export const SignIn: React.FC = () => {
     } else {
       setError(res.message || 'Invalid email or password.');
     }
-  };
-
-  const fillAdminCredentials = () => {
-    setEmail(DEMO_ADMIN.email);
-    setPassword(DEMO_ADMIN.password);
-    setError(null);
-  };
-
-  const fillStudentCredentials = () => {
-    setEmail(DEMO_STUDENT.email);
-    setPassword(DEMO_STUDENT.password);
-    setError(null);
   };
 
   return (
@@ -159,33 +147,6 @@ export const SignIn: React.FC = () => {
             </button>
 
           </form>
-
-          {/* Quick Demo Credentials Panel */}
-          <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-subtle)' }}>
-            <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-light)', fontWeight: 600, textAlign: 'center', marginBottom: '0.8rem' }}>
-              Quick Fill Demo Credentials
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-              <button
-                type="button"
-                onClick={fillAdminCredentials}
-                className="btn btn-secondary btn-sm"
-                style={{ fontSize: '0.8rem', padding: '0.5rem 0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-              >
-                <ShieldCheck size={14} color="var(--color-berry)" />
-                Fill Admin (admin@...)
-              </button>
-              <button
-                type="button"
-                onClick={fillStudentCredentials}
-                className="btn btn-secondary btn-sm"
-                style={{ fontSize: '0.8rem', padding: '0.5rem 0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-              >
-                <UserCheck size={14} color="var(--color-berry)" />
-                Fill Student (student@...)
-              </button>
-            </div>
-          </div>
 
           {/* Sign Up Link */}
           <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>

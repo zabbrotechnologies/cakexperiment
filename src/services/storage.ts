@@ -1701,7 +1701,7 @@ class StorageService {
 
     const totalRevenue = payments
       .filter(p => p.status === 'successful')
-      .reduce((sum, p) => sum + p.amount, 0);
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
 
     const pendingOrders = orders.filter(o => o.orderStatus === 'processing' || o.paymentStatus === 'pending').length;
 

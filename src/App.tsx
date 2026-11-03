@@ -11,6 +11,7 @@ import { AdminLayout } from './components/layout/AdminLayout';
 import { Home } from './pages/public/Home';
 import { Courses } from './pages/public/Courses';
 import { CourseDetail } from './pages/public/CourseDetail';
+import { Checkout } from './pages/public/Checkout';
 import { About } from './pages/public/About';
 import { SignIn } from './pages/public/SignIn';
 import { SignUp } from './pages/public/SignUp';
@@ -72,6 +73,7 @@ export const App: React.FC = () => {
             <Route path="/" element={<Home />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/:slug" element={<CourseDetail />} />
+            <Route path="/checkout/:courseId" element={<Checkout />} />
             <Route path="/about" element={<Navigate to="/#about" replace />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
@@ -122,6 +124,7 @@ export const App: React.FC = () => {
             }
           >
             <Route index element={<AdminDashboard />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="courses" element={<AdminCourses />} />
             <Route path="courses/new" element={<AdminCourseEdit />} />
             <Route path="courses/:id/edit" element={<AdminCourseEdit />} />

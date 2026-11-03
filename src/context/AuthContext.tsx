@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '../types';
+import type { User } from '../types';
 import { storageService, DEMO_ADMIN, DEMO_STUDENT } from '../services/storage';
+
+const TOKEN_KEY = 'cakexperiment_auth_token';
 
 interface AuthContextType {
   user: User | null;
@@ -21,47 +23,128 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchCurrentUser = async () => {
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      const res = await fetch('/api/auth/me', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.user) {
+          setUser(data.user);
+          return;
+        }
+      }
+    } catch {
+      // API unavailable or network error, fallback to local storage
+    }
+
+    // Fallback to local storage if API not available
+    const localUser = storageService.getCurrentUser();
+    setUser(localUser);
+  };
+
   useEffect(() => {
     storageService.init();
-    const currentUser = storageService.getCurrentUser();
-    setUser(currentUser);
-    setLoading(false);
+    fetchCurrentUser().finally(() => setLoading(false));
   }, []);
 
   const refreshUser = () => {
-    const currentUser = storageService.getCurrentUser();
-    setUser(currentUser);
+    fetchCurrentUser();
   };
 
   const signIn = async (email: string, pass: string) => {
-    const res = storageService.signIn(email, pass);
-    if (res.success && res.user) {
-      setUser(res.user);
-      const redirectTo = res.user.role === 'admin' ? '/admin' : '/learn';
-      return { success: true, redirectTo };
+    try {
+      const res = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success && data.user) {
+        if (data.token) {
+          localStorage.setItem(TOKEN_KEY, data.token);
+        }
+        setUser(data.user);
+        return {
+          success: true,
+          redirectTo: data.redirectTo || (data.user.role === 'ADMIN' ? '/admin/dashboard' : '/learn')
+        };
+      }
+
+      return {
+        success: false,
+        message: data.error || 'Invalid credentials'
+      };
+    } catch (err: any) {
+      // Fallback for offline demo mode
+      const res = storageService.signIn(email, pass);
+      if (res.success && res.user) {
+        setUser(res.user);
+        const redirectTo = res.user.role === 'admin' ? '/admin/dashboard' : '/learn';
+        return { success: true, redirectTo };
+      }
+      return { success: false, message: res.message || err.message || 'Authentication error' };
     }
-    return { success: false, message: res.message || 'Invalid credentials' };
   };
 
   const signUp = async (name: string, email: string, pass: string) => {
-    const res = storageService.signUp(name, email, pass);
-    if (res.success && res.user) {
-      setUser(res.user);
-      return { success: true, redirectTo: '/learn' };
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password: pass, confirmPassword: pass })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success && data.user) {
+        if (data.token) {
+          localStorage.setItem(TOKEN_KEY, data.token);
+        }
+        setUser(data.user);
+        return {
+          success: true,
+          redirectTo: data.redirectTo || '/learn'
+        };
+      }
+
+      return {
+        success: false,
+        message: data.error || 'Could not complete registration'
+      };
+    } catch (err: any) {
+      const res = storageService.signUp(name, email, pass);
+      if (res.success && res.user) {
+        setUser(res.user);
+        return { success: true, redirectTo: '/learn' };
+      }
+      return { success: false, message: res.message || err.message || 'Could not register' };
     }
-    return { success: false, message: res.message || 'Could not register' };
   };
 
   const signOut = () => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    fetch('/api/auth/signout', {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    }).catch(() => {});
+
+    localStorage.removeItem(TOKEN_KEY);
     storageService.signOut();
     setUser(null);
   };
 
   const hasCourseAccess = (courseId: string): boolean => {
     if (!user) return false;
-    if (user.role === 'admin') return true; // admin preview
+    if (user.role === 'ADMIN' || user.role === 'admin') return true;
     return storageService.isEnrolled(user.id, courseId);
   };
+
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'admin';
+  const isStudent = user?.role === 'USER' || user?.role === 'student';
 
   return (
     <AuthContext.Provider
@@ -69,8 +152,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         loading,
         isAuthenticated: !!user,
-        isAdmin: user?.role === 'admin',
-        isStudent: user?.role === 'student',
+        isAdmin,
+        isStudent,
         signIn,
         signUp,
         signOut,

@@ -189,7 +189,7 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  {new Date(st.createdAt).toLocaleDateString()}
+                  {st.createdAt ? new Date(st.createdAt).toLocaleDateString() : 'Recent'}
                 </div>
               </div>
             ))}

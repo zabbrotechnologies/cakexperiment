@@ -60,14 +60,14 @@ export const CourseDetail: React.FC = () => {
 
   const handleEnrollClick = () => {
     if (!isAuthenticated) {
-      navigate('/signin', { state: { from: { pathname: `/courses/${course.slug}` } } });
+      navigate('/signin', { state: { from: { pathname: `/checkout/${course.slug}` } } });
       return;
     }
     if (isEnrolled) {
       navigate(`/learn/${course.id}`);
       return;
     }
-    setCheckoutModalOpen(true);
+    navigate(`/checkout/${course.slug}`);
   };
 
   const handleSimulatePayment = () => {

@@ -36,7 +36,7 @@ export const AdminLayout: React.FC = () => {
     { label: 'Categories', to: '/admin/categories', icon: <FolderTree size={18} /> },
     { label: 'Videos & Lessons', to: '/admin/videos', icon: <Video size={18} /> },
     { label: 'Students', to: '/admin/users', icon: <Users size={18} /> },
-    { label: 'Orders', to: '/admin/orders', icon: <ShoppingBag size={18} /> },
+    { label: 'Purchase Requests', to: '/admin/orders', icon: <ShoppingBag size={18} /> },
     { label: 'Payments', to: '/admin/payments', icon: <CreditCard size={18} /> },
     { label: 'Reviews', to: '/admin/reviews', icon: <MessageSquare size={18} /> },
     { label: 'Settings', to: '/admin/settings', icon: <Settings size={18} /> },
@@ -220,8 +220,8 @@ export const AdminLayout: React.FC = () => {
         </header>
 
         {/* Admin Page Body */}
-        <main style={{ padding: '2rem', flex: 1 }}>
-          <div key={location.pathname} className="page-transition">
+        <main style={{ padding: '2rem', flex: 1, minWidth: 0, maxWidth: '100%', overflowX: 'hidden' }}>
+          <div key={location.pathname} className="page-transition" style={{ minWidth: 0, width: '100%' }}>
             <Outlet />
           </div>
         </main>
