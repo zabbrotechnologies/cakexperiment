@@ -137,10 +137,27 @@ function readJsonBody(req: IncomingMessage): Promise<any> {
 }
 
 export async function handleNeonApi(req: IncomingMessage, res: ServerResponse, next?: () => void) {
-  const matchedPath = (req.headers['x-matched-path'] as string) || (req.headers['x-invoke-path'] as string);
-  const rawUrl = matchedPath && matchedPath.startsWith('/api') ? matchedPath : (req.url || '');
+  const rawUrl = req.url || '';
   const parsedUrl = new URL(rawUrl, 'http://localhost');
-  const pathname = parsedUrl.pathname;
+  
+  // Extract path from ?path= query (set by Vercel rewrite /api/(.*) -> /api?path=$1), or matched path header, or parsed pathname
+  const queryPath = parsedUrl.searchParams.get('path');
+  const matchedPath = (req.headers['x-matched-path'] as string) || (req.headers['x-invoke-path'] as string);
+  
+  let pathname = parsedUrl.pathname;
+  if (queryPath) {
+    pathname = queryPath.startsWith('/') ? `/api${queryPath}` : `/api/${queryPath}`;
+  } else if (matchedPath && matchedPath.startsWith('/api/') && matchedPath !== '/api') {
+    pathname = matchedPath;
+  }
+
+  // If hit at root /api or /api/, return health check
+  if (pathname === '/api' || pathname === '/api/') {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ status: 'ok', name: 'Cakexperiment API Engine', time: new Date().toISOString() }));
+    return;
+  }
 
   // Intercept all /api/* routes
   if (!pathname.startsWith('/api/')) {
