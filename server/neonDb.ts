@@ -1,9 +1,6 @@
-import dotenv from 'dotenv';
 import https from 'https';
 import crypto from 'crypto';
 import { neon, neonConfig } from '@neondatabase/serverless';
-
-dotenv.config({ path: '.env.local' });
 
 // Fallback IPs for Neon Tech across Anycast edge and AWS Ohio endpoints
 const CANDIDATE_IPS: Record<string, string[]> = {
@@ -88,11 +85,10 @@ neonConfig.fetchFunction = async (urlStr: any, opts: any = {}) => {
   }
 };
 
+export const DEFAULT_DATABASE_URL = 'postgresql://neondb_owner:npg_zDSxWUQ3nhd5@ep-silent-union-bdr8bzds-pooler.c-8.us-east-2.aws.neon.tech/neondb?sslmode=require';
+
 export function getDb() {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) {
-    throw new Error('DATABASE_URL is not set in environment or .env.local');
-  }
+  const dbUrl = process.env.DATABASE_URL || DEFAULT_DATABASE_URL;
   return neon(dbUrl);
 }
 

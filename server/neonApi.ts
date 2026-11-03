@@ -1,5 +1,4 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import dotenv from 'dotenv';
 import crypto from 'crypto';
 import https from 'https';
 import {
@@ -14,17 +13,15 @@ import {
   generateCourseActivatedEmail
 } from './emailService.ts';
 
-dotenv.config({ path: '.env.local' });
-
 const S3_HOST_IPS: Record<string, string> = {
   'br-soft-queen-bdn8ofgg.storage.c-8.us-east-2.aws.neon.tech': '18.119.63.132',
   'storage.c-8.us-east-2.aws.neon.tech': '18.119.63.132'
 };
 
 function getS3() {
-  const endpoint = process.env.AWS_ENDPOINT_URL_S3;
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+  const endpoint = process.env.AWS_ENDPOINT_URL_S3 || 'https://br-soft-queen-bdn8ofgg.storage.c-8.us-east-2.aws.neon.tech';
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID || 'nak_live_a59babbf885c4501aa6025aebda5d7a9';
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || 'nsk_live_d9ce3a6253dff1837ff53dc7da62655f13111a7207df4336ad5b2aebad647072';
   const region = process.env.AWS_REGION || 'us-east-2';
 
   if (!endpoint || !accessKeyId || !secretAccessKey) {
