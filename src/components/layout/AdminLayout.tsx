@@ -202,7 +202,7 @@ export const AdminLayout: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', backgroundColor: 'var(--color-blush)', padding: '0.35rem 0.8rem', borderRadius: 'var(--radius-full)', fontSize: '0.8rem', color: 'var(--color-plum)', fontWeight: 600 }}>
               <ShieldCheck size={14} color="var(--color-berry)" />
-              <span>Demo Admin Role</span>
+              <span>{user?.role === 'ADMIN' ? 'Administrator' : 'Admin'}</span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>

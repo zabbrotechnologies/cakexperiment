@@ -136,14 +136,19 @@ function readJsonBody(req: IncomingMessage): Promise<any> {
   });
 }
 
-export async function handleNeonApi(req: IncomingMessage, res: ServerResponse, next: () => void) {
-  const rawUrl = req.url || '';
+export async function handleNeonApi(req: IncomingMessage, res: ServerResponse, next?: () => void) {
+  const matchedPath = (req.headers['x-matched-path'] as string) || (req.headers['x-invoke-path'] as string);
+  const rawUrl = matchedPath && matchedPath.startsWith('/api') ? matchedPath : (req.url || '');
   const parsedUrl = new URL(rawUrl, 'http://localhost');
   const pathname = parsedUrl.pathname;
 
   // Intercept all /api/* routes
   if (!pathname.startsWith('/api/')) {
-    return next();
+    if (next) return next();
+    res.statusCode = 404;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: 'Endpoint not found' }));
+    return;
   }
 
   res.setHeader('Content-Type', 'application/json');

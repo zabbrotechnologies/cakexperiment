@@ -62,20 +62,30 @@ function tryFetch(url: URL, targetIp: string, opts: any): Promise<any> {
 
 // Custom resilient fetch with multi-IP failover for Neon serverless queries
 neonConfig.fetchFunction = async (urlStr: any, opts: any = {}) => {
-  const url = new URL(urlStr);
-  const hostname = url.hostname;
-  const ips = CANDIDATE_IPS[hostname] || [hostname];
+  // First attempt native fetch with a 3.5s timeout (optimal for cloud/Vercel environments)
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3500);
+    const nativeRes = await fetch(urlStr, { ...opts, signal: controller.signal });
+    clearTimeout(timer);
+    return nativeRes;
+  } catch (nativeErr) {
+    // If native fetch fails (e.g. local Windows DNS ENOTFOUND), failover to candidate IPs
+    const url = new URL(urlStr);
+    const hostname = url.hostname;
+    const ips = CANDIDATE_IPS[hostname] || [hostname];
 
-  let lastErr: any;
-  for (const ip of ips) {
-    try {
-      const res = await tryFetch(url, ip, opts);
-      return res;
-    } catch (err) {
-      lastErr = err;
+    let lastErr: any = nativeErr;
+    for (const ip of ips) {
+      try {
+        const res = await tryFetch(url, ip, opts);
+        return res;
+      } catch (err) {
+        lastErr = err;
+      }
     }
+    throw lastErr || new Error(`Failed to connect to Neon database on ${hostname}`);
   }
-  throw lastErr || new Error(`Failed to connect to Neon database on ${hostname}`);
 };
 
 export function getDb() {

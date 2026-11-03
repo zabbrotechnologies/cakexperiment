@@ -109,6 +109,7 @@ export const AdminOrders: React.FC = () => {
     try {
       const token = localStorage.getItem('cakexperiment_auth_token');
       const res = await fetch(`/api/admin/orders?status=${statusFilter}&search=${encodeURIComponent(search)}`, {
+        credentials: 'include',
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       if (res.ok) {
@@ -157,6 +158,7 @@ export const AdminOrders: React.FC = () => {
       const token = localStorage.getItem('cakexperiment_auth_token');
       const res = await fetch(`/api/admin/orders/${confirmDialogOrder.id}/confirm-payment`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -187,6 +189,7 @@ export const AdminOrders: React.FC = () => {
       const token = localStorage.getItem('cakexperiment_auth_token');
       const res = await fetch(`/api/admin/orders/${order.id}/cancel`, {
         method: 'POST',
+        credentials: 'include',
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       if (res.ok) {
@@ -208,6 +211,7 @@ export const AdminOrders: React.FC = () => {
       const token = localStorage.getItem('cakexperiment_auth_token');
       const res = await fetch(`/api/admin/orders/${order.id}/refund`, {
         method: 'POST',
+        credentials: 'include',
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       if (res.ok) {
@@ -313,17 +317,17 @@ export const AdminOrders: React.FC = () => {
             ref={topScrollRef}
             onScroll={handleTopScroll}
             style={{
-              overflowX: 'auto',
+              overflowX: 'scroll',
               overflowY: 'hidden',
               width: '100%',
-              height: '11px',
+              height: '16px',
               backgroundColor: 'var(--color-cream)',
               borderBottom: '1px solid var(--border-subtle)',
               WebkitOverflowScrolling: 'touch'
             }}
-            title="Horizontal scroll (drag or swipe)"
+            title="Horizontal scroll bar"
           >
-            <div style={{ width: `${contentWidth}px`, height: '11px' }} />
+            <div style={{ width: `${contentWidth}px`, height: '16px' }} />
           </div>
         )}
 

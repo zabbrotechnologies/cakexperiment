@@ -21,13 +21,16 @@ interface AdminUserRecord {
 export const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<AdminUserRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [actionUserId, setActionUserId] = useState<string | null>(null);
 
   const fetchUsers = async () => {
+    setErrorMsg(null);
     try {
       const token = localStorage.getItem('cakexperiment_auth_token');
       const res = await fetch('/api/admin/users', {
+        credentials: 'include',
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
       if (res.ok) {
@@ -36,24 +39,14 @@ export const AdminUsers: React.FC = () => {
           setUsers(data.users);
           return;
         }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setErrorMsg(errData.error || `Server returned HTTP ${res.status}`);
       }
-    } catch (err) {
-      console.warn('Failed to fetch from /api/admin/users, falling back to local storage:', err);
+    } catch (err: any) {
+      console.warn('Failed to fetch from /api/admin/users:', err);
+      setErrorMsg('Unable to connect to database server. Please check your network or login session.');
     }
-    // Fallback if needed
-    const local = storageService.getUsers();
-    setUsers(
-      local.map(u => ({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        role: u.role as any,
-        status: u.status,
-        avatar: u.avatar,
-        created_at: u.createdAt,
-        active_enrollments_count: storageService.getEnrollments().filter(e => e.userId === u.id).length
-      }))
-    );
   };
 
   useEffect(() => {
@@ -69,6 +62,7 @@ export const AdminUsers: React.FC = () => {
       const token = localStorage.getItem('cakexperiment_auth_token');
       const res = await fetch(`/api/admin/users/${u.id}/status`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -81,17 +75,11 @@ export const AdminUsers: React.FC = () => {
           prev.map(item => (item.id === u.id ? { ...item, status: nextStatus } : item))
         );
       } else {
-        // Fallback local update
-        storageService.updateUserStatus(u.id, nextStatus as any);
-        setUsers(prev =>
-          prev.map(item => (item.id === u.id ? { ...item, status: nextStatus } : item))
-        );
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || 'Failed to update user status.');
       }
-    } catch {
-      storageService.updateUserStatus(u.id, nextStatus as any);
-      setUsers(prev =>
-        prev.map(item => (item.id === u.id ? { ...item, status: nextStatus } : item))
-      );
+    } catch (err: any) {
+      alert(err.message || 'Failed to update user status.');
     } finally {
       setActionUserId(null);
     }
@@ -128,6 +116,12 @@ export const AdminUsers: React.FC = () => {
           Refresh Students
         </button>
       </div>
+
+      {errorMsg && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', backgroundColor: '#FFEBEE', color: '#C62828', padding: '0.9rem 1.2rem', borderRadius: 'var(--radius-md)', border: '1px solid #FFCDD2', fontSize: '0.88rem' }}>
+          <span>{errorMsg}</span>
+        </div>
+      )}
 
       {/* Search Input */}
       <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-md)', padding: '1rem', border: '1px solid var(--border-subtle)', width: '100%', maxWidth: '380px' }}>
