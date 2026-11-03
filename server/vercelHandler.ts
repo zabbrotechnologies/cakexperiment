@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'http';
-import { handleNeonApi } from '../server/neonApi.ts';
+import { handleNeonApi } from './neonApi.ts';
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   try {
