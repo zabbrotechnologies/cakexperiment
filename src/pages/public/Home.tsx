@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
@@ -22,16 +22,21 @@ import {
   Layers,
   Thermometer,
   ShieldCheck,
-  Eye,
-  Quote,
-  Wifi
+  Video,
+  Download,
+  GraduationCap,
+  FlaskConical,
+  Users,
+  Sparkle,
+  ChefHat,
+  Cake
 } from 'lucide-react';
 
 export const Home: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Smooth Hash Scroll on mount or hash change (for #about, #testimonials, #faq)
+  // Smooth Hash Scroll on mount or hash change (for #about, #courses, #categories, #testimonials, #faq)
   useEffect(() => {
     const handleHashScroll = () => {
       const hash = window.location.hash.replace('#', '');
@@ -177,15 +182,19 @@ export const Home: React.FC = () => {
   const duplicatedReviews = reviews.length > 0 ? [...reviews, ...reviews, ...reviews] : [];
 
   // Section Scroll Reveal Hooks
-  const aboutRef = useScrollReveal();
   const coursesRef = useScrollReveal();
-  const pillarsRef = useScrollReveal();
-  const categoriesSectionRef = useScrollReveal();
+  const whyLearnRef = useScrollReveal();
+  const skillsRef = useScrollReveal();
   const instructorRef = useScrollReveal();
-  const testimonialsRef = useScrollReveal();
+  const categoriesSectionRef = useScrollReveal();
   const stepsRef = useScrollReveal();
+  const testimonialsRef = useScrollReveal();
   const faqRef = useScrollReveal();
   const ctaRef = useScrollReveal();
+
+  // Skills Mindmap Interactive State
+  const [hoveredSkillIdx, setHoveredSkillIdx] = useState<number | null>(null);
+  const [isCenterHovered, setIsCenterHovered] = useState(false);
 
   // Category Taxonomy Showcase State (Vertical Parallax Center-Mode Carousel)
   const [categoriesList] = useState<Category[]>(() =>
@@ -280,75 +289,210 @@ export const Home: React.FC = () => {
     }
   };
 
-  const benefits = [
-    { title: 'Beginner Friendly', desc: 'No prior baking experience needed', icon: <Sparkles size={20} /> },
-    { title: 'Step-by-Step Video Lessons', desc: 'High-definition 4K macro camera angles', icon: <Play size={20} /> },
-    { title: 'Learn at Your Own Pace', desc: 'Lifetime on-demand curriculum access', icon: <Clock size={20} /> },
-    { title: 'Certificate of Completion', desc: 'Accredited Cakexperiment studio diploma', icon: <Award size={20} /> }
+  // Hero Benefits (Academy Highlights)
+  const heroBenefits = [
+    { title: 'Beginner to Pro Curriculums', desc: 'Structured video masterclasses with actionable steps', icon: <GraduationCap size={20} /> },
+    { title: 'Multi-Angle 4K Video', desc: 'Macro camera zooms on wrist angles & batter sheen', icon: <Play size={20} /> },
+    { title: 'Downloadable Recipe Scales', desc: 'Exact gram formulas & pan conversion matrices', icon: <Download size={20} /> },
+    { title: 'Lifetime Access & Certificate', desc: 'Learn on your schedule with accredited studio diploma', icon: <Award size={20} /> }
   ];
 
-  const pillars = [
+  // Why Learn With Cakexperiment (The Academy Advantage)
+  const whyLearnPillars = [
     {
       number: '01',
-      title: 'Flour & Sponge Chemistry',
+      title: 'Scientific Precision & Chemistry',
       description:
-        'Understand moisture migration, emulsion science, and reverse-creaming to guarantee flat, velvety sponges every bake.',
-      icon: <Thermometer size={28} />
+        'We demystify the culinary chemistry behind gluten development, fat percentages, emulsion stability, and moisture retention so your sponges never sink, crack, or dry out.',
+      icon: <Thermometer size={26} />
     },
     {
       number: '02',
-      title: 'Silky Buttercream & Piping',
+      title: 'Cinematic 4K Macro Instruction',
       description:
-        'Demystify Swiss meringue stability, nozzle angles, Russian tips, and delicate rosettes that hold sharp edges in any room temperature.',
-      icon: <Layers size={28} />
+        'Multi-angle close-ups reveal the microscopic sheen of whipped meringue, exact wrist angles on the turntable, and featherlight palette knife strokes.',
+      icon: <Video size={26} />
     },
     {
       number: '03',
-      title: 'Botanical Color Formulations',
+      title: 'Downloadable Recipe Workbooks',
       description:
-        'Blend soft dusty roses, muted sage greens, and warm terracotta tones using professional gel colors without bleeding.',
-      icon: <Palette size={28} />
+        'Get exact gram-weight formulation cards, pan-scaling matrices, ingredient replacement tables, and commercial bakery sourcing sheets.',
+      icon: <Download size={26} />
     },
     {
       number: '04',
-      title: 'Tiered Structural Architecture',
+      title: 'Self-Paced Lifetime Studio Access',
       description:
-        'Internal dowelling, acrylic disk smoothing, and safe wedding delivery packaging for cakes that stand tall and secure.',
-      icon: <ShieldCheck size={28} />
+        'Stream lessons 24/7 on desktop, tablet, or mobile. Pause, rewind, and re-watch complex techniques with zero expiration dates or rushed deadlines.',
+      icon: <Clock size={26} />
+    },
+    {
+      number: '05',
+      title: 'Accredited Studio Certification',
+      description:
+        'Submit your milestone cake creation to receive an official Cakexperiment Studio Diploma to showcase on your portfolio or bakery resume.',
+      icon: <GraduationCap size={26} />
+    },
+    {
+      number: '06',
+      title: 'Direct Chef Feedback & Mentorship',
+      description:
+        'Post your baking queries in dedicated lesson discussions, upload photos of your crumb structure, and receive guidance from master pastry instructors.',
+      icon: <ShieldCheck size={26} />
     }
   ];
 
+  // Scalloped Rosette SVG Path for Core Learning Areas center badge
+  const scallopRosettePath = useMemo(() => {
+    const cx = 108;
+    const cy = 108;
+    const r = 94;
+    const numScallops = 16;
+    const depth = 6.5;
+    const points: { x: number; y: number }[] = [];
+    const total = numScallops * 2;
+    for (let i = 0; i < total; i++) {
+      const angle = (i * Math.PI) / numScallops - Math.PI / 2;
+      const rad = i % 2 === 0 ? r + depth : r - depth;
+      points.push({
+        x: cx + rad * Math.cos(angle),
+        y: cy + rad * Math.sin(angle)
+      });
+    }
+    let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+    for (let i = 0; i < total; i++) {
+      const curr = points[i];
+      const next = points[(i + 1) % total];
+      const midX = (curr.x + next.x) / 2;
+      const midY = (curr.y + next.y) / 2;
+      d += ` Q ${curr.x.toFixed(1)} ${curr.y.toFixed(1)}, ${midX.toFixed(1)} ${midY.toFixed(1)}`;
+    }
+    d += ' Z';
+    return d;
+  }, []);
+
+  // Wavy Scalloped Distortion Path for the Orbital Ring (matching Image 1 fluted pattern)
+  const orbitalScallopPath = useMemo(() => {
+    const cx = 275;
+    const cy = 275;
+    const r = 265;
+    const numScallops = 36;
+    const depth = 7;
+    const points: { x: number; y: number }[] = [];
+    const total = numScallops * 2;
+    for (let i = 0; i < total; i++) {
+      const angle = (i * Math.PI) / numScallops - Math.PI / 2;
+      const rad = i % 2 === 0 ? r + depth : r - depth;
+      points.push({
+        x: cx + rad * Math.cos(angle),
+        y: cy + rad * Math.sin(angle)
+      });
+    }
+    let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+    for (let i = 0; i < total; i++) {
+      const curr = points[i];
+      const next = points[(i + 1) % total];
+      const midX = (curr.x + next.x) / 2;
+      const midY = (curr.y + next.y) / 2;
+      d += ` Q ${curr.x.toFixed(1)} ${curr.y.toFixed(1)}, ${midX.toFixed(1)} ${midY.toFixed(1)}`;
+    }
+    d += ' Z';
+    return d;
+  }, []);
+
+  // 6 Mindmap Curriculum Competencies (Skills & Techniques You'll Master)
+  const mindmapSkills = [
+    {
+      num: '01',
+      category: 'BAKING FUNDAMENTALS',
+      title: 'Sponge Chemistry & Crumb Science',
+      description: 'Master reverse-creaming, emulsion control, and moisture locks for perfectly level, velvety layers.',
+      tags: ['Texture', 'Emulsion', 'Moisture'],
+      image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=500&q=80'
+    },
+    {
+      num: '02',
+      category: 'FROSTING PERFECTION',
+      title: 'Silky Swiss Meringue & Buttercream Alchemy',
+      description: 'The golden ratio of egg whites, sugar, and butter-stable, glossy frostings with sharp edges.',
+      tags: ['Swiss Meringue', 'Stability', 'Texture'],
+      image: 'https://images.unsplash.com/photo-1587668178277-295251f900ce?auto=format&fit=crop&w=500&q=80'
+    },
+    {
+      num: '03',
+      category: 'MODERN DECORATING',
+      title: 'Razor-Sharp Edges & Smoothing Technique',
+      description: 'Achieve flawless 90° corners and silky finishes using professional tools.',
+      tags: ['Acrylic Discs', 'Side Walls', 'Clean Finish'],
+      image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=500&q=80'
+    },
+    {
+      num: '04',
+      category: 'FLORAL MASTERY',
+      title: 'Botanical Piping & Palette Knife Artistry',
+      description: 'Pipe dimensional florals and create painterly textures with refined control.',
+      tags: ['Florals', 'Palette Knife', 'Color Shading'],
+      image: 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?auto=format&fit=crop&w=500&q=80'
+    },
+    {
+      num: '05',
+      category: 'CELEBRATION ENGINEERING',
+      title: 'Multi-Tier Structural Architecture',
+      description: 'Internal supports, weight distribution, and safe assembly for high-stakes cakes.',
+      tags: ['Dowels', 'Tier Stacking', 'Transport'],
+      image: 'https://images.unsplash.com/photo-1535254973040-607b474cb50d?auto=format&fit=crop&w=500&q=80'
+    },
+    {
+      num: '06',
+      category: 'HAUTE PATISSERIE',
+      title: 'Mirror Glazes & Chocolate Tempering',
+      description: 'Create high-gloss finishes and architectural chocolate elements.',
+      tags: ['Tempering', 'Mirror Glaze', 'Ganache'],
+      image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=500&q=80'
+    }
+  ];
+
+  // FAQs Tailored to Online Learning Platform
   const faqs = [
     {
-      q: 'Who can take these courses? Do I need prior pastry school training?',
-      a: 'Everyone is welcome! Our curriculum starts from foundational kitchen basics and builds up to advanced tiered designs. Whether you are baking your very first vanilla sponge or aiming to launch a bespoke wedding cake studio, every lesson is explained with calm, step-by-step clarity.'
+      q: 'How do I access my course after purchasing?',
+      a: 'You receive immediate, instant access upon enrollment! Simply log into your Cakexperiment student portal on any desktop computer, tablet, or smartphone to stream HD video lessons and download all accompanying recipe guides.'
     },
     {
-      q: 'How long do I have access to a purchased course?',
-      a: 'You receive unlimited, lifetime access! Once enrolled, the video lessons, downloadable recipe formulas, and troubleshooting guides are available 24/7 on desktop, tablet, and mobile.'
+      q: 'Do I get lifetime access to the courses?',
+      a: 'Yes! All Cakexperiment masterclasses include full lifetime access with zero expiration dates. You can revisit lessons, download updated recipe calculators, and re-watch techniques whenever you need a refresher.'
     },
     {
-      q: 'What equipment and ingredients will I need to start?',
-      a: 'You do not need expensive commercial tools right away. Each course page lists standard kitchen tools like an 8-inch cake tin, a hand or stand mixer, an offset spatula, and common piping tips. We also provide a downloadable shopping guide.'
+      q: 'Are the recipes and course materials downloadable?',
+      a: 'Absolutely. Every course includes comprehensive, downloadable PDF recipe workbooks, exact gram calculators, pan-size conversion matrices, ingredient substitution guides, and equipment checklists.'
     },
     {
-      q: 'How do the video lessons work?',
-      a: 'Our courses feature high-definition macro video lessons that zoom in on nozzle pressure, batter consistency, and palette knife strokes. You can pause, rewind, track your completion, and ask questions at any time.'
+      q: 'I am a complete beginner. Are these courses suitable for me?',
+      a: 'Yes, our courses are structured specifically to take you from foundational basics to advanced artistry. We start with fundamental kitchen science and guide you step-by-step through every technique with macro camera angles.'
     },
     {
-      q: 'Can I purchase courses from outside India? What payment methods are supported?',
-      a: 'Yes, we welcome students globally! We support major credit and debit cards, UPI, Net Banking, and international payment gateways with instant course unlock.'
+      q: 'What equipment and ingredients do I need to start?',
+      a: 'You do not need expensive commercial bakery equipment. Standard kitchen tools like round 8-inch cake tins, an electric hand or stand mixer, an offset spatula, and common piping tips are sufficient to start. Each course page includes an equipment list.'
+    },
+    {
+      q: 'Can I ask questions if my bake does not turn out right?',
+      a: 'Yes! Every lesson has a dedicated student discussion forum where you can ask technique questions, upload photos of your bake, and receive troubleshooting feedback from our pastry instructors.'
+    },
+    {
+      q: 'Do I receive a certificate upon finishing a masterclass?',
+      a: 'Yes. Once you complete the curriculum and upload your milestone cake photo, you will be awarded an official verified Cakexperiment Studio Certificate of Completion to showcase your skills.'
     },
     {
       q: 'What is your refund policy?',
-      a: 'We offer a 14-day satisfaction guarantee. If you watch the first module and feel the course is not for you, simply reach out to our studio concierge for an effortless resolution.'
+      a: 'We offer an unconditional 14-day satisfaction guarantee. If you explore the first module and feel the course is not right for your learning style, simply reach out to our concierge for a full refund.'
     }
   ];
 
   return (
     <div style={{ overflow: 'hidden' }}>
       {/* =========================================================================
-          1. HERO SECTION (Strawberry Cream Luxury Aesthetic with Staged Sequence)
+          1. HERO SECTION — Online Cake-Baking Academy Introduction
           ========================================================================= */}
       <section
         className="hero-section hero-bg-animated"
@@ -366,7 +510,7 @@ export const Home: React.FC = () => {
           paddingBottom: '4.5rem'
         }}
       >
-        {/* Editorial Double-Ring Elliptical Badge (Staged Reveal + Ambient Float) */}
+        {/* Editorial Double-Ring Elliptical Badge (Online Masterclasses Branding) */}
         <div
           className="hero-badge hero-reveal-badge animate-float"
           style={{
@@ -397,7 +541,6 @@ export const Home: React.FC = () => {
               overflow: 'visible'
             }}
           >
-            {/* First slightly rotated wire oval */}
             <ellipse
               cx="72.5"
               cy="97.5"
@@ -408,7 +551,6 @@ export const Home: React.FC = () => {
               strokeWidth="1.2"
               transform="rotate(-3 72.5 97.5)"
             />
-            {/* Second offset wire oval intersecting */}
             <ellipse
               cx="72.5"
               cy="97.5"
@@ -433,9 +575,9 @@ export const Home: React.FC = () => {
                 textShadow: '0 1px 4px rgba(87, 51, 58, 0.35)'
               }}
             >
-              <div>More</div>
-              <div>than just</div>
+              <div>Online</div>
               <div>Baking</div>
+              <div>Academy</div>
             </div>
 
             <div style={{ height: '9px' }} />
@@ -443,9 +585,9 @@ export const Home: React.FC = () => {
             <div
               style={{
                 fontFamily: 'var(--font-sans)',
-                fontSize: '0.64rem',
-                fontWeight: 400,
-                letterSpacing: '0.2em',
+                fontSize: '0.62rem',
+                fontWeight: 500,
+                letterSpacing: '0.18em',
                 lineHeight: 1.5,
                 color: '#FFF2F4',
                 textTransform: 'uppercase',
@@ -453,13 +595,13 @@ export const Home: React.FC = () => {
                 textShadow: '0 1px 3px rgba(87, 51, 58, 0.35)'
               }}
             >
-              <div>IT'S A</div>
-              <div>CREATIVE</div>
-              <div>JOURNEY</div>
+              <div>STRUCTURED</div>
+              <div>DIGITAL</div>
+              <div>COURSES</div>
             </div>
 
             <div style={{ marginTop: '6px' }}>
-              <Heart size={13} color="rgba(244, 205, 212, 0.85)" strokeWidth={1.5} fill="none" />
+              <ChefHat size={14} color="rgba(244, 205, 212, 0.95)" strokeWidth={1.5} />
             </div>
           </div>
         </div>
@@ -467,78 +609,66 @@ export const Home: React.FC = () => {
         <div className="container" style={{ position: 'relative', zIndex: 2 }}>
           {/* Editorial Left Content Area with Coordinated Entrance Sequence */}
           <div style={{ maxWidth: '640px' }}>
-            {/* 1. Eyebrow */}
-            <div
-              className="hero-reveal-eyebrow"
-              style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.2rem' }}
-            >
-              <span
-                style={{
-                  fontSize: '0.78rem',
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  color: 'var(--color-berry)',
-                  fontWeight: 600
-                }}
-              >
-                • LEARN &nbsp;•&nbsp; BAKE &nbsp;•&nbsp; CREATE &nbsp;•&nbsp; CELEBRATE •
-              </span>
-              <span style={{ width: '40px', height: '1px', backgroundColor: 'var(--color-rose)' }} />
+            {/* 1. Academy Eyebrow */}
+            <div className="section-eyebrow-badge hero-reveal-eyebrow" style={{ marginBottom: '1.2rem' }}>
+              <span className="section-eyebrow-line" />
+              <span className="section-eyebrow-text">PREMIUM ONLINE CAKE-BAKING ACADEMY</span>
+              <span className="section-eyebrow-line" />
             </div>
 
             {/* 2. Headline with controlled mask reveal */}
             <h1
               className="hero-reveal-title"
               style={{
-                fontSize: 'clamp(2.8rem, 5.2vw, 4.6rem)',
-                lineHeight: 1.06,
+                fontSize: 'clamp(2.6rem, 5vw, 4.4rem)',
+                lineHeight: 1.08,
                 color: 'var(--color-plum)',
                 marginBottom: '1.2rem',
                 fontWeight: 600
               }}
             >
-              Turn Your Love for Baking into{' '}
+              Master the Art of Cake Baking & Design From Home{' '}
               <span
                 style={{
                   fontFamily: 'var(--font-script)',
                   color: 'var(--color-berry)',
                   display: 'block',
-                  fontSize: '1.3em',
+                  fontSize: '1.25em',
                   fontWeight: 400,
                   marginTop: '-0.1em'
                 }}
               >
-                Beautiful Creations
+                Through Online Masterclasses
               </span>
             </h1>
 
-            {/* 3. Supporting Copy */}
+            {/* 3. Supporting Educational Copy */}
             <p
               className="hero-reveal-subtitle"
               style={{
-                fontSize: '1.12rem',
+                fontSize: '1.1rem',
                 color: 'var(--text-muted)',
                 lineHeight: 1.68,
                 maxWidth: '540px',
                 marginBottom: '2.5rem'
               }}
             >
-              Step-by-step online cake baking and decorating masterclasses designed for all skill levels. Learn
-              professional techniques, develop your creativity, and craft stunning bakery centerpieces from the comfort
-              of your home.
+              Step inside our digital atelier. Learn exact culinary science, fail-safe sponge formulas, silky Swiss
+              meringue buttercream, and bespoke Parisian cake art through structured, on-demand video masterclasses led
+              by master pastry chefs.
             </p>
 
             {/* 4. Action Buttons with Micro-interactions */}
             <div
               className="hero-reveal-buttons"
-              style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.2rem', marginBottom: '3.5rem' }}
+              style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.2rem', marginBottom: '3rem' }}
             >
               <Link
                 to="/courses"
                 className="btn btn-primary btn-lg"
                 style={{ boxShadow: '0 8px 24px rgba(169, 87, 104, 0.35)' }}
               >
-                <span>Explore Courses</span>
+                <span>Explore All Masterclasses</span>
                 <ArrowRight size={18} />
               </Link>
 
@@ -563,7 +693,7 @@ export const Home: React.FC = () => {
                 >
                   <Play size={13} fill="currentColor" />
                 </div>
-                <span>Watch Studio Trailer</span>
+                <span>Watch Academy Trailer</span>
               </button>
             </div>
 
@@ -576,15 +706,15 @@ export const Home: React.FC = () => {
                 gap: '1.2rem',
                 marginTop: '1.6rem',
                 padding: '1.25rem 1.4rem',
-                backgroundColor: 'rgba(255, 250, 248, 0.42)',
+                backgroundColor: 'rgba(255, 250, 248, 0.52)',
                 backdropFilter: 'blur(10px)',
                 WebkitBackdropFilter: 'blur(10px)',
                 borderRadius: '16px',
-                border: '1px solid rgba(255, 255, 255, 0.6)',
+                border: '1px solid rgba(255, 255, 255, 0.65)',
                 boxShadow: '0 8px 30px rgba(87, 51, 58, 0.04)'
               }}
             >
-              {benefits.map((b, idx) => (
+              {heroBenefits.map((b, idx) => (
                 <div
                   key={b.title}
                   style={{
@@ -597,7 +727,7 @@ export const Home: React.FC = () => {
                   <div style={{ color: 'var(--color-berry)', display: 'flex', alignItems: 'center' }}>
                     {b.icon}
                   </div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-plum)' }}>
+                  <div style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--color-plum)' }}>
                     {b.title}
                   </div>
                   <div style={{ fontSize: '0.75rem', color: '#111111', lineHeight: 1.45, fontWeight: 500 }}>
@@ -645,8 +775,8 @@ export const Home: React.FC = () => {
                   gap: '0.5rem'
                 }}
               >
-                <Sparkles size={18} color="var(--color-berry)" />
-                Cakexperiment Atelier — Video Trailer
+                <Play size={18} color="var(--color-berry)" />
+                Cakexperiment Academy — Masterclass Trailer
               </div>
               <button
                 onClick={() => setIntroVideoOpen(false)}
@@ -668,208 +798,12 @@ export const Home: React.FC = () => {
       )}
 
       {/* =========================================================================
-          2. ABOUT US — Visual Studio Collage & Philosophy (Section 2)
+          2. FEATURED COURSES SECTION — Main Product Prominently Displayed After Hero
+          Fixed Center Stage Coverflow Showcase with Educational Information
           ========================================================================= */}
-      <section id="about" ref={aboutRef} style={{ padding: '6.5rem 0', backgroundColor: '#FFFFFF', scrollMarginTop: '6rem' }}>
+      <section id="courses" ref={coursesRef} style={{ padding: '6.5rem 0', backgroundColor: 'var(--color-cream)', scrollMarginTop: '6.5rem', overflow: 'hidden' }}>
         <div className="container">
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-              alignItems: 'center',
-              gap: '4rem'
-            }}
-          >
-            {/* Visual Studio Collage with Rock-solid Reveal */}
-            <div className="reveal-on-scroll" style={{ position: 'relative' }}>
-              {/* Floating Quality Badge */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '-15px',
-                  left: '-12px',
-                  backgroundColor: '#FFFFFF',
-                  padding: '0.6rem 1.1rem',
-                  borderRadius: '999px',
-                  boxShadow: '0 8px 24px rgba(87,51,58,0.12)',
-                  border: '1px solid rgba(220,165,175,0.45)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  zIndex: 3
-                }}
-              >
-                <Sparkles size={16} color="var(--color-berry)" />
-                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-plum)' }}>
-                  Parisian Patisserie Atelier
-                </span>
-              </div>
-
-              {/* Main Studio Frame */}
-              <div
-                style={{
-                  width: '100%',
-                  maxWidth: '460px',
-                  height: '480px',
-                  borderRadius: 'var(--radius-lg)',
-                  overflow: 'hidden',
-                  boxShadow: 'var(--shadow-md)',
-                  position: 'relative',
-                  backgroundColor: 'var(--color-cream)'
-                }}
-              >
-                <img
-                  src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=800&q=80"
-                  alt="Cakexperiment Baking Studio"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                />
-              </div>
-
-              {/* Offset Overlapping Mini Photo with delayed rise */}
-              <div
-                className="reveal-on-scroll stagger-2"
-                style={{
-                  position: 'absolute',
-                  bottom: '-25px',
-                  right: '10px',
-                  width: '210px',
-                  height: '210px',
-                  borderRadius: 'var(--radius-lg)',
-                  overflow: 'hidden',
-                  border: '6px solid #FFFFFF',
-                  boxShadow: 'var(--shadow-lg)',
-                  backgroundColor: 'var(--color-cream)'
-                }}
-              >
-                <img
-                  src="https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?auto=format&fit=crop&w=500&q=80"
-                  alt="Piping Cake Flowers"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                />
-              </div>
-            </div>
-
-            {/* Story Editorial */}
-            <div className="reveal-on-scroll stagger-1">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem' }}>
-                <span
-                  style={{
-                    fontSize: '0.78rem',
-                    letterSpacing: '0.14em',
-                    textTransform: 'uppercase',
-                    color: 'var(--color-berry)',
-                    fontWeight: 600
-                  }}
-                >
-                  OUR PHILOSOPHY
-                </span>
-                <span style={{ width: '32px', height: '1px', backgroundColor: 'var(--color-rose)' }} />
-              </div>
-
-              <h2 style={{ fontSize: 'clamp(2.2rem, 3.5vw, 3.2rem)', marginBottom: '1.4rem' }}>
-                Where Patisserie Precision Meets Warm, Creative Freedom
-              </h2>
-
-              <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: 1.7, marginBottom: '1.2rem' }}>
-                Cakexperiment began with a simple belief: baking beautiful cakes should not require years behind closed
-                culinary school doors. We demystify European pastry technique into friendly, structured video modules
-                that honor your creative experiments.
-              </p>
-
-              <p style={{ color: 'var(--text-muted)', fontSize: '1.02rem', lineHeight: 1.7, marginBottom: '2rem' }}>
-                From getting that silky gloss on Swiss meringue to hand-painting watercolor botanicals onto chilled
-                buttercream, our curriculum is engineered to give home bakers true mastery and absolute confidence.
-              </p>
-
-              {/* Statistics Counter Row */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginBottom: '2rem' }}>
-                <div>
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-display)',
-                      fontSize: '2.5rem',
-                      fontWeight: 600,
-                      color: 'var(--color-berry)',
-                      lineHeight: 1
-                    }}
-                  >
-                    14k+
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '0.82rem',
-                      color: 'var(--text-muted)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}
-                  >
-                    Active Bakers
-                  </div>
-                </div>
-                <div style={{ width: '1px', height: '40px', backgroundColor: 'var(--border-subtle)' }} />
-                <div>
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-display)',
-                      fontSize: '2.5rem',
-                      fontWeight: 600,
-                      color: 'var(--color-berry)',
-                      lineHeight: 1
-                    }}
-                  >
-                    98.6%
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '0.82rem',
-                      color: 'var(--text-muted)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}
-                  >
-                    Positive Rating
-                  </div>
-                </div>
-                <div style={{ width: '1px', height: '40px', backgroundColor: 'var(--border-subtle)' }} />
-                <div>
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-display)',
-                      fontSize: '2.5rem',
-                      fontWeight: 600,
-                      color: 'var(--color-berry)',
-                      lineHeight: 1
-                    }}
-                  >
-                    100%
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '0.82rem',
-                      color: 'var(--text-muted)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}
-                  >
-                    Lifetime Access
-                  </div>
-                </div>
-              </div>
-
-              <a href="#courses" className="btn btn-outline">
-                <span>Explore Masterclasses</span> &rarr;
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          3. FEATURED COURSES SECTION — Center-Anchored Coverflow Carousel (Image 3 Style)
-          ========================================================================= */}
-      <section id="courses" ref={coursesRef} style={{ padding: '6.5rem 0', backgroundColor: 'var(--color-cream)', scrollMarginTop: '6.5rem' }}>
-        <div className="container">
-          {/* Header Row: Eyebrow + Title on left, "View All Courses" link on right (Image 1 pill removed!) */}
+          {/* Header Row: Eyebrow + Title on left, "View All Courses" link on right */}
           <div
             className="reveal-on-scroll"
             style={{
@@ -882,21 +816,15 @@ export const Home: React.FC = () => {
             }}
           >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem' }}>
-                <span
-                  style={{
-                    fontSize: '0.78rem',
-                    letterSpacing: '0.14em',
-                    textTransform: 'uppercase',
-                    color: 'var(--color-berry)',
-                    fontWeight: 600
-                  }}
-                >
-                  STUDIO MASTERCLASSES
-                </span>
-                <span style={{ width: '30px', height: '1px', backgroundColor: 'var(--color-rose)' }} />
+              <div className="section-eyebrow-badge">
+                <span className="section-eyebrow-line" />
+                <span className="section-eyebrow-text">FEATURED ACADEMY MASTERCLASSES</span>
+                <span className="section-eyebrow-line" />
               </div>
-              <h2 style={{ fontSize: 'clamp(2.2rem, 3.5vw, 3.2rem)' }}>Featured Cake Art Courses</h2>
+              <h2 style={{ fontSize: 'clamp(2.2rem, 3.5vw, 3.2rem)' }}>Structured Online Courses for Every Skill Level</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '1.02rem', marginTop: '0.5rem', maxWidth: '640px' }}>
+                Explore comprehensive video masterclasses led by master pastry chefs. Each course includes step-by-step 4K video lessons, downloadable recipe workbooks, and lifetime studio access.
+              </p>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
@@ -926,13 +854,13 @@ export const Home: React.FC = () => {
               </div>
 
               <Link to="/courses" className="btn btn-secondary">
-                <span>View All Courses ({storageService.getCourses().length})</span>
+                <span>Browse All {storageService.getCourses().length} Courses</span>
                 <ArrowRight size={16} />
               </Link>
             </div>
           </div>
 
-          {/* Stationary Fixed Center Stage Viewport (Independent of track translation) */}
+          {/* Stationary Fixed Center Stage Viewport */}
           <div
             className="fixed-showcase-viewport"
             tabIndex={0}
@@ -1006,7 +934,7 @@ export const Home: React.FC = () => {
                       )}
                     </div>
 
-                    {/* Bottom Info directly on card: Category, Title, Price, Duration */}
+                    {/* Bottom Info directly on card: Category, Title, Academic Specs, Price, Action */}
                     <div className="showcase-card-content">
                       <div className="showcase-card-category">
                         {course.categoryName}
@@ -1014,14 +942,53 @@ export const Home: React.FC = () => {
                       <h3 className="showcase-card-title">
                         {course.title}
                       </h3>
+
+                      {/* Academic Specs Pill */}
+                      <div
+                        style={{
+                          fontSize: '0.74rem',
+                          color: 'rgba(255, 248, 245, 0.92)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          marginBottom: '0.6rem'
+                        }}
+                      >
+                        <span>{course.moduleCount || 3} Modules</span>
+                        <span>•</span>
+                        <span>{course.lessonCount || 9} Lessons</span>
+                        <span>•</span>
+                        <span>{course.totalDuration}</span>
+                      </div>
+
                       <div className="showcase-card-bottom-row">
-                        <div className="showcase-card-price">
-                          {storageService.formatINR(course.price)}
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
+                          <span className="showcase-card-price">
+                            {storageService.formatINR(course.price)}
+                          </span>
+                          {course.originalPrice && (
+                            <span style={{ fontSize: '0.78rem', textDecoration: 'line-through', color: 'rgba(255,255,255,0.7)' }}>
+                              {storageService.formatINR(course.originalPrice)}
+                            </span>
+                          )}
                         </div>
-                        <div className="showcase-card-duration">
-                          <Clock size={13} />
-                          <span>{course.totalDuration}</span>
-                        </div>
+
+                        <span
+                          style={{
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            color: '#FFFFFF',
+                            backgroundColor: 'rgba(169, 87, 104, 0.85)',
+                            backdropFilter: 'blur(6px)',
+                            padding: '0.3rem 0.75rem',
+                            borderRadius: '999px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem'
+                          }}
+                        >
+                          Enroll &rarr;
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1055,88 +1022,685 @@ export const Home: React.FC = () => {
       </section>
 
       {/* =========================================================================
-          5. WHAT YOU'LL LEARN — Curriculum Pillars (Section 4 with Staggered Entrance)
+          3. WHY LEARN WITH CAKEXPERIMENT — A Complete Learning Experience
+          (Recreated precisely from the visual design reference)
           ========================================================================= */}
-      <section ref={pillarsRef} style={{ padding: '6rem 0', backgroundColor: 'var(--color-cream)' }}>
-        <div className="container">
-          <div className="reveal-on-scroll" style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto 4rem auto' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem' }}>
-              <span
-                style={{
-                  fontSize: '0.78rem',
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: 'var(--color-berry)',
-                  fontWeight: 600
-                }}
-              >
-                CURRICULUM PILLARS
-              </span>
+      <section id="why-learn" ref={whyLearnRef} className="experience-section" style={{ scrollMarginTop: '6rem' }}>
+        {/* Subtle Organic Background Waves at Base */}
+        <div className="experience-waves-bottom">
+          <svg viewBox="0 0 1440 110" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block' }}>
+            <path
+              d="M 0 65 C 340 115, 680 20, 1040 75 C 1220 100, 1380 45, 1440 65 L 1440 110 L 0 110 Z"
+              fill="rgba(242, 218, 222, 0.42)"
+            />
+            <path
+              d="M 0 80 C 400 35, 740 105, 1120 50 C 1290 25, 1395 70, 1440 55 L 1440 110 L 0 110 Z"
+              fill="rgba(235, 204, 209, 0.3)"
+            />
+          </svg>
+        </div>
+
+        <div className="container" style={{ position: 'relative', zIndex: 2 }}>
+          {/* Centered Editorial Header Matching Reference */}
+          <div className="reveal-on-scroll" style={{ textAlign: 'center', maxWidth: '780px', margin: '0 auto 4.5rem auto' }}>
+            <div className="section-eyebrow-badge" style={{ marginBottom: '1.2rem' }}>
+              <span className="section-eyebrow-line" />
+              <span className="section-eyebrow-text">WHY LEARN WITH CAKEXPERIMENT ACADEMY</span>
+              <span className="section-eyebrow-line" />
             </div>
-            <h2 style={{ fontSize: 'clamp(2.2rem, 3.5vw, 3.2rem)', marginBottom: '1rem' }}>
-              Master the Craft From Chemistry to High Art
+
+            <h2
+              style={{
+                fontSize: 'clamp(2.4rem, 4.4vw, 3.8rem)',
+                color: 'var(--color-plum)',
+                lineHeight: 1.15,
+                marginBottom: '1.2rem',
+                fontWeight: 600
+              }}
+            >
+              A Complete Learning Experience{' '}
+              <span style={{ display: 'block' }}>
+                for Serious{' '}
+                <span
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontStyle: 'italic',
+                    color: 'var(--color-berry)',
+                    fontWeight: 500
+                  }}
+                >
+                  Cake Artists
+                </span>
+              </span>
             </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: 1.6 }}>
-              Every technique in our academy is grounded in solid culinary science, repeatable formulas, and
-              contemporary floral aesthetics.
+
+            <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: 1.65, maxWidth: '640px', margin: '0 auto' }}>
+              More than recipes — a structured, studio-level learning system that builds real skill, confidence, and creative mastery.
             </p>
           </div>
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: '2rem'
-            }}
-          >
-            {pillars.map((pillar, idx) => (
-              <div
-                key={pillar.number}
-                className={`reveal-on-scroll stagger-${idx + 1}`}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '2.5rem 1.8rem',
-                  border: '1px solid var(--border-subtle)',
-                  position: 'relative',
-                  transition: 'transform 0.3s var(--ease-out-editorial), box-shadow 0.3s var(--ease-out-editorial)',
-                  boxShadow: 'var(--shadow-sm)'
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.transform = 'translateY(-6px)';
-                  e.currentTarget.style.boxShadow = 'var(--shadow-card)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-                }}
-              >
-                <div
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '2.4rem',
-                    color: 'var(--color-rose)',
-                    fontWeight: 600,
-                    opacity: 0.6,
-                    marginBottom: '0.5rem'
-                  }}
-                >
-                  {pillar.number}
+          {/* Three-Column Center Monument & Flanking Feature Cards Stage */}
+          <div className="experience-stage">
+            {/* Left Column (3 Feature Cards) */}
+            <div className="experience-col-left">
+              {/* Card 1: Scientific Precision & Chemistry */}
+              <div className="experience-card-pill exp-float-1 reveal-on-scroll stagger-1">
+                <div className="experience-pill-icon">
+                  <FlaskConical size={24} strokeWidth={1.8} />
                 </div>
-                <div style={{ color: 'var(--color-berry)', marginBottom: '1rem' }}>{pillar.icon}</div>
-                <h3 style={{ fontSize: '1.3rem', marginBottom: '0.75rem' }}>{pillar.title}</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: 1.6 }}>
-                  {pillar.description}
-                </p>
+                <div>
+                  <h4 className="experience-pill-title">Scientific Precision & Chemistry</h4>
+                  <p className="experience-pill-desc">
+                    Understand the science behind flour, fat, emulsion, and moisture for consistently perfect sponges.
+                  </p>
+                </div>
               </div>
-            ))}
+
+              {/* Card 2: Cinematic 4K Macro Instruction */}
+              <div className="experience-card-pill exp-float-2 reveal-on-scroll stagger-2">
+                <div className="experience-pill-icon">
+                  <Video size={24} strokeWidth={1.8} />
+                </div>
+                <div>
+                  <h4 className="experience-pill-title">Cinematic 4K Macro Instruction</h4>
+                  <p className="experience-pill-desc">
+                    Multi-angle close-ups reveal textures, techniques, and professional finishing in stunning detail.
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 3: Self-Paced Lifetime Studio Access */}
+              <div className="experience-card-pill exp-float-3 reveal-on-scroll stagger-3">
+                <div className="experience-pill-icon">
+                  <Clock size={24} strokeWidth={1.8} />
+                </div>
+                <div>
+                  <h4 className="experience-pill-title">Self-Paced Lifetime Studio Access</h4>
+                  <p className="experience-pill-desc">
+                    Stream lessons 24/7, pause, rewind, and re-watch with no expiry or rushed deadlines.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Center Monument: The 3D Pedestal + Arched Certification Portal */}
+            <div className="experience-center-monument reveal-on-scroll">
+              {/* Dusty Rose Arched Portal */}
+              <div className="experience-arch-monument">
+                {/* Graduation Cap Icon */}
+                <div className="experience-arch-cap" style={{ color: '#FFFFFF', marginBottom: '0.4rem' }}>
+                  <GraduationCap size={36} strokeWidth={1.6} />
+                </div>
+
+                <h3 className="experience-arch-title">
+                  Accredited Studio Certification
+                </h3>
+
+                <p className="experience-arch-desc">
+                  Submit your milestone cake creation to receive an official Cakexperiment Studio Diploma to showcase on your portfolio or bakery resume.
+                </p>
+
+                {/* Ornate Gold & Champagne Ribbon Seal with Laurel Wreath */}
+                <div className="experience-arch-seal-wrap" style={{ position: 'relative', width: '100%', height: '118px', marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg viewBox="0 0 200 130" style={{ width: '190px', height: '124px', overflow: 'visible' }}>
+                    <defs>
+                      <linearGradient id="sealGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#FDEEE0" />
+                        <stop offset="30%" stopColor="#E8BF96" />
+                        <stop offset="68%" stopColor="#D29E6F" />
+                        <stop offset="100%" stopColor="#BE8959" />
+                      </linearGradient>
+                      <linearGradient id="ribbonGradLeft" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#D9A87C" />
+                        <stop offset="100%" stopColor="#B9804F" />
+                      </linearGradient>
+                      <linearGradient id="ribbonGradRight" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#C8976B" />
+                        <stop offset="100%" stopColor="#A26B3D" />
+                      </linearGradient>
+                      <filter id="sealShadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="5" stdDeviation="5" floodColor="rgba(60,25,32,0.3)" />
+                      </filter>
+                    </defs>
+
+                    {/* Left Laurel Branch */}
+                    <g stroke="rgba(248, 220, 196, 0.9)" fill="rgba(248, 220, 196, 0.85)" strokeWidth="1.2">
+                      <path d="M 62 82 C 49 68, 47 45, 57 28" fill="none" stroke="rgba(248, 220, 196, 0.95)" strokeWidth="1.6" />
+                      <ellipse cx="49" cy="70" rx="6" ry="3" transform="rotate(-35 49 70)" />
+                      <ellipse cx="43" cy="56" rx="6.5" ry="3.2" transform="rotate(-50 43 56)" />
+                      <ellipse cx="44" cy="42" rx="6.5" ry="3.2" transform="rotate(-65 44 42)" />
+                      <ellipse cx="51" cy="30" rx="6" ry="3" transform="rotate(-75 51 30)" />
+                      <ellipse cx="57" cy="24" rx="5" ry="2.6" transform="rotate(-85 57 24)" />
+                    </g>
+
+                    {/* Right Laurel Branch */}
+                    <g stroke="rgba(248, 220, 196, 0.9)" fill="rgba(248, 220, 196, 0.85)" strokeWidth="1.2">
+                      <path d="M 138 82 C 151 68, 153 45, 143 28" fill="none" stroke="rgba(248, 220, 196, 0.95)" strokeWidth="1.6" />
+                      <ellipse cx="151" cy="70" rx="6" ry="3" transform="rotate(35 151 70)" />
+                      <ellipse cx="157" cy="56" rx="6.5" ry="3.2" transform="rotate(50 157 56)" />
+                      <ellipse cx="156" cy="42" rx="6.5" ry="3.2" transform="rotate(65 156 42)" />
+                      <ellipse cx="149" cy="30" rx="6" ry="3" transform="rotate(75 149 30)" />
+                      <ellipse cx="143" cy="24" rx="5" ry="2.6" transform="rotate(85 143 24)" />
+                    </g>
+
+                    {/* Hanging Ribbon Tails */}
+                    <polygon points="90,75 80,118 92,110 100,118 94,75" fill="url(#ribbonGradLeft)" filter="url(#sealShadow)" />
+                    <polygon points="106,75 100,118 108,110 120,118 110,75" fill="url(#ribbonGradRight)" filter="url(#sealShadow)" />
+
+                    {/* Scalloped Rosette Outer Medallion */}
+                    <g filter="url(#sealShadow)">
+                      <path
+                        d="M 100 24
+                           L 105 27 L 112 25 L 115 31 L 122 32 L 123 39 L 130 43 L 129 50 L 134 56 L 130 63 L 133 70 L 127 75 L 127 83 L 120 86 L 117 93 L 110 93 L 105 99 L 98 97 L 92 101 L 88 95 L 81 97 L 78 90 L 72 89 L 71 82 L 65 79 L 67 72 L 63 65 L 67 59 L 64 52 L 70 47 L 70 40 L 77 37 L 80 30 L 87 30 L 91 24 Z"
+                        fill="url(#sealGoldGrad)"
+                        stroke="#FCE7D2"
+                        strokeWidth="1.2"
+                      />
+
+                      {/* Inner Raised Ring */}
+                      <circle cx="100" cy="62" r="24" fill="#F4D2B2" stroke="#E5B588" strokeWidth="1.5" />
+                      <circle cx="100" cy="62" r="21" fill="url(#sealGoldGrad)" />
+
+                      {/* 5-pointed Embossed Star */}
+                      <polygon
+                        points="100,48 104,57 114,57 106,64 109,74 100,68 91,74 94,64 86,57 96,57"
+                        fill="#FFFFFF"
+                        opacity="0.95"
+                      />
+                    </g>
+                  </svg>
+                </div>
+              </div>
+
+              {/* 3D Cylindrical Pedestal Base */}
+              <div className="experience-pedestal-wrap">
+                <div className="experience-pedestal-top" />
+                <div className="experience-pedestal-body" />
+              </div>
+            </div>
+
+            {/* Right Column (3 Feature Cards) */}
+            <div className="experience-col-right">
+              {/* Card 1: Downloadable Recipe Workbooks */}
+              <div className="experience-card-pill exp-float-2 reveal-on-scroll stagger-1">
+                <div className="experience-pill-icon">
+                  <Download size={24} strokeWidth={1.8} />
+                </div>
+                <div>
+                  <h4 className="experience-pill-title">Downloadable Recipe Workbooks</h4>
+                  <p className="experience-pill-desc">
+                    Get exact gram-weight formulation cards, pan-scaling matrices, and ingredient replacement tables.
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 2: Direct Chef Feedback & Mentorship */}
+              <div className="experience-card-pill exp-float-3 reveal-on-scroll stagger-2">
+                <div className="experience-pill-icon">
+                  <ShieldCheck size={24} strokeWidth={1.8} />
+                </div>
+                <div>
+                  <h4 className="experience-pill-title">Direct Chef Feedback & Mentorship</h4>
+                  <p className="experience-pill-desc">
+                    Post your baking queries, share your progress, and receive guidance from master pastry instructors.
+                  </p>
+                </div>
+              </div>
+
+              {/* Card 3: Global Student Community */}
+              <div className="experience-card-pill exp-float-1 reveal-on-scroll stagger-3">
+                <div className="experience-pill-icon">
+                  <Users size={24} strokeWidth={1.8} />
+                </div>
+                <div>
+                  <h4 className="experience-pill-title">Global Student Community</h4>
+                  <p className="experience-pill-desc">
+                    Connect with passionate bakers worldwide, share your creations, and gain inspiring peer feedback.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* =========================================================================
-          5B. CATEGORY TAXONOMY SHOWCASE — Vertical Parallax Center-Mode Carousel
-          Displayed immediately above Founder & Head Chef section
+          4. SKILLS AND TECHNIQUES YOU'LL MASTER — Mindmap Curriculum Competencies
+          ========================================================================= */}
+      <section id="skills" ref={skillsRef} style={{ padding: '6.5rem 0', backgroundColor: 'var(--color-cream)', scrollMarginTop: '6rem' }}>
+        <div className="container">
+          {/* Header */}
+          <div className="reveal-on-scroll" style={{ textAlign: 'center', maxWidth: '780px', margin: '0 auto 4rem auto' }}>
+            <div className="section-eyebrow-badge">
+              <span className="section-eyebrow-line" />
+              <span className="section-eyebrow-text">CURRICULUM COMPETENCIES</span>
+              <span className="section-eyebrow-line" />
+            </div>
+            <h2 style={{ fontSize: 'clamp(2.3rem, 3.8vw, 3.4rem)', marginBottom: '1rem', lineHeight: 1.2 }}>
+              Skills & Techniques You'll{' '}
+              <span style={{ fontStyle: 'italic', color: 'var(--color-berry)', fontFamily: 'var(--font-heading)' }}>
+                Master
+              </span>
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: 1.65 }}>
+              Every masterclass is engineered to build practical, repeatable baking and decorating competencies that transform your craft from amateur guesswork into professional artistry.
+            </p>
+          </div>
+
+          {/* Interactive Mindmap Stage with Circular Orbit */}
+          <div className="skills-stage">
+            {/* Left Column (Cards 01, 03, 05) */}
+            <div className="skills-col-left">
+              {/* Card 01 */}
+              <div
+                className="skills-card-pill skills-card-01 reveal-on-scroll stagger-1"
+                onMouseEnter={() => setHoveredSkillIdx(0)}
+                onMouseLeave={() => setHoveredSkillIdx(null)}
+                style={{
+                  opacity: hoveredSkillIdx !== null && hoveredSkillIdx !== 0 ? 0.65 : 1,
+                  filter: hoveredSkillIdx !== null && hoveredSkillIdx !== 0 ? 'grayscale(0.12)' : 'none'
+                }}
+              >
+                <div className="skills-card-thumb-wrap">
+                  <img
+                    src={mindmapSkills[0].image}
+                    alt={mindmapSkills[0].title}
+                    className="skills-card-thumb"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="skills-card-content">
+                  <div className="skills-card-header">
+                    <span className="skills-card-number">{mindmapSkills[0].num}</span>
+                    <span className="skills-card-category">{mindmapSkills[0].category}</span>
+                  </div>
+                  <h3 className="skills-card-title">{mindmapSkills[0].title}</h3>
+                  <p className="skills-card-desc">{mindmapSkills[0].description}</p>
+                  <div className="skills-card-tags">
+                    {mindmapSkills[0].tags.map(tag => (
+                      <span key={tag} className="skills-card-tag">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 03 */}
+              <div
+                className="skills-card-pill skills-card-03 reveal-on-scroll stagger-2"
+                onMouseEnter={() => setHoveredSkillIdx(2)}
+                onMouseLeave={() => setHoveredSkillIdx(null)}
+                style={{
+                  opacity: hoveredSkillIdx !== null && hoveredSkillIdx !== 2 ? 0.65 : 1,
+                  filter: hoveredSkillIdx !== null && hoveredSkillIdx !== 2 ? 'grayscale(0.12)' : 'none'
+                }}
+              >
+                <div className="skills-card-thumb-wrap">
+                  <img
+                    src={mindmapSkills[2].image}
+                    alt={mindmapSkills[2].title}
+                    className="skills-card-thumb"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="skills-card-content">
+                  <div className="skills-card-header">
+                    <span className="skills-card-number">{mindmapSkills[2].num}</span>
+                    <span className="skills-card-category">{mindmapSkills[2].category}</span>
+                  </div>
+                  <h3 className="skills-card-title">{mindmapSkills[2].title}</h3>
+                  <p className="skills-card-desc">{mindmapSkills[2].description}</p>
+                  <div className="skills-card-tags">
+                    {mindmapSkills[2].tags.map(tag => (
+                      <span key={tag} className="skills-card-tag">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 05 */}
+              <div
+                className="skills-card-pill skills-card-05 reveal-on-scroll stagger-3"
+                onMouseEnter={() => setHoveredSkillIdx(4)}
+                onMouseLeave={() => setHoveredSkillIdx(null)}
+                style={{
+                  opacity: hoveredSkillIdx !== null && hoveredSkillIdx !== 4 ? 0.65 : 1,
+                  filter: hoveredSkillIdx !== null && hoveredSkillIdx !== 4 ? 'grayscale(0.12)' : 'none'
+                }}
+              >
+                <div className="skills-card-thumb-wrap">
+                  <img
+                    src={mindmapSkills[4].image}
+                    alt={mindmapSkills[4].title}
+                    className="skills-card-thumb"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="skills-card-content">
+                  <div className="skills-card-header">
+                    <span className="skills-card-number">{mindmapSkills[4].num}</span>
+                    <span className="skills-card-category">{mindmapSkills[4].category}</span>
+                  </div>
+                  <h3 className="skills-card-title">{mindmapSkills[4].title}</h3>
+                  <p className="skills-card-desc">{mindmapSkills[4].description}</p>
+                  <div className="skills-card-tags">
+                    {mindmapSkills[4].tags.map(tag => (
+                      <span key={tag} className="skills-card-tag">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Center Scalloped Rosette (Core Learning Areas — circular orbit anchor) */}
+            <div className="skills-center-wrap reveal-on-scroll">
+              <div className="skills-orbital-ring">
+                <svg className="skills-orbital-svg" viewBox="0 0 550 550">
+                  <path
+                    d={orbitalScallopPath}
+                    fill="none"
+                    stroke={hoveredSkillIdx !== null || isCenterHovered ? "var(--color-berry)" : "rgba(215, 155, 168, 0.58)"}
+                    strokeWidth={hoveredSkillIdx !== null || isCenterHovered ? "2.2" : "1.6"}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{
+                      transition: 'stroke 0.35s ease, stroke-width 0.35s ease, filter 0.35s ease',
+                      filter: hoveredSkillIdx !== null || isCenterHovered ? 'drop-shadow(0 0 10px rgba(186, 72, 94, 0.45))' : 'none'
+                    }}
+                  />
+                </svg>
+              </div>
+              <div
+                className="skills-scalloped-badge"
+                onMouseEnter={() => setIsCenterHovered(true)}
+                onMouseLeave={() => setIsCenterHovered(false)}
+              >
+                <svg className="skills-scalloped-svg" viewBox="0 0 216 216">
+                  <defs>
+                    <radialGradient id="rosetteGrad" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="#FFFFFF" />
+                      <stop offset="65%" stopColor="#FFF2F5" />
+                      <stop offset="100%" stopColor="#FDE3EA" />
+                    </radialGradient>
+                  </defs>
+                  <path
+                    d={scallopRosettePath}
+                    fill="url(#rosetteGrad)"
+                    stroke={isCenterHovered ? "var(--color-berry)" : "rgba(215, 155, 168, 0.65)"}
+                    strokeWidth="1.6"
+                    style={{ transition: 'stroke 0.35s ease' }}
+                  />
+                </svg>
+                <div style={{ position: 'relative', zIndex: 2 }}>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-heading)',
+                      fontSize: '1.45rem',
+                      fontWeight: 600,
+                      color: isCenterHovered ? 'var(--color-berry)' : 'var(--color-plum)',
+                      lineHeight: 1.25,
+                      letterSpacing: '-0.01em',
+                      transition: 'color 0.35s ease'
+                    }}
+                  >
+                    Core<br />Learning<br />Areas
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column (Cards 02, 04, 06) */}
+            <div className="skills-col-right">
+              {/* Card 02 */}
+              <div
+                className="skills-card-pill skills-card-02 reveal-on-scroll stagger-1"
+                onMouseEnter={() => setHoveredSkillIdx(1)}
+                onMouseLeave={() => setHoveredSkillIdx(null)}
+                style={{
+                  opacity: hoveredSkillIdx !== null && hoveredSkillIdx !== 1 ? 0.65 : 1,
+                  filter: hoveredSkillIdx !== null && hoveredSkillIdx !== 1 ? 'grayscale(0.12)' : 'none'
+                }}
+              >
+                <div className="skills-card-thumb-wrap">
+                  <img
+                    src={mindmapSkills[1].image}
+                    alt={mindmapSkills[1].title}
+                    className="skills-card-thumb"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="skills-card-content">
+                  <div className="skills-card-header">
+                    <span className="skills-card-number">{mindmapSkills[1].num}</span>
+                    <span className="skills-card-category">{mindmapSkills[1].category}</span>
+                  </div>
+                  <h3 className="skills-card-title">{mindmapSkills[1].title}</h3>
+                  <p className="skills-card-desc">{mindmapSkills[1].description}</p>
+                  <div className="skills-card-tags">
+                    {mindmapSkills[1].tags.map(tag => (
+                      <span key={tag} className="skills-card-tag">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 04 */}
+              <div
+                className="skills-card-pill skills-card-04 reveal-on-scroll stagger-2"
+                onMouseEnter={() => setHoveredSkillIdx(3)}
+                onMouseLeave={() => setHoveredSkillIdx(null)}
+                style={{
+                  opacity: hoveredSkillIdx !== null && hoveredSkillIdx !== 3 ? 0.65 : 1,
+                  filter: hoveredSkillIdx !== null && hoveredSkillIdx !== 3 ? 'grayscale(0.12)' : 'none'
+                }}
+              >
+                <div className="skills-card-thumb-wrap">
+                  <img
+                    src={mindmapSkills[3].image}
+                    alt={mindmapSkills[3].title}
+                    className="skills-card-thumb"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="skills-card-content">
+                  <div className="skills-card-header">
+                    <span className="skills-card-number">{mindmapSkills[3].num}</span>
+                    <span className="skills-card-category">{mindmapSkills[3].category}</span>
+                  </div>
+                  <h3 className="skills-card-title">{mindmapSkills[3].title}</h3>
+                  <p className="skills-card-desc">{mindmapSkills[3].description}</p>
+                  <div className="skills-card-tags">
+                    {mindmapSkills[3].tags.map(tag => (
+                      <span key={tag} className="skills-card-tag">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 06 */}
+              <div
+                className="skills-card-pill skills-card-06 reveal-on-scroll stagger-3"
+                onMouseEnter={() => setHoveredSkillIdx(5)}
+                onMouseLeave={() => setHoveredSkillIdx(null)}
+                style={{
+                  opacity: hoveredSkillIdx !== null && hoveredSkillIdx !== 5 ? 0.65 : 1,
+                  filter: hoveredSkillIdx !== null && hoveredSkillIdx !== 5 ? 'grayscale(0.12)' : 'none'
+                }}
+              >
+                <div className="skills-card-thumb-wrap">
+                  <img
+                    src={mindmapSkills[5].image}
+                    alt={mindmapSkills[5].title}
+                    className="skills-card-thumb"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="skills-card-content">
+                  <div className="skills-card-header">
+                    <span className="skills-card-number">{mindmapSkills[5].num}</span>
+                    <span className="skills-card-category">{mindmapSkills[5].category}</span>
+                  </div>
+                  <h3 className="skills-card-title">{mindmapSkills[5].title}</h3>
+                  <p className="skills-card-desc">{mindmapSkills[5].description}</p>
+                  <div className="skills-card-tags">
+                    {mindmapSkills[5].tags.map(tag => (
+                      <span key={tag} className="skills-card-tag">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Centered Bottom CTA Button */}
+          <div className="reveal-on-scroll" style={{ textAlign: 'center', marginTop: '3.8rem' }}>
+            <Link to="/courses" className="skills-syllabus-btn">
+              <span>View Course Syllabus</span>
+              <ArrowRight size={18} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          5. MEET THE FOUNDER — Anisha Arthur (Has #about & #instructor anchors)
+          ========================================================================= */}
+      <section id="about" ref={instructorRef} className="founder-section">
+        {/* Organic Bottom Wave */}
+        <div className="founder-wave-bottom" aria-hidden="true">
+          <svg viewBox="0 0 1440 90" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block' }}>
+            <path d="M 0,40 C 320,80 680,10 1020,55 C 1220,80 1360,40 1440,50 L 1440,90 L 0,90 Z" fill="rgba(244, 221, 224, 0.38)" />
+            <path d="M 0,55 C 380,20 740,75 1100,40 C 1280,20 1390,55 1440,45 L 1440,90 L 0,90 Z" fill="rgba(163, 61, 89, 0.08)" />
+          </svg>
+        </div>
+
+        <div className="container">
+          <div className="founder-grid">
+            {/* Left Column: Founder Portrait (Direct Image, No Card) */}
+            <div className="founder-portrait-column">
+              <div
+                className="reveal-on-scroll founder-portrait-wrap"
+                style={{
+                  WebkitMaskImage: 'radial-gradient(ellipse at center, #000000 50%, rgba(0, 0, 0, 0.8) 65%, rgba(0, 0, 0, 0.25) 80%, transparent 92%)',
+                  maskImage: 'radial-gradient(ellipse at center, #000000 50%, rgba(0, 0, 0, 0.8) 65%, rgba(0, 0, 0, 0.25) 80%, transparent 92%)',
+                  WebkitMaskSize: '100% 100%',
+                  maskSize: '100% 100%',
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskRepeat: 'no-repeat'
+                }}
+              >
+                <img
+                  src="/images/anisha-founder.jpg"
+                  alt="Anisha Arthur - Founder & Cake Artist"
+                  className="founder-direct-img"
+                  style={{
+                    WebkitMaskImage: 'radial-gradient(ellipse at center, #000000 50%, rgba(0, 0, 0, 0.8) 65%, rgba(0, 0, 0, 0.25) 80%, transparent 92%)',
+                    maskImage: 'radial-gradient(ellipse at center, #000000 50%, rgba(0, 0, 0, 0.8) 65%, rgba(0, 0, 0, 0.25) 80%, transparent 92%)',
+                    WebkitMaskSize: '100% 100%',
+                    maskSize: '100% 100%',
+                    WebkitMaskRepeat: 'no-repeat',
+                    maskRepeat: 'no-repeat'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Right Column: Founder Introduction */}
+            <div className="founder-info-column reveal-on-scroll stagger-2">
+              {/* Eyebrow Label with Both-Side Lines */}
+              <div className="section-eyebrow-badge">
+                <span className="section-eyebrow-line" />
+                <span className="section-eyebrow-text">MEET THE FOUNDER</span>
+                <span className="section-eyebrow-line" />
+              </div>
+
+              {/* Founder Name Heading */}
+              <h2 className="founder-name-heading">Anisha Arthur</h2>
+
+              {/* Role Subtitle Badge */}
+              <div className="founder-role-badge">
+                <Cake size={16} strokeWidth={2} />
+                <span>FOUNDER &amp; CAKE ARTIST</span>
+              </div>
+
+              {/* Passion Subheading with Burgundy Italic */}
+              <div className="founder-subheading">
+                A Passion for Baking, <em>A Journey of Creativity</em>
+              </div>
+
+              {/* Distinct Quote Box with Vertical Burgundy Accent Line */}
+              <div className="founder-quote-box">
+                <p className="founder-quote-text">
+                  “In baking, technique creates the canvas, but understanding culinary science brings the cake alive. I created Cakexperiment to demystify high-end French patisserie and give you actionable, repeatable formulas that you can recreate in your home kitchen.”
+                </p>
+              </div>
+
+              {/* Short Passion & Vision Introduction */}
+              <p className="founder-intro-text">
+                Every creation begins with curiosity, grows with disciplined practice, and becomes truly special when shared with passionate learners. Cakexperiment was born from a vision to turn complex cake architecture into accessible, joyous masterclasses for bakers worldwide.
+              </p>
+
+              {/* 4 Achievement Cards in a Balanced 2 × 2 Grid */}
+              <div className="founder-cards-grid">
+                {/* Card 1: Baking Expertise */}
+                <div className="founder-card">
+                  <div className="founder-card-icon">
+                    <ChefHat size={20} strokeWidth={1.8} />
+                  </div>
+                  <div>
+                    <h4 className="founder-card-title">Baking Expertise</h4>
+                    <p className="founder-card-desc">Practical baking knowledge</p>
+                  </div>
+                </div>
+
+                {/* Card 2: Creative Approach */}
+                <div className="founder-card">
+                  <div className="founder-card-icon">
+                    <Palette size={20} strokeWidth={1.8} />
+                  </div>
+                  <div>
+                    <h4 className="founder-card-title">Creative Approach</h4>
+                    <p className="founder-card-desc">Learning through experimentation</p>
+                  </div>
+                </div>
+
+                {/* Card 3: Cakexperiment */}
+                <div className="founder-card">
+                  <div className="founder-card-icon">
+                    <Layers size={20} strokeWidth={1.8} />
+                  </div>
+                  <div>
+                    <h4 className="founder-card-title">Cakexperiment</h4>
+                    <p className="founder-card-desc">A platform to share baking knowledge</p>
+                  </div>
+                </div>
+
+                {/* Card 4: Student Learning */}
+                <div className="founder-card">
+                  <div className="founder-card-icon">
+                    <BookOpen size={20} strokeWidth={1.8} />
+                  </div>
+                  <div>
+                    <h4 className="founder-card-title">Student Learning</h4>
+                    <p className="founder-card-desc">Step-by-step learning experience</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Compact Burgundy CTA Button */}
+              <div className="founder-cta-wrap">
+                <Link to="/courses" className="founder-cta-btn">
+                  <span>Explore Our Courses</span>
+                  <ArrowRight size={16} strokeWidth={2.2} />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          6. EXPLORE COURSE CATEGORIES — Vertical Parallax Center-Mode Carousel
+          Displayed immediately after Meet the Instructor (#categories)
           ========================================================================= */}
       <section
         id="categories"
@@ -1146,27 +1710,18 @@ export const Home: React.FC = () => {
         <div className="container" style={{ position: 'relative', zIndex: 2 }}>
           {/* Centered Editorial Header */}
           <div className="reveal-on-scroll" style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto 3rem auto' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem' }}>
-              <span
-                style={{
-                  fontSize: '0.78rem',
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: 'var(--color-berry)',
-                  fontWeight: 600
-                }}
-              >
-                ACADEMY DISCIPLINES
-              </span>
-              <span style={{ width: '30px', height: '1px', backgroundColor: 'var(--color-rose)' }} />
+            <div className="section-eyebrow-badge">
+              <span className="section-eyebrow-line" />
+              <span className="section-eyebrow-text">ACADEMY DISCIPLINES</span>
+              <span className="section-eyebrow-line" />
             </div>
 
             <h2 style={{ fontSize: 'clamp(2.2rem, 3.5vw, 3.2rem)', marginBottom: '0.85rem' }}>
-              Explore by Cake Art Category
+              Explore Courses by Cake Art Category
             </h2>
 
             <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: 1.6 }}>
-              Immerse in specialized cake disciplines curated by our master pastry chefs. Select or scroll any category to explore its curriculum.
+              Immerse in specialized cake disciplines curated by our master pastry chefs. Select or scroll any category to explore its full curriculum.
             </p>
           </div>
 
@@ -1325,7 +1880,7 @@ export const Home: React.FC = () => {
                               transition: 'transform 0.2s ease'
                             }}
                           >
-                            Explore Masterclasses
+                            Explore Curriculum Track
                             <ArrowRight size={17} />
                           </span>
                         </div>
@@ -1375,124 +1930,123 @@ export const Home: React.FC = () => {
       </section>
 
       {/* =========================================================================
-          6. MEET THE INSTRUCTOR (Section 5)
+          7. HOW THE LEARNING EXPERIENCE WORKS — 4-Step Arched Learning Journey
           ========================================================================= */}
-      <section ref={instructorRef} style={{ padding: '6rem 0', backgroundColor: 'var(--color-blush)' }}>
+      <section id="how-it-works" ref={stepsRef} style={{ padding: '6.5rem 0', backgroundColor: '#FFFFFF', scrollMarginTop: '6rem', overflow: 'hidden' }}>
         <div className="container">
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-              alignItems: 'center',
-              gap: '4rem'
-            }}
-          >
-            {/* Instructor Portrait with Clip Reveal */}
-            <div className="reveal-on-scroll" style={{ display: 'flex', justifyContent: 'center' }}>
-              <div
-                className="reveal-clip"
-                style={{
-                  width: '100%',
-                  maxWidth: '420px',
-                  borderRadius: '240px 240px 20px 20px',
-                  overflow: 'hidden',
-                  boxShadow: 'var(--shadow-lg)',
-                  border: '6px solid #FFFFFF'
-                }}
-              >
-                <img
-                  src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=800&q=80"
-                  alt="Chef Camille Laurent"
-                  style={{ width: '100%', height: 'auto', display: 'block' }}
-                />
-              </div>
+          {/* Section Header (Image 3) */}
+          <div className="reveal-on-scroll" style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto 3.5rem auto' }}>
+            <div className="section-eyebrow-badge">
+              <span className="section-eyebrow-line" />
+              <span className="section-eyebrow-text">THE LEARNING PROCESS</span>
+              <span className="section-eyebrow-line" />
             </div>
 
-            {/* Biography & Philosophy with Staggered Entrance */}
-            <div className="reveal-on-scroll stagger-2">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem' }}>
-                <span
+            <h2 style={{ fontSize: 'clamp(2.3rem, 3.8vw, 3.4rem)', marginBottom: '1.2rem', lineHeight: 1.2 }}>
+              How You Learn with{' '}
+              <span style={{ position: 'relative', display: 'inline-block', fontStyle: 'italic', color: 'var(--color-berry)', fontFamily: 'var(--font-heading)' }}>
+                Cakexperiment
+                <svg
+                  viewBox="0 0 240 16"
+                  fill="none"
                   style={{
-                    fontSize: '0.78rem',
-                    letterSpacing: '0.14em',
-                    textTransform: 'uppercase',
-                    color: 'var(--color-berry)',
-                    fontWeight: 600
+                    position: 'absolute',
+                    left: 0,
+                    bottom: '-6px',
+                    width: '100%',
+                    height: '12px',
+                    overflow: 'visible'
                   }}
                 >
-                  FOUNDER & HEAD CHEF
-                </span>
-                <span style={{ width: '30px', height: '1px', backgroundColor: 'var(--color-rose)' }} />
-              </div>
+                  <path
+                    d="M 4 8 C 65 14, 160 14, 236 4 C 175 11, 75 12, 4 8 Z"
+                    fill="var(--color-berry)"
+                    opacity="0.85"
+                  />
+                </svg>
+              </span>
+            </h2>
 
-              <h2 style={{ fontSize: 'clamp(2.2rem, 3.5vw, 3.2rem)', marginBottom: '0.5rem' }}>
-                Chef Camille Laurent
-              </h2>
-              <div
-                style={{
-                  fontSize: '1rem',
-                  color: 'var(--color-berry)',
-                  fontWeight: 500,
-                  marginBottom: '1.5rem',
-                  fontFamily: 'var(--font-display)',
-                  fontStyle: 'italic'
-                }}
+            <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: 1.65 }}>
+              A simple, structured learning flow from choosing your course to creating professional cakes with confidence.
+            </p>
+          </div>
+
+          {/* Arched Convex Fan Showcase (Image 1 Structure & Posing + Image 2 Card Design) */}
+          <div className="learning-arc-stage">
+            {[
+              {
+                num: '01',
+                title: 'Choose Your Course',
+                desc: 'Explore curated masterclasses, from baking basics to advanced cake art.',
+                image: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=600&q=80',
+                link: '/courses',
+                poseClass: 'learning-card-pose-1'
+              },
+              {
+                num: '02',
+                title: 'Learn Through Video',
+                desc: 'Watch detailed, step-by-step lessons in high-quality, close-up video.',
+                image: 'https://images.unsplash.com/photo-1587668178277-295251f900ce?auto=format&fit=crop&w=600&q=80',
+                link: '/courses',
+                poseClass: 'learning-card-pose-2'
+              },
+              {
+                num: '03',
+                title: 'Practice & Build Skills',
+                desc: 'Use recipe sheets, workbooks, and guided exercises to refine your techniques.',
+                image: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=600&q=80',
+                link: '/courses',
+                poseClass: 'learning-card-pose-3'
+              },
+              {
+                num: '04',
+                title: 'Create with Confidence',
+                desc: 'Complete the course, showcase your work, and earn your Cakexperiment certificate.',
+                image: 'https://images.unsplash.com/photo-1589330694653-ded6df03f754?auto=format&fit=crop&w=600&q=80',
+                link: '/courses',
+                poseClass: 'learning-card-pose-4'
+              }
+            ].map((step, idx) => (
+              <Link
+                key={step.num}
+                to={step.link}
+                className={`learning-arc-card ${step.poseClass} reveal-on-scroll stagger-${idx + 1}`}
               >
-                Former Executive Pastry Chef at L’Étoile Paris & Bespoke Wedding Sculptor
-              </div>
-
-              <p style={{ color: 'var(--color-plum)', fontSize: '1.05rem', lineHeight: 1.7, marginBottom: '1.2rem' }}>
-                "In baking, technique creates the canvas, but love and curiosity bring the cake alive. I created
-                Cakexperiment to peel away the intimidation of high-end French patisserie and give you actionable,
-                repeatable formulas that you can recreate in your own kitchen."
-              </p>
-
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: 1.7, marginBottom: '2rem' }}>
-                With over fourteen years of decorating multi-tiered celebration cakes for luxury events across Paris and
-                London, Camille has mentored thousands of students worldwide to launch their own baking studios or
-                elevate their weekend craft.
-              </p>
-
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '2.5rem' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    fontSize: '0.9rem',
-                    color: 'var(--color-plum)',
-                    fontWeight: 500
-                  }}
-                >
-                  <CheckCircle size={18} color="var(--color-berry)" />
-                  14+ Years International Experience
+                {/* Top Image Half */}
+                <div className="learning-card-media">
+                  <div className="learning-card-badge">{step.num}</div>
+                  <img
+                    src={step.image}
+                    alt={step.title}
+                    className="learning-card-img"
+                    loading="lazy"
+                  />
+                  {/* Organic Wave Divider */}
+                  <div className="learning-card-wave">
+                    <svg viewBox="0 0 100 24" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block', fill: '#FFFFFF' }}>
+                      <path d="M 0,16 C 30,26 65,4 100,8 L 100,24 L 0,24 Z" />
+                    </svg>
+                  </div>
                 </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    fontSize: '0.9rem',
-                    color: 'var(--color-plum)',
-                    fontWeight: 500
-                  }}
-                >
-                  <CheckCircle size={18} color="var(--color-berry)" />
-                  Parisian Haute Patisserie Trained
-                </div>
-              </div>
 
-              <Link to="/about" className="btn btn-primary">
-                <span>Learn More About Camille</span>
-                <ArrowRight size={16} />
+                {/* Lower Card Content */}
+                <div className="learning-card-body">
+                  <div className="learning-card-dash" />
+                  <h3 className="learning-card-title">{step.title}</h3>
+                  <p className="learning-card-desc">{step.desc}</p>
+                  <div className="learning-card-arrow-btn">
+                    <ArrowRight size={15} strokeWidth={2.2} />
+                  </div>
+                </div>
               </Link>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* =========================================================================
-          7. STUDENT TESTIMONIALS — Curved Screen Cinematic Auto-Moving Cards UI
+          8. STUDENT TESTIMONIALS — Curved Screen Cinematic Auto-Moving Showcase
           ========================================================================= */}
       <section id="testimonials" ref={testimonialsRef} className="curved-cinema-section" style={{ scrollMarginTop: '6.5rem' }}>
         {/* Ambient atmospheric glows */}
@@ -1502,24 +2056,16 @@ export const Home: React.FC = () => {
         <div className="container" style={{ position: 'relative', zIndex: 2 }}>
           {/* Section Header */}
           <div className="reveal-on-scroll" style={{ textAlign: 'center', maxWidth: '680px', margin: '0 auto 2.5rem auto' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem' }}>
-              <span
-                style={{
-                  fontSize: '0.78rem',
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: 'var(--color-berry)',
-                  fontWeight: 600
-                }}
-              >
-                STUDENT CREATIONS & LOVE
-              </span>
+            <div className="section-eyebrow-badge">
+              <span className="section-eyebrow-line" />
+              <span className="section-eyebrow-text">STUDENT SUCCESS STORIES</span>
+              <span className="section-eyebrow-line" />
             </div>
             <h2 style={{ fontSize: 'clamp(2.2rem, 3.5vw, 3.2rem)', marginBottom: '1rem', color: 'var(--color-plum)' }}>
-              Real Stories from Our Bakers
+              Transformations from Our Online Bakers
             </h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: 1.6 }}>
-              Discover how passionate home bakers and aspiring studio founders perfected their craft with Cakexperiment.
+              Discover how home bakers, career switchers, and studio founders transformed their skills with Cakexperiment.
             </p>
           </div>
         </div>
@@ -1536,7 +2082,7 @@ export const Home: React.FC = () => {
                 key={`${review.id}-${index}`}
                 className="curved-cinema-card"
               >
-                {/* Card Top: Stars + Verified Badge + Quote Icon */}
+                {/* Card Top: Stars + Verified Badge */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.2rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                     <div style={{ display: 'flex', gap: '0.2rem', color: '#FFB800' }}>
@@ -1548,86 +2094,65 @@ export const Home: React.FC = () => {
                       style={{
                         fontSize: '0.72rem',
                         fontWeight: 600,
-                        letterSpacing: '0.04em',
+                        backgroundColor: 'var(--color-blush)',
                         color: 'var(--color-berry)',
-                        backgroundColor: 'rgba(244, 221, 224, 0.45)',
                         padding: '0.2rem 0.55rem',
                         borderRadius: '999px',
-                        border: '1px solid rgba(220, 165, 175, 0.4)'
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.25rem'
                       }}
                     >
-                      Verified Baker
+                      <CheckCircle size={11} color="var(--color-berry)" />
+                      Verified Student
                     </span>
                   </div>
-                  <Quote size={28} color="var(--color-rose)" style={{ opacity: 0.55 }} />
                 </div>
 
-                {/* Card Body: Quote */}
+                {/* Course Badge */}
+                {review.courseTitle && (
+                  <div
+                    style={{
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      color: 'var(--color-berry)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      marginBottom: '0.65rem'
+                    }}
+                  >
+                    Enrolled: {review.courseTitle}
+                  </div>
+                )}
+
+                {/* Review Text */}
                 <p
                   style={{
-                    fontFamily: 'var(--font-display)',
-                    fontSize: '1.08rem',
                     color: 'var(--color-plum)',
-                    lineHeight: 1.62,
-                    fontStyle: 'italic',
+                    fontSize: '0.94rem',
+                    lineHeight: 1.65,
                     marginBottom: '1.5rem',
-                    flexGrow: 1
+                    flex: 1
                   }}
                 >
                   "{review.comment}"
                 </p>
 
-                {/* Card Bottom: Student Author & Creation Thumbnail */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '1rem',
-                    paddingTop: '1.2rem',
-                    borderTop: '1px solid rgba(220, 165, 175, 0.3)'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                    <img
-                      src={review.userAvatar}
-                      alt={review.userName}
-                      style={{
-                        width: '46px',
-                        height: '46px',
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        border: '2px solid var(--color-rose)',
-                        boxShadow: '0 2px 8px rgba(87, 51, 58, 0.1)'
-                      }}
-                    />
-                    <div>
-                      <div style={{ fontSize: '0.94rem', fontWeight: 600, color: 'var(--color-plum)', lineHeight: 1.3 }}>
-                        {review.userName}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: '0.76rem',
-                          color: 'var(--color-berry)',
-                          fontWeight: 500,
-                          marginTop: '0.15rem'
-                        }}
-                      >
-                        {review.courseTitle}
-                      </div>
+                {/* User Info */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingTop: '1rem', borderTop: '1px solid var(--border-subtle)' }}>
+                  <img
+                    src={review.userAvatar}
+                    alt={review.userName}
+                    style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-rose)' }}
+                  />
+                  <div>
+                    <div style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--color-plum)' }}>
+                      {review.userName}
+                    </div>
+                    <div style={{ fontSize: '0.76rem', color: 'var(--text-light)' }}>
+                      Cakexperiment Graduate
                     </div>
                   </div>
-
-                  {/* Student creation photo preview thumbnail */}
-                  {review.studentCreationImg && (
-                    <div style={{ position: 'relative' }} title="Student's Baked Creation">
-                      <img
-                        src={review.studentCreationImg}
-                        alt={`${review.userName}'s creation`}
-                        className="curved-card-creation-thumb"
-                      />
-                    </div>
-                  )}
                 </div>
               </div>
             ))}
@@ -1636,144 +2161,21 @@ export const Home: React.FC = () => {
       </section>
 
       {/* =========================================================================
-          8. THE LEARNING EXPERIENCE — 4 Simple Steps (Section 7)
+          9. FAQ SECTION — Academy Questions & Answers
           ========================================================================= */}
-      <section ref={stepsRef} style={{ padding: '6rem 0', backgroundColor: 'var(--color-cream)' }}>
-        <div className="container">
-          <div className="reveal-on-scroll" style={{ textAlign: 'center', maxWidth: '640px', margin: '0 auto 4rem auto' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem' }}>
-              <span
-                style={{
-                  fontSize: '0.78rem',
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: 'var(--color-berry)',
-                  fontWeight: 600
-                }}
-              >
-                FOUR SIMPLE STEPS
-              </span>
-            </div>
-            <h2 style={{ fontSize: 'clamp(2.2rem, 3.5vw, 3.2rem)', marginBottom: '1rem' }}>
-              How You Learn with Cakexperiment
-            </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: 1.6 }}>
-              A modern digital atelier structured to give you effortless progress from enrollment to final slice.
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: '2rem',
-              position: 'relative'
-            }}
-          >
-            {[
-              {
-                step: 'Step 1',
-                title: 'Choose Your Course',
-                desc: 'Explore our curated masterclasses from buttercream floristry to chocolate alchemy.'
-              },
-              {
-                step: 'Step 2',
-                title: 'Learn Through 4K Video',
-                desc: 'Watch step-by-step macro camera angles highlighting nozzle pressure and textures.'
-              },
-              {
-                step: 'Step 3',
-                title: 'Practice Every Technique',
-                desc: 'Download exact ratio recipe sheets, troubleshooting guides, and practice drills.'
-              },
-              {
-                step: 'Step 4',
-                title: 'Create Something Beautiful',
-                desc: 'Earn your studio completion diploma and share your breathtaking bakes with the world.'
-              }
-            ].map((s, idx) => (
-              <div
-                key={s.step}
-                className={`reveal-on-scroll stagger-${idx + 1}`}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: '2rem 1.5rem',
-                  border: '1px solid var(--border-subtle)',
-                  textAlign: 'center',
-                  boxShadow: 'var(--shadow-sm)',
-                  transition: 'transform 0.3s var(--ease-out-editorial)'
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
-              >
-                <div
-                  style={{
-                    width: '50px',
-                    height: '50px',
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--color-blush)',
-                    color: 'var(--color-berry)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: '1.15rem',
-                    margin: '0 auto 1.2rem auto',
-                    fontFamily: 'var(--font-display)',
-                    border: '2px solid rgba(220,165,175,0.4)'
-                  }}
-                >
-                  {idx + 1}
-                </div>
-                <div
-                  style={{
-                    fontSize: '0.75rem',
-                    textTransform: 'uppercase',
-                    color: 'var(--color-berry)',
-                    letterSpacing: '0.1em',
-                    fontWeight: 600,
-                    marginBottom: '0.4rem'
-                  }}
-                >
-                  {s.step}
-                </div>
-                <h3 style={{ fontSize: '1.2rem', marginBottom: '0.6rem' }}>{s.title}</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', lineHeight: 1.5 }}>{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          9. FAQ SECTION — Smooth Accordion (Section 8)
-          ========================================================================= */}
-      <section id="faq" ref={faqRef} style={{ padding: '6rem 0', backgroundColor: '#FFFFFF', scrollMarginTop: '6.5rem' }}>
+      <section id="faq" ref={faqRef} style={{ padding: '6.5rem 0', backgroundColor: '#FFFFFF', scrollMarginTop: '6.5rem' }}>
         <div className="container-narrow">
           <div className="reveal-on-scroll" style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem' }}>
-              <span
-                style={{
-                  fontSize: '0.78rem',
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  color: 'var(--color-berry)',
-                  fontWeight: 600
-                }}
-              >
-                QUESTIONS & ANSWERS
-              </span>
+            <div className="section-eyebrow-badge">
+              <span className="section-eyebrow-line" />
+              <span className="section-eyebrow-text">QUESTIONS & ANSWERS</span>
+              <span className="section-eyebrow-line" />
             </div>
             <h2 style={{ fontSize: 'clamp(2.2rem, 3.5vw, 3.2rem)', marginBottom: '1rem' }}>
               Frequently Asked Questions
             </h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem' }}>
-              Everything you need to know about our courses, access, and studio support.
+              Everything you need to know about our online courses, video streaming, recipe downloads, and studio support.
             </p>
           </div>
 
@@ -1847,9 +2249,10 @@ export const Home: React.FC = () => {
       </section>
 
       {/* =========================================================================
-          10. FINAL CTA — Radial Backdrop & Shimmer (Section 9)
+          10. FINAL CTA — Enroll in a Masterclass Today
           ========================================================================= */}
       <section
+        id="enroll"
         ref={ctaRef}
         style={{
           padding: '7rem 0',
@@ -1885,7 +2288,7 @@ export const Home: React.FC = () => {
               border: '1px solid rgba(220,165,175,0.3)'
             }}
           >
-            <Sparkles size={16} color="var(--color-rose)" />
+            <GraduationCap size={16} color="var(--color-rose)" />
             <span
               style={{
                 fontSize: '0.8rem',
@@ -1895,53 +2298,59 @@ export const Home: React.FC = () => {
                 fontWeight: 600
               }}
             >
-              BEGIN YOUR JOURNEY TODAY
+              ENROLL IN A MASTERCLASS
             </span>
           </div>
 
           <h2
             style={{
-              fontSize: 'clamp(2.5rem, 4.5vw, 4rem)',
-              color: '#FFF8F5',
+              fontSize: 'clamp(2.4rem, 4.5vw, 3.8rem)',
+              color: '#FFFFFF',
               marginBottom: '1.2rem',
               lineHeight: 1.15
             }}
           >
-            Your Next Beautiful Creation Starts Here.
+            Ready to Master the Art of Professional Cake Baking?
           </h2>
 
           <p
             style={{
-              color: 'var(--color-rose)',
-              fontSize: '1.15rem',
-              lineHeight: 1.7,
-              maxWidth: '620px',
+              color: 'rgba(255, 248, 245, 0.88)',
+              fontSize: '1.12rem',
+              lineHeight: 1.65,
+              maxWidth: '560px',
               margin: '0 auto 2.5rem auto'
             }}
           >
-            Unlock professional baking formulas, master Swiss meringue piping, and learn to craft celebration cakes
-            that captivate every room.
+            Join thousands of passionate bakers worldwide who have transformed their skills with our online masterclasses. Enroll today and start baking with confidence.
           </p>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '1.2rem' }}>
             <Link
               to="/courses"
               className="btn btn-primary btn-lg"
               style={{
-                backgroundColor: 'var(--color-berry)',
-                color: '#FFFFFF',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.3)'
+                backgroundColor: 'var(--color-rose)',
+                borderColor: 'var(--color-rose)',
+                color: 'var(--color-plum)',
+                fontWeight: 600,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.2)'
               }}
             >
-              <span>Explore All Courses ({storageService.getCourses().length})</span>
+              <span>Explore All Masterclasses</span>
               <ArrowRight size={18} />
             </Link>
+
             <Link
-              to="/about"
-              className="btn btn-outline btn-lg"
-              style={{ borderColor: 'var(--color-rose)', color: '#FFF8F5' }}
+              to="/signup"
+              className="btn btn-secondary btn-lg"
+              style={{
+                borderColor: 'rgba(255,255,255,0.4)',
+                color: '#FFFFFF',
+                backgroundColor: 'rgba(255,255,255,0.08)'
+              }}
             >
-              Learn About Cakexperiment
+              <span>Create Student Account</span>
             </Link>
           </div>
         </div>

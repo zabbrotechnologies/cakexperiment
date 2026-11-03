@@ -39,11 +39,10 @@ export const About: React.FC = () => {
             </div>
 
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem' }}>
-                <span style={{ fontSize: '0.78rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--color-berry)', fontWeight: 600 }}>
-                  THE ATELIER VISION
-                </span>
-                <span style={{ width: '30px', height: '1px', backgroundColor: 'var(--color-rose)' }} />
+              <div className="section-eyebrow-badge">
+                <span className="section-eyebrow-line" />
+                <span className="section-eyebrow-text">THE ATELIER VISION</span>
+                <span className="section-eyebrow-line" />
               </div>
 
               <h2 style={{ fontSize: '2.4rem', marginBottom: '1.2rem', color: 'var(--color-plum)' }}>

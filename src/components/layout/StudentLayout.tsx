@@ -1,14 +1,14 @@
 import React from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { BookOpen, Sparkles, BarChart2, Receipt, User, ShieldAlert } from 'lucide-react';
+import { BookOpen, GraduationCap, BarChart2, Receipt, User, ShieldAlert } from 'lucide-react';
 
 export const StudentLayout: React.FC = () => {
   const { user, isAdmin } = useAuth();
 
   const tabs = [
     { label: 'Overview', to: '/learn', icon: <BookOpen size={16} /> },
-    { label: 'My Courses', to: '/my-courses', icon: <Sparkles size={16} /> },
+    { label: 'My Courses', to: '/my-courses', icon: <GraduationCap size={16} /> },
     { label: 'Learning Progress', to: '/my-learning', icon: <BarChart2 size={16} /> },
     { label: 'Orders & Receipts', to: '/my-purchases', icon: <Receipt size={16} /> },
     { label: 'Student Profile', to: '/profile', icon: <User size={16} /> }

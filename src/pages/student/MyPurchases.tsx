@@ -94,7 +94,7 @@ export const MyPurchases: React.FC = () => {
           <div className="modal-content" style={{ maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--color-cream)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Sparkles size={18} color="var(--color-berry)" />
+                <Receipt size={18} color="var(--color-berry)" />
                 <h3 style={{ fontSize: '1.2rem', color: 'var(--color-plum)', margin: 0 }}>
                   Official Digital Invoice Receipt
                 </h3>

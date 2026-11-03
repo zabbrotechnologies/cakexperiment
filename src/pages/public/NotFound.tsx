@@ -1,13 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Home, BookOpen } from 'lucide-react';
+import { Cake, Home, BookOpen } from 'lucide-react';
 
 export const NotFound: React.FC = () => {
   return (
     <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem 1.5rem', backgroundColor: 'var(--color-cream)', textAlign: 'center' }}>
       <div style={{ maxWidth: '500px' }}>
         <div style={{ width: '70px', height: '70px', borderRadius: '50%', backgroundColor: 'var(--color-blush)', color: 'var(--color-berry)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
-          <Sparkles size={32} />
+          <Cake size={32} />
         </div>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: '5rem', fontWeight: 600, color: 'var(--color-plum)', lineHeight: 1 }}>
           404

@@ -312,7 +312,7 @@ export const CourseClassroom: React.FC = () => {
                   <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.92rem', color: 'var(--text-muted)' }}>
                     {course.learningOutcomes.map((o, idx) => (
                       <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Sparkles size={14} color="var(--color-berry)" />
+                        <CheckCircle size={14} color="var(--color-berry)" />
                         {o}
                       </li>
                     ))}

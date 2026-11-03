@@ -339,7 +339,7 @@ export const Navbar: React.FC = () => {
                             color: 'var(--color-plum)'
                           }}
                         >
-                          <Sparkles size={16} /> My Enrolled Courses
+                          <BookOpen size={16} /> My Enrolled Courses
                         </Link>
                         <Link
                           to="/profile"

@@ -69,7 +69,7 @@ export const Courses: React.FC = () => {
         return <Cake size={16} />;
       case 'celebration-cakes':
       case 'cat-6':
-        return <Sparkles size={16} />;
+        return <Cake size={16} />;
       default:
         return <BookOpen size={16} />;
     }
@@ -1004,7 +1004,7 @@ export const Courses: React.FC = () => {
                               display: 'flex',
                               justifyContent: 'space-between',
                               alignItems: 'center',
-                              marginBottom: '0.5rem',
+                              marginBottom: '0.6rem',
                               fontSize: '0.78rem'
                             }}
                           >
@@ -1034,6 +1034,47 @@ export const Courses: React.FC = () => {
                             </Link>
                           </h3>
 
+                          {/* Instructor Credential Row */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', marginBottom: '0.75rem' }}>
+                            <img
+                              src={course.instructorAvatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=120&q=80'}
+                              alt={course.instructorName}
+                              style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--color-rose)' }}
+                            />
+                            <span style={{ fontSize: '0.82rem', color: 'var(--color-plum)', fontWeight: 500 }}>
+                              {course.instructorName}
+                            </span>
+                          </div>
+
+                          {/* Academic Curriculum Specs: Modules & Lessons */}
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              padding: '0.55rem 0.75rem',
+                              backgroundColor: 'var(--color-cream)',
+                              borderRadius: '8px',
+                              marginBottom: '0.85rem',
+                              fontSize: '0.76rem',
+                              color: 'var(--color-plum)'
+                            }}
+                          >
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}>
+                              <BookOpen size={13} color="var(--color-berry)" />
+                              {course.moduleCount || 3} Modules
+                            </span>
+                            <span style={{ color: 'var(--border-subtle)' }}>•</span>
+                            <span style={{ fontWeight: 500 }}>
+                              {course.lessonCount || 9} Video Lessons
+                            </span>
+                            <span style={{ color: 'var(--border-subtle)' }}>•</span>
+                            <span style={{ color: 'var(--color-berry)', fontWeight: 600 }}>
+                              {course.skillLevel}
+                            </span>
+                          </div>
+
                           <p
                             style={{
                               color: 'var(--text-muted)',
@@ -1057,7 +1098,7 @@ export const Courses: React.FC = () => {
                             }}
                           >
                             <div>
-                              <div style={{ fontSize: '0.72rem', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                                 Masterclass Fee
                               </div>
                               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
@@ -1082,7 +1123,7 @@ export const Courses: React.FC = () => {
                               </Link>
                             ) : (
                               <Link to={`/courses/${course.slug}`} className="btn btn-primary btn-sm">
-                                View Details &rarr;
+                                Enroll Now &rarr;
                               </Link>
                             )}
                           </div>

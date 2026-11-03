@@ -19,7 +19,7 @@ import {
   Check,
   X,
   CreditCard,
-  Sparkles,
+  ChefHat,
   ArrowRight
 } from 'lucide-react';
 
@@ -238,7 +238,7 @@ export const CourseDetail: React.FC = () => {
                   }}
                 >
                   <span>Click to watch free preview</span>
-                  <Sparkles size={16} color="var(--color-rose)" />
+                  <Play size={16} color="var(--color-rose)" />
                 </div>
               </div>
             </div>
@@ -257,7 +257,7 @@ export const CourseDetail: React.FC = () => {
             {/* What you'll learn */}
             <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '2.5rem', border: '1px solid var(--border-subtle)' }}>
               <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <Sparkles size={20} color="var(--color-berry)" />
+                <ChefHat size={20} color="var(--color-berry)" />
                 What You'll Master in this Course
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
@@ -516,7 +516,7 @@ export const CourseDetail: React.FC = () => {
             
             <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--color-cream)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Sparkles size={18} color="var(--color-berry)" />
+                <CheckCircle size={18} color="var(--color-berry)" />
                 <h3 style={{ fontSize: '1.25rem', color: 'var(--color-plum)', margin: 0 }}>
                   Simulated Course Checkout
                 </h3>

@@ -754,7 +754,7 @@ export const AdminVideos: React.FC = () => {
               color: 'var(--color-berry)'
             }}
           >
-            <Sparkles size={20} />
+            <Eye size={20} />
           </div>
           <div>
             <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.04em' }}>

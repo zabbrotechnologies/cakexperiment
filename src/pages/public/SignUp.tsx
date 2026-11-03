@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Sparkles, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Cake, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export const SignUp: React.FC = () => {
   const { signUp, isAuthenticated, isAdmin } = useAuth();
@@ -62,7 +62,7 @@ export const SignUp: React.FC = () => {
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none', marginBottom: '1rem' }}>
             <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: 'var(--color-blush)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-berry)' }}>
-              <Sparkles size={22} />
+              <Cake size={22} />
             </div>
             <span style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', fontWeight: 600, color: 'var(--color-plum)' }}>
               Cakexperiment

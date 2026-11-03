@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, ArrowLeft, Mail, Check } from 'lucide-react';
+import { Cake, ArrowLeft, Mail, Check } from 'lucide-react';
 
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -20,7 +20,7 @@ export const ForgotPassword: React.FC = () => {
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none', marginBottom: '1rem' }}>
             <div style={{ width: '38px', height: '38px', borderRadius: '50%', backgroundColor: 'var(--color-blush)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-berry)' }}>
-              <Sparkles size={20} />
+              <Cake size={20} />
             </div>
             <span style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 600, color: 'var(--color-plum)' }}>
               Cakexperiment
