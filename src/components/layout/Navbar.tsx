@@ -263,11 +263,21 @@ export const Navbar: React.FC = () => {
                     boxShadow: 'var(--shadow-sm)'
                   }}
                 >
-                  <img
-                    src={user.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80'}
-                    alt={user.name}
-                    style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
-                  />
+                  <div
+                    style={{
+                      width: '30px',
+                      height: '30px',
+                      borderRadius: '50%',
+                      backgroundColor: 'var(--color-blush)',
+                      color: 'var(--color-berry)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <UserIcon size={16} />
+                  </div>
                   <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-plum)' }}>
                     {user.name.split(' ')[0]}
                   </span>

@@ -20,4 +20,7 @@ function neonPlugin(): Plugin {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), neonPlugin()],
+  optimizeDeps: {
+    exclude: ['playwright', '@playwright/test']
+  }
 })

@@ -21,6 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchCurrentUser = async () => {
@@ -28,6 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const token = localStorage.getItem(TOKEN_KEY);
       if (!token) {
         setUser(null);
+        setEnrolledCourseIds([]);
         return;
       }
 
@@ -39,6 +41,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const data = await res.json();
         if (data?.user) {
           setUser(data.user);
+          if (Array.isArray(data.user.enrolledCourseIds)) {
+            setEnrolledCourseIds(data.user.enrolledCourseIds);
+          }
           return;
         }
       }
@@ -46,8 +51,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // If token is expired or unauthorized, clear token
       localStorage.removeItem(TOKEN_KEY);
       setUser(null);
+      setEnrolledCourseIds([]);
     } catch {
       setUser(null);
+      setEnrolledCourseIds([]);
     }
   };
 
@@ -73,6 +80,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.setItem(TOKEN_KEY, data.token);
         }
         setUser(data.user);
+        if (Array.isArray(data.user.enrolledCourseIds)) {
+          setEnrolledCourseIds(data.user.enrolledCourseIds);
+        }
         return {
           success: true,
           redirectTo: data.redirectTo || (data.user.role === 'ADMIN' ? '/admin/dashboard' : '/learn')
@@ -133,12 +143,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem(TOKEN_KEY);
     storageService.signOut();
     setUser(null);
+    setEnrolledCourseIds([]);
   };
 
   const hasCourseAccess = (courseId: string): boolean => {
     if (!user) return false;
     if (user.role === 'ADMIN' || user.role === 'admin') return true;
-    return storageService.isEnrolled(user.id, courseId);
+    return enrolledCourseIds.includes(courseId) || storageService.isEnrolled(user.id, courseId);
   };
 
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'admin';

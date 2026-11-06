@@ -17,28 +17,73 @@ import {
 
 export const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (!user) return;
+
+    const fetchDashboardData = async () => {
+      try {
+        const token = localStorage.getItem('cakexperiment_auth_token');
+        const res = await fetch('/api/user/courses', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.courses) && data.courses.length > 0) {
+            const mapped = data.courses.map((c: any) => ({
+              id: c.course_id || c.id,
+              title: c.title,
+              thumbnail: c.thumbnail || c.image || '/images/hero-cake.png',
+              categoryName: c.tag || 'Masterclass',
+              instructorName: c.instructor_name || 'Chef Camille Laurent',
+              totalDuration: c.total_duration || '2h 30m',
+              lessonCount: c.lessons_count || 6,
+              enrollment: {
+                id: c.enrollment_id,
+                courseId: c.course_id || c.id,
+                userId: user.id,
+                enrolledAt: c.activated_at || new Date().toISOString(),
+                progress: Number(c.progress) || 0,
+                completedLessonIds: Array.isArray(c.completed_lessons) ? c.completed_lessons : []
+              }
+            }));
+            setEnrolledCourses(mapped);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load user courses from API:', err);
+      }
+
+      // Fallback to storageService
       const studentEnrollments = storageService.getStudentEnrollments(user.id);
-      setEnrollments(studentEnrollments);
-      setCourses(storageService.getCourses());
-    }
+      const allCourses = storageService.getCourses();
+      const fallbackEnrolled = allCourses
+        .filter(c => studentEnrollments.some(e => e.courseId === c.id))
+        .map(c => {
+          const enr = studentEnrollments.find(e => e.courseId === c.id)!;
+          return {
+            ...c,
+            lessonCount: c.modules?.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) || 6,
+            enrollment: enr
+          };
+        });
+      setEnrolledCourses(fallbackEnrolled);
+    };
+
+    fetchDashboardData().finally(() => setLoading(false));
   }, [user]);
 
-  const enrolledCourses = courses
-    .filter(c => enrollments.some(e => e.courseId === c.id))
-    .map(c => {
-      const enr = enrollments.find(e => e.courseId === c.id)!;
-      return { ...c, enrollment: enr };
-    });
-
   // Calculate stats
-  const totalCompletedLessons = enrollments.reduce((acc, e) => acc + (e.completedLessonIds?.length || 0), 0);
-  const completedCoursesCount = enrollments.filter(e => e.progress === 100).length;
-  const inProgressCourses = enrolledCourses.filter(c => c.enrollment.progress < 100);
+  const totalCompletedLessons = enrolledCourses.reduce(
+    (acc, c) => acc + (c.enrollment?.completedLessonIds?.length || 0),
+    0
+  );
+  const completedCoursesCount = enrolledCourses.filter(c => c.enrollment?.progress === 100).length;
+  const inProgressCourses = enrolledCourses.filter(c => (c.enrollment?.progress || 0) < 100);
   const recentCourse = enrolledCourses[0];
 
   return (

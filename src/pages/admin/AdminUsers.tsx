@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../../services/storage';
-import { Users, Search, CheckCircle, Ban, BookOpen, Shield, RefreshCw } from 'lucide-react';
+import { Users, Search, CheckCircle, Ban, BookOpen, Shield, RefreshCw, User } from 'lucide-react';
 
 interface AdminUserRecord {
   id: string;
@@ -169,23 +169,27 @@ export const AdminUsers: React.FC = () => {
                 filteredUsers.map((u) => {
                   const isAdmin = u.role?.toUpperCase() === 'ADMIN';
                   const isSuspended = u.status === 'suspended';
-                  const avatarUrl =
-                    u.avatar ||
-                    u.profile_image ||
-                    `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.name || 'User')}&backgroundColor=8b263e,b85d75`;
 
                   return (
                     <tr key={u.id} style={{ borderBottom: '1px solid #FAF0F2' }}>
                       <td style={{ padding: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                          <img
-                            src={avatarUrl}
-                            alt={u.name}
-                            style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-subtle)' }}
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = 'none';
+                          <div
+                            style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '50%',
+                              backgroundColor: 'var(--color-blush)',
+                              color: 'var(--color-berry)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              border: '1px solid var(--border-subtle)',
+                              flexShrink: 0
                             }}
-                          />
+                          >
+                            <User size={18} />
+                          </div>
                           <div>
                             <div style={{ fontWeight: 600, color: 'var(--color-plum)' }}>{u.name}</div>
                             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{u.email}</div>

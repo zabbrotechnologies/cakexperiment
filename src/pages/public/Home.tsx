@@ -69,11 +69,22 @@ export const Home: React.FC = () => {
   }, [location.hash, location.pathname]);
 
   // Center-Anchored Coverflow Masterclasses Carousel State
-  const [courses] = useState<Course[]>(() =>
+  const [courses, setCourses] = useState<Course[]>(() =>
     storageService
       .getCourses()
       .filter(c => c.featured || c.status === 'published')
   );
+
+  useEffect(() => {
+    fetch('/api/courses')
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (Array.isArray(data?.courses) && data.courses.length > 0) {
+          setCourses(data.courses.filter((c: any) => c.featured || c.status === 'published'));
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [activeCourseIdx, setActiveCourseIdx] = useState(() => Math.min(2, Math.max(0, courses.length - 1)));
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);

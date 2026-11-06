@@ -16,7 +16,8 @@ import {
   Menu,
   X,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  User
 } from 'lucide-react';
 
 export const AdminLayout: React.FC = () => {
@@ -206,11 +207,21 @@ export const AdminLayout: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <img
-                src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
-                alt="Admin"
-                style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-rose)' }}
-              />
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--color-blush)',
+                  color: 'var(--color-berry)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '2px solid var(--color-rose)'
+                }}
+              >
+                <User size={18} />
+              </div>
               <div style={{ display: 'none' }} className="admin-user-info">
                 <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-plum)' }}>{user?.name || 'Admin'}</div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{user?.email}</div>

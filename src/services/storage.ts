@@ -818,7 +818,7 @@ const initialUsers: User[] = [
     name: 'Administrator',
     email: DEMO_ADMIN.email,
     role: 'admin',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    avatar: '',
     status: 'active',
     bio: 'Platform director and academy operations manager at Cakexperiment.',
     createdAt: '2026-01-01T00:00:00Z'
@@ -828,7 +828,7 @@ const initialUsers: User[] = [
     name: 'Aria Montgomery',
     email: DEMO_STUDENT.email,
     role: 'student',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+    avatar: '',
     status: 'active',
     bio: 'Passionate home baker dreaming of launching a boutique bakery studio.',
     createdAt: '2026-02-01T12:00:00Z'
@@ -838,7 +838,7 @@ const initialUsers: User[] = [
     name: 'David Sterling',
     email: 'david.sterling@example.com',
     role: 'student',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    avatar: '',
     status: 'active',
     bio: 'Hobbyist pastry enthusiast perfecting celebratory cakes for family.',
     createdAt: '2026-02-05T14:20:00Z'
@@ -848,7 +848,7 @@ const initialUsers: User[] = [
     name: 'Sophie Moreau',
     email: 'sophie.m@example.com',
     role: 'student',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+    avatar: '',
     status: 'active',
     bio: 'Catering chef expanding dessert menu offerings.',
     createdAt: '2026-02-12T09:15:00Z'
@@ -1144,12 +1144,7 @@ class StorageService {
       name: name.trim(),
       email: cleanEmail,
       role: 'student',
-      avatar: [
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80'
-      ][Math.floor(Math.random() * 4)],
+      avatar: '',
       status: 'active',
       bio: 'Enthusiastic baker learning with Cakexperiment.',
       createdAt: new Date().toISOString()
@@ -1543,10 +1538,24 @@ class StorageService {
   public toggleLessonCompleted(userId: string, courseId: string, lessonId: string): Enrollment | null {
     const enrollments = this.getEnrollments();
     const idx = enrollments.findIndex(e => e.userId === userId && e.courseId === courseId);
-    if (idx === -1) return null;
-
     const course = this.getCourseById(courseId);
     const totalLessons = course ? (course.lessonCount || 6) : 6;
+
+    if (idx === -1) {
+      const newEnr: Enrollment = {
+        id: `enr_${userId}_${courseId}`,
+        userId,
+        courseId,
+        activatedAt: new Date().toISOString(),
+        progress: Math.min(100, Math.round((1 / totalLessons) * 100)),
+        completedLessonIds: [lessonId],
+        lastAccessedLessonId: lessonId
+      };
+      enrollments.push(newEnr);
+      this.set(STORAGE_KEYS.ENROLLMENTS, enrollments);
+      return newEnr;
+    }
+
     const current = enrollments[idx];
     const completed = new Set(current.completedLessonIds || []);
 

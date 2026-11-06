@@ -36,25 +36,50 @@ export const AdminCourseEdit: React.FC = () => {
   const [totalDuration, setTotalDuration] = useState('2h 30m');
   const [modules, setModules] = useState<Module[]>([]);
 
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     if (id) {
-      const existing = storageService.getCourseById(id);
-      if (existing) {
-        setTitle(existing.title);
-        setSlug(existing.slug);
-        setShortDescription(existing.shortDescription);
-        setDescription(existing.description);
-        setThumbnail(existing.thumbnail);
-        setPreviewMedia(existing.previewMedia);
-        setCategoryId(existing.categoryId);
-        setSkillLevel(existing.skillLevel);
-        setPrice(existing.price);
-        setOriginalPrice(existing.originalPrice || 1499);
-        setStatus(existing.status === 'published' ? 'published' : 'draft');
-        setFeatured(existing.featured);
-        setTotalDuration(existing.totalDuration);
-        setModules(existing.modules || []);
-      }
+      fetch(`/api/courses/${id}`)
+        .then(res => (res.ok ? res.json() : null))
+        .then(data => {
+          const existing = data?.course || storageService.getCourseById(id);
+          if (existing) {
+            setTitle(existing.title || '');
+            setSlug(existing.slug || '');
+            setShortDescription(existing.shortDescription || existing.short_description || '');
+            setDescription(existing.description || '');
+            setThumbnail(existing.thumbnail || '/images/hero-cake.png');
+            setPreviewMedia(existing.previewMedia || existing.preview_media || '');
+            setCategoryId(existing.categoryId || existing.category_id || categories[0]?.id || 'cat-1');
+            setSkillLevel(existing.skillLevel || existing.skill_level || 'All Levels');
+            setPrice(Number(existing.price) || 499);
+            setOriginalPrice(Number(existing.originalPrice || existing.original_price) || 1499);
+            setStatus(existing.status === 'published' ? 'published' : 'draft');
+            setFeatured(Boolean(existing.featured));
+            setTotalDuration(existing.totalDuration || existing.total_duration || '2h 30m');
+            setModules(existing.modules || []);
+          }
+        })
+        .catch(() => {
+          const existing = storageService.getCourseById(id);
+          if (existing) {
+            setTitle(existing.title);
+            setSlug(existing.slug);
+            setShortDescription(existing.shortDescription);
+            setDescription(existing.description);
+            setThumbnail(existing.thumbnail);
+            setPreviewMedia(existing.previewMedia);
+            setCategoryId(existing.categoryId);
+            setSkillLevel(existing.skillLevel);
+            setPrice(existing.price);
+            setOriginalPrice(existing.originalPrice || 1499);
+            setStatus(existing.status === 'published' ? 'published' : 'draft');
+            setFeatured(existing.featured);
+            setTotalDuration(existing.totalDuration);
+            setModules(existing.modules || []);
+          }
+        });
     } else {
       // Default initial module for new course
       setModules([
@@ -142,8 +167,9 @@ export const AdminCourseEdit: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
 
     const selectedCategoryObj = categories.find(c => c.id === categoryId);
 
@@ -166,8 +192,28 @@ export const AdminCourseEdit: React.FC = () => {
       modules
     };
 
+    // Immediate local cache
     storageService.saveCourse(courseData);
-    navigate('/admin/courses');
+
+    try {
+      const token = localStorage.getItem('cakexperiment_auth_token');
+      const url = id ? `/api/admin/courses/${id}` : '/api/admin/courses';
+      const method = id ? 'PUT' : 'POST';
+
+      await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(courseData)
+      });
+    } catch (err) {
+      console.error('Failed to sync course to Neon database:', err);
+    } finally {
+      setIsSaving(false);
+      navigate('/admin/courses');
+    }
   };
 
   return (

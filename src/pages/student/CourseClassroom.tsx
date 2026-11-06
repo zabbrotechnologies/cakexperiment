@@ -53,18 +53,48 @@ export const CourseClassroom: React.FC = () => {
       })
       .then((data) => {
         if (data?.course) {
-          setCourse(data.course);
-          const firstMod = data.course.modules?.[0];
+          const raw = data.course;
+          const defaultOutcomes = [
+            'Master fundamental techniques, precise ingredient ratios, and temperature control',
+            'Step-by-step practical atelier execution from preparation to presentation',
+            'Professional troubleshooting and bakery kitchen best practices'
+          ];
+          const formattedCourse: Course = {
+            ...raw,
+            instructorName: raw.instructorName || raw.instructor_name || 'Chef Camille Laurent',
+            instructorBio: raw.instructorBio || raw.instructor_bio || 'Master Pastry Chef & Atelier Instructor',
+            instructorAvatar: raw.instructorAvatar || raw.instructor_avatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=400&q=80',
+            learningOutcomes: Array.isArray(raw.learningOutcomes) && raw.learningOutcomes.length > 0
+              ? raw.learningOutcomes
+              : (Array.isArray(raw.learning_outcomes) && raw.learning_outcomes.length > 0 ? raw.learning_outcomes : defaultOutcomes),
+            modules: (raw.modules || []).map((m: any, mIdx: number) => ({
+              ...m,
+              order: m.order || m.order_num || mIdx + 1,
+              lessons: (m.lessons || []).map((l: any, lIdx: number) => ({
+                ...l,
+                order: l.order || l.order_num || lIdx + 1,
+                videoReference: l.videoReference || l.video_reference || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+                isPreview: l.isPreview !== undefined ? l.isPreview : Boolean(l.is_preview)
+              }))
+            }))
+          };
+
+          setCourse(formattedCourse);
+          const firstMod = formattedCourse.modules?.[0];
           const firstLesson = firstMod?.lessons?.[0];
           if (firstLesson) setActiveLesson(firstLesson);
 
           const expanded: Record<string, boolean> = {};
-          data.course.modules?.forEach((m: any) => { expanded[m.id] = true; });
+          formattedCourse.modules?.forEach((m: any) => { expanded[m.id] = true; });
           setOpenModules(expanded);
 
           if (data.progress) {
             const completed = data.progress.filter((p: any) => p.completed).map((p: any) => p.lesson_id);
             setCompletedLessonIds(completed);
+            const totalLessons = (formattedCourse.modules || []).reduce((acc, m) => acc + (m.lessons?.length || 0), 0);
+            if (totalLessons > 0) {
+              setProgress(Math.round((completed.length / totalLessons) * 100));
+            }
           }
           return;
         }
@@ -129,7 +159,13 @@ export const CourseClassroom: React.FC = () => {
     );
   }
 
-  if (!course || !activeLesson) {
+  // Flatten all lessons for next/prev navigation
+  const allLessons: Lesson[] = [];
+  course?.modules?.forEach(m => {
+    (m.lessons || []).forEach(l => allLessons.push(l));
+  });
+
+  if (!course) {
     return (
       <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <p style={{ color: 'var(--text-muted)' }}>Loading classroom video workspace...</p>
@@ -137,11 +173,20 @@ export const CourseClassroom: React.FC = () => {
     );
   }
 
-  // Flatten all lessons for next/prev navigation
-  const allLessons: Lesson[] = [];
-  course.modules?.forEach(m => {
-    m.lessons.forEach(l => allLessons.push(l));
-  });
+  if (allLessons.length === 0 || !activeLesson) {
+    return (
+      <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', padding: '2rem' }}>
+        <BookOpen size={48} color="var(--color-berry)" />
+        <h3 style={{ fontSize: '1.3rem', color: 'var(--color-plum)', margin: 0 }}>Curriculum Lessons Updating</h3>
+        <p style={{ color: 'var(--text-muted)', maxWidth: '440px', textAlign: 'center', lineHeight: 1.6 }}>
+          The studio lessons for this masterclass are being prepared and verified. Please check back shortly!
+        </p>
+        <Link to="/learn" className="btn btn-secondary" style={{ marginTop: '0.5rem' }}>
+          Return to Dashboard
+        </Link>
+      </div>
+    );
+  }
 
   const currentIndex = allLessons.findIndex(l => l.id === activeLesson.id);
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
@@ -159,24 +204,38 @@ export const CourseClassroom: React.FC = () => {
       : completedLessonIds.filter(id => id !== activeLesson.id);
     setCompletedLessonIds(updated);
 
-    const token = localStorage.getItem('cakexperiment_auth_token');
-    fetch('/api/user/progress', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
-      },
-      body: JSON.stringify({
-        courseId: course.id,
-        lessonId: activeLesson.id,
-        completed: newCompleted
-      })
-    }).catch(() => {});
-
-    const updatedEnr = storageService.toggleLessonCompleted(user.id, course.id, activeLesson.id);
-    if (updatedEnr) {
-      setProgress(updatedEnr.progress);
+    if (allLessons.length > 0) {
+      setProgress(Math.min(100, Math.round((updated.length / allLessons.length) * 100)));
     }
+
+    const token = localStorage.getItem('cakexperiment_auth_token');
+    try {
+      const res = await fetch('/api/user/progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          courseId: course.id,
+          lessonId: activeLesson.id,
+          completed: newCompleted
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.progress === 'number') {
+          setProgress(data.progress);
+        }
+        if (Array.isArray(data.completedLessons)) {
+          setCompletedLessonIds(data.completedLessons);
+        }
+      }
+    } catch {
+      // Fallback
+    }
+
+    storageService.toggleLessonCompleted(user.id, course.id, activeLesson.id);
   };
 
   const toggleModule = (modId: string) => {
@@ -237,11 +296,11 @@ export const CourseClassroom: React.FC = () => {
               }}
             >
               <video
-                key={activeLesson.videoReference}
+                key={activeLesson.videoReference || (activeLesson as any).video_reference || activeLesson.id}
                 controls
                 autoPlay
-                poster={course.thumbnail}
-                src={activeLesson.videoReference}
+                poster={course.thumbnail || (course as any).image}
+                src={activeLesson.videoReference || (activeLesson as any).video_reference || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'}
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -384,7 +443,11 @@ export const CourseClassroom: React.FC = () => {
                 <div>
                   <h4 style={{ fontSize: '1.1rem', color: 'var(--color-plum)', marginBottom: '0.6rem' }}>Mastery Objectives</h4>
                   <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.92rem', color: 'var(--text-muted)' }}>
-                    {course.learningOutcomes.map((o, idx) => (
+                    {(course.learningOutcomes || (course as any).learning_outcomes || [
+                      'Master fundamental techniques, precise ingredient ratios, and temperature control',
+                      'Step-by-step practical atelier execution from preparation to presentation',
+                      'Professional troubleshooting and bakery kitchen best practices'
+                    ]).map((o, idx) => (
                       <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <CheckCircle size={14} color="var(--color-berry)" />
                         {o}
@@ -441,14 +504,16 @@ export const CourseClassroom: React.FC = () => {
               {activeTab === 'instructor' && (
                 <div style={{ display: 'flex', gap: '1.2rem', alignItems: 'flex-start' }}>
                   <img
-                    src={course.instructorAvatar}
-                    alt={course.instructorName}
+                    src={course.instructorAvatar || (course as any).instructor_avatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=400&q=80'}
+                    alt={course.instructorName || (course as any).instructor_name || 'Chef Camille Laurent'}
                     style={{ width: '54px', height: '54px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-rose)' }}
                   />
                   <div>
-                    <h4 style={{ fontSize: '1.1rem', color: 'var(--color-plum)', margin: 0 }}>{course.instructorName}</h4>
+                    <h4 style={{ fontSize: '1.1rem', color: 'var(--color-plum)', margin: 0 }}>
+                      {course.instructorName || (course as any).instructor_name || 'Chef Camille Laurent'}
+                    </h4>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '0.4rem 0 0.8rem 0' }}>
-                      {course.instructorBio}
+                      {course.instructorBio || (course as any).instructor_bio || 'Master Pastry Chef & Atelier Instructor'}
                     </p>
                     <div style={{ fontSize: '0.82rem', color: 'var(--color-berry)', fontWeight: 500 }}>
                       Have questions about your batter or piping angles? Reach out via studio concierge support.

@@ -92,11 +92,14 @@ export interface Course {
   totalDuration: string;
   total_duration?: string;
   moduleCount: number;
+  modulesCount?: number;
   modules_count?: number;
   lessonCount: number;
+  lessonsCount?: number;
   lessons_count?: number;
   rating: number;
   reviewCount: number;
+  reviewsCount?: number;
   reviews_count?: number;
   createdAt: string;
   updatedAt: string;

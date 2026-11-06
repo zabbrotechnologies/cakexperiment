@@ -12,7 +12,8 @@ import {
   ArrowUpRight,
   ShieldCheck,
   CheckCircle,
-  Plus
+  Plus,
+  User
 } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
@@ -182,7 +183,21 @@ export const AdminDashboard: React.FC = () => {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <img src={st.avatar} alt={st.name} style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
+                  <div
+                    style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '50%',
+                      backgroundColor: 'var(--color-blush)',
+                      color: 'var(--color-berry)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <User size={18} />
+                  </div>
                   <div>
                     <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-plum)' }}>{st.name}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{st.email}</div>

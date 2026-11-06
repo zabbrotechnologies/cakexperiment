@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ShoppingBag,
   Search,
@@ -82,6 +83,28 @@ export const AdminOrders: React.FC = () => {
       window.removeEventListener('resize', updateDimensions);
     };
   }, [orders, loading]);
+
+  // Lock background scroll and handle Escape key when any modal is open
+  useEffect(() => {
+    const isModalOpen = Boolean(confirmDialogOrder || selectedOrder);
+    if (!isModalOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isProcessingAction) {
+        setConfirmDialogOrder(null);
+        setSelectedOrder(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [confirmDialogOrder, selectedOrder, isProcessingAction]);
 
   const handleTopScroll = () => {
     if (isSyncingScroll.current) return;
@@ -498,7 +521,7 @@ export const AdminOrders: React.FC = () => {
       </div>
 
       {/* Confirmation Dialog for Manual Payment Verification */}
-      {confirmDialogOrder && (
+      {confirmDialogOrder && createPortal(
         <div className="modal-overlay" onClick={() => !isProcessingAction && setConfirmDialogOrder(null)}>
           <div className="modal-content" style={{ maxWidth: '480px' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F1F8E9' }}>
@@ -508,7 +531,13 @@ export const AdminOrders: React.FC = () => {
                   Confirm Manual Payment
                 </h3>
               </div>
-              <button onClick={() => setConfirmDialogOrder(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+              <button
+                type="button"
+                disabled={isProcessingAction}
+                onClick={() => setConfirmDialogOrder(null)}
+                style={{ background: 'none', border: 'none', cursor: isProcessingAction ? 'not-allowed' : 'pointer', padding: '4px' }}
+                aria-label="Close"
+              >
                 <X size={18} />
               </button>
             </div>
@@ -528,6 +557,12 @@ export const AdminOrders: React.FC = () => {
               <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
                 Confirming will immediately mark this order as <strong>COMPLETED</strong>, set payment status to <strong>CONFIRMED</strong>, and create an <strong>ACTIVE</strong> student enrollment unlocking the course classroom.
               </p>
+
+              {actionErrorMsg && (
+                <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#FFEBEE', color: '#C62828', borderRadius: 'var(--radius-sm)', fontSize: '0.85rem' }}>
+                  {actionErrorMsg}
+                </div>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.8rem' }}>
                 <button
@@ -551,11 +586,12 @@ export const AdminOrders: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Order Details Modal */}
-      {selectedOrder && (
+      {selectedOrder && createPortal(
         <div className="modal-overlay" onClick={() => setSelectedOrder(null)}>
           <div className="modal-content" style={{ maxWidth: '600px' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--color-cream)' }}>
@@ -673,7 +709,8 @@ export const AdminOrders: React.FC = () => {
 
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

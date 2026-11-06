@@ -195,15 +195,26 @@ export const StudentProfile: React.FC = () => {
 
             <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
-              {/* Avatar Preview */}
+              {/* Student Symbol Badge */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                <img
-                  src={(user as any)?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80'}
-                  alt={user?.name}
-                  style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--color-blush)' }}
-                />
+                <div
+                  style={{
+                    width: '80px',
+                    height: '80px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--color-blush)',
+                    color: 'var(--color-berry)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '3px solid var(--color-rose)',
+                    flexShrink: 0
+                  }}
+                >
+                  <User size={40} />
+                </div>
                 <div>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-plum)' }}>Student Profile Avatar</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--color-plum)' }}>Student Account Badge</div>
                   <div style={{ fontSize: '0.78rem', color: 'var(--color-berry)', fontFamily: 'monospace' }}>User ID: {user?.id}</div>
                 </div>
               </div>

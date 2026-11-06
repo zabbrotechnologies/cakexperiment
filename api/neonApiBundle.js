@@ -44447,6 +44447,29 @@ async function handleNeonApi(req, res, next) {
       await handleAdminStats(req, res);
       return;
     }
+    if (pathname === "/api/admin/courses" && req.method === "GET") {
+      await handleAdminListCourses(req, res);
+      return;
+    }
+    if (pathname === "/api/admin/courses" && req.method === "POST") {
+      await handleAdminSaveCourse(null, req, res);
+      return;
+    }
+    if (pathname.startsWith("/api/admin/courses/") && pathname.endsWith("/publish") && req.method === "POST") {
+      const courseId = pathname.replace("/api/admin/courses/", "").replace("/publish", "");
+      await handleAdminToggleCoursePublish(courseId, req, res);
+      return;
+    }
+    if (pathname.startsWith("/api/admin/courses/") && req.method === "PUT") {
+      const courseId = pathname.replace("/api/admin/courses/", "");
+      await handleAdminSaveCourse(courseId, req, res);
+      return;
+    }
+    if (pathname.startsWith("/api/admin/courses/") && req.method === "DELETE") {
+      const courseId = pathname.replace("/api/admin/courses/", "");
+      await handleAdminDeleteCourse(courseId, req, res);
+      return;
+    }
     res.statusCode = 404;
     res.end(JSON.stringify({ error: "Endpoint not found" }));
   } catch (err) {
@@ -44568,6 +44591,9 @@ async function handleSignIn(req, res) {
     "Set-Cookie",
     `cakexperiment_session=${sessionToken}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${7 * 24 * 3600}`
   );
+  const activeEnrollments = await sql`
+    SELECT course_id FROM enrollments WHERE user_id = ${user.id} AND status = 'ACTIVE';
+  `;
   const redirectTo = user.role === "ADMIN" ? "/admin/dashboard" : "/learn";
   res.statusCode = 200;
   res.end(
@@ -44578,7 +44604,8 @@ async function handleSignIn(req, res) {
         name: user.name,
         email: user.email,
         role: user.role,
-        emailVerified: user.email_verified
+        emailVerified: user.email_verified,
+        enrolledCourseIds: activeEnrollments.map((e5) => e5.course_id)
       },
       token: sessionToken,
       redirectTo
@@ -44604,6 +44631,9 @@ async function handleAuthMe(req, res) {
   const sql = getDb();
   const profiles = await sql`SELECT phone, profile_image, bio FROM user_profiles WHERE user_id = ${session.userId};`;
   const prof = profiles[0] || {};
+  const activeEnrollments = await sql`
+    SELECT course_id FROM enrollments WHERE user_id = ${session.userId} AND status = 'ACTIVE';
+  `;
   res.statusCode = 200;
   res.end(
     JSON.stringify({
@@ -44613,8 +44643,9 @@ async function handleAuthMe(req, res) {
         email: session.email,
         role: session.role,
         phone: prof.phone || "",
-        avatar: prof.profile_image || "",
-        bio: prof.bio || ""
+        avatar: "",
+        bio: prof.bio || "",
+        enrolledCourseIds: activeEnrollments.map((e5) => e5.course_id)
       }
     })
   );
@@ -44845,7 +44876,7 @@ async function handleUserCourses(req, res) {
     return;
   }
   const sql = getDb();
-  const courses = await sql`
+  const enrollments = await sql`
     SELECT e.id as enrollment_id, e.course_id, e.progress, e.completed_lessons, e.activated_at,
            c.title, c.slug, c.tag, c.thumbnail, c.image, c.instructor_name, c.total_duration,
            c.modules_count, c.lessons_count
@@ -44854,6 +44885,42 @@ async function handleUserCourses(req, res) {
     WHERE e.user_id = ${session.userId} AND e.status = 'ACTIVE'
     ORDER BY e.activated_at DESC;
   `;
+  const progressRows = await sql`
+    SELECT course_id, lesson_id
+    FROM lesson_progress
+    WHERE user_id = ${session.userId} AND completed = true;
+  `;
+  const lessonCounts = await sql`
+    SELECT course_id, COUNT(*) as count
+    FROM lessons
+    GROUP BY course_id;
+  `;
+  const countMap = {};
+  lessonCounts.forEach((r5) => {
+    countMap[r5.course_id] = Number(r5.count);
+  });
+  const courses = enrollments.map((e5) => {
+    const fromProgressTable = progressRows.filter((p4) => p4.course_id === e5.course_id).map((p4) => p4.lesson_id);
+    let storedLessons = [];
+    if (Array.isArray(e5.completed_lessons)) {
+      storedLessons = e5.completed_lessons;
+    } else if (typeof e5.completed_lessons === "string") {
+      try {
+        const parsed = JSON.parse(e5.completed_lessons);
+        if (Array.isArray(parsed)) storedLessons = parsed;
+      } catch {
+      }
+    }
+    const uniqueCompleted = Array.from(/* @__PURE__ */ new Set([...fromProgressTable, ...storedLessons]));
+    const totalLessons = countMap[e5.course_id] || Number(e5.lessons_count) || (uniqueCompleted.length > 0 ? uniqueCompleted.length : 1);
+    const computedProgress = totalLessons > 0 ? Math.min(100, Math.round(uniqueCompleted.length / totalLessons * 100)) : 0;
+    return {
+      ...e5,
+      progress: computedProgress,
+      completed_lessons: uniqueCompleted,
+      lessons_count: totalLessons
+    };
+  });
   res.statusCode = 200;
   res.end(JSON.stringify({ courses }));
 }
@@ -44866,7 +44933,7 @@ async function handleCourseClassroom(courseId, req, res) {
   }
   const sql = getDb();
   const courses = await sql`
-    SELECT id, title, slug, tag, description, instructor_name, instructor_bio, instructor_avatar, thumbnail
+    SELECT *
     FROM courses
     WHERE id = ${courseId} OR slug = ${courseId};
   `;
@@ -44901,18 +44968,36 @@ async function handleCourseClassroom(courseId, req, res) {
   `;
   const modulesWithLessons = modules.map((m3) => ({
     ...m3,
-    lessons: lessons.filter((l3) => l3.module_id === m3.id)
+    order: m3.order_num,
+    lessons: lessons.filter((l3) => l3.module_id === m3.id).map((l3) => ({
+      ...l3,
+      order: l3.order_num,
+      videoReference: l3.video_reference || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      video_reference: l3.video_reference || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      isPreview: l3.is_preview
+    }))
   }));
   const progressRows = await sql`
     SELECT lesson_id, completed, last_watched_at
     FROM lesson_progress
     WHERE user_id = ${session.userId} AND course_id = ${course.id};
   `;
+  const defaultOutcomes = [
+    "Master fundamental techniques, precise ingredient ratios, and temperature control",
+    "Step-by-step practical atelier execution from preparation to presentation",
+    "Professional troubleshooting and bakery kitchen best practices"
+  ];
   res.statusCode = 200;
   res.end(
     JSON.stringify({
       course: {
         ...course,
+        instructorName: course.instructor_name || "Chef Camille Laurent",
+        instructorBio: course.instructor_bio || "Master Pastry Chef & Atelier Instructor",
+        instructorAvatar: course.instructor_avatar || "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=400&q=80",
+        shortDescription: course.short_description || course.description,
+        learningOutcomes: course.learning_outcomes || defaultOutcomes,
+        learning_outcomes: course.learning_outcomes || defaultOutcomes,
         modules: modulesWithLessons
       },
       progress: progressRows
@@ -44943,12 +45028,42 @@ async function handleUserProgress(req, res) {
       last_watched_at = NOW(),
       updated_at = NOW();
   `;
+  const completedRows = await sql`
+    SELECT lesson_id
+    FROM lesson_progress
+    WHERE user_id = ${session.userId} AND course_id = ${courseId} AND completed = true;
+  `;
+  const completedLessonIds = completedRows.map((r5) => r5.lesson_id);
+  const lessonRows = await sql`
+    SELECT id
+    FROM lessons
+    WHERE course_id = ${courseId};
+  `;
+  const totalLessons = lessonRows.length > 0 ? lessonRows.length : 1;
+  const progressPercentage = Math.min(100, Math.round(completedLessonIds.length / totalLessons * 100));
+  try {
+    await sql`
+      UPDATE enrollments
+      SET progress = ${progressPercentage},
+          completed_lessons = ${JSON.stringify(completedLessonIds)}
+      WHERE user_id = ${session.userId} AND course_id = ${courseId};
+    `;
+  } catch (err) {
+    console.warn("Could not update enrollments progress column:", err);
+  }
   res.statusCode = 200;
-  res.end(JSON.stringify({ success: true, message: "Progress saved successfully." }));
+  res.end(
+    JSON.stringify({
+      success: true,
+      message: "Progress saved successfully.",
+      progress: progressPercentage,
+      completedLessons: completedLessonIds
+    })
+  );
 }
 async function handleListCourses(res) {
   const sql = getDb();
-  const courses = await sql`
+  const rows = await sql`
     SELECT id, title, slug, tag, short_description, description, thumbnail, image, preview_media,
            category_id, category_name, instructor_name, instructor_avatar, skill_level,
            price, original_price, rating, reviews_count, status, featured, total_duration,
@@ -44957,6 +45072,38 @@ async function handleListCourses(res) {
     WHERE status = 'published'
     ORDER BY created_at DESC;
   `;
+  const courses = rows.map((c5) => {
+    const ratingNum = Number(c5.rating) || 4.9;
+    const priceNum = Number(c5.price) || 499;
+    const originalPriceNum = Number(c5.original_price) || 1499;
+    const reviewsNum = Number(c5.reviews_count) || 0;
+    const modCount = Number(c5.modules_count) || 2;
+    const lesCount = Number(c5.lessons_count) || 6;
+    return {
+      ...c5,
+      price: priceNum,
+      originalPrice: originalPriceNum,
+      original_price: originalPriceNum,
+      rating: ratingNum,
+      reviewsCount: reviewsNum,
+      reviewCount: reviewsNum,
+      reviews_count: reviewsNum,
+      moduleCount: modCount,
+      modulesCount: modCount,
+      modules_count: modCount,
+      lessonCount: lesCount,
+      lessonsCount: lesCount,
+      lessons_count: lesCount,
+      categoryId: c5.category_id,
+      categoryName: c5.category_name,
+      shortDescription: c5.short_description,
+      previewMedia: c5.preview_media,
+      totalDuration: c5.total_duration,
+      skillLevel: c5.skill_level,
+      instructorName: c5.instructor_name,
+      instructorBio: c5.instructor_bio
+    };
+  });
   res.statusCode = 200;
   res.end(JSON.stringify({ courses }));
 }
@@ -44982,13 +45129,46 @@ async function handleGetCourseDetail(idOrSlug, res) {
   `;
   const modulesWithLessons = modules.map((m3) => ({
     ...m3,
-    lessons: lessons.filter((l3) => l3.module_id === m3.id)
+    order: m3.order_num,
+    lessons: lessons.filter((l3) => l3.module_id === m3.id).map((l3) => ({
+      ...l3,
+      order: l3.order_num,
+      videoReference: l3.video_reference,
+      isPreview: l3.is_preview
+    }))
   }));
+  const ratingNum = Number(course.rating) || 4.9;
+  const priceNum = Number(course.price) || 499;
+  const originalPriceNum = Number(course.original_price) || 1499;
+  const reviewsNum = Number(course.reviews_count) || 0;
+  const modCount = Number(course.modules_count) || modules.length;
+  const lesCount = Number(course.lessons_count) || lessons.length;
   res.statusCode = 200;
   res.end(
     JSON.stringify({
       course: {
         ...course,
+        price: priceNum,
+        originalPrice: originalPriceNum,
+        original_price: originalPriceNum,
+        rating: ratingNum,
+        reviewsCount: reviewsNum,
+        reviewCount: reviewsNum,
+        reviews_count: reviewsNum,
+        moduleCount: modCount,
+        modulesCount: modCount,
+        modules_count: modCount,
+        lessonCount: lesCount,
+        lessonsCount: lesCount,
+        lessons_count: lesCount,
+        categoryId: course.category_id,
+        categoryName: course.category_name,
+        shortDescription: course.short_description,
+        previewMedia: course.preview_media,
+        totalDuration: course.total_duration,
+        skillLevel: course.skill_level,
+        instructorName: course.instructor_name,
+        instructorBio: course.instructor_bio,
         modules: modulesWithLessons
       }
     })
@@ -45252,6 +45432,243 @@ async function handleAdminStats(req, res) {
   `;
   res.statusCode = 200;
   res.end(JSON.stringify({ stats: stats[0] }));
+}
+async function handleAdminListCourses(req, res) {
+  const session = await getAuthenticatedUser(req);
+  if (!session) {
+    res.statusCode = 401;
+    res.end(JSON.stringify({ error: "Unauthorized: Authentication required." }));
+    return;
+  }
+  if (session.role !== "ADMIN") {
+    res.statusCode = 403;
+    res.end(JSON.stringify({ error: "Forbidden: Admin access required." }));
+    return;
+  }
+  const sql = getDb();
+  const rows = await sql`
+    SELECT id, title, slug, tag, short_description, description, thumbnail, image, preview_media,
+           category_id, category_name, instructor_name, instructor_avatar, skill_level,
+           price, original_price, rating, reviews_count, status, featured, total_duration,
+           modules_count, lessons_count, created_at, updated_at
+    FROM courses
+    ORDER BY created_at DESC;
+  `;
+  const courses = rows.map((c5) => {
+    const ratingNum = Number(c5.rating) || 4.9;
+    const priceNum = Number(c5.price) || 499;
+    const originalPriceNum = Number(c5.original_price) || 1499;
+    const reviewsNum = Number(c5.reviews_count) || 0;
+    const modCount = Number(c5.modules_count) || 2;
+    const lesCount = Number(c5.lessons_count) || 6;
+    return {
+      ...c5,
+      price: priceNum,
+      originalPrice: originalPriceNum,
+      original_price: originalPriceNum,
+      rating: ratingNum,
+      reviewsCount: reviewsNum,
+      reviewCount: reviewsNum,
+      reviews_count: reviewsNum,
+      moduleCount: modCount,
+      modulesCount: modCount,
+      modules_count: modCount,
+      lessonCount: lesCount,
+      lessonsCount: lesCount,
+      lessons_count: lesCount,
+      categoryId: c5.category_id,
+      categoryName: c5.category_name,
+      shortDescription: c5.short_description,
+      previewMedia: c5.preview_media,
+      totalDuration: c5.total_duration,
+      skillLevel: c5.skill_level,
+      instructorName: c5.instructor_name,
+      instructorBio: c5.instructor_bio
+    };
+  });
+  res.statusCode = 200;
+  res.end(JSON.stringify({ courses }));
+}
+async function handleAdminSaveCourse(targetCourseId, req, res) {
+  const session = await getAuthenticatedUser(req);
+  if (!session) {
+    res.statusCode = 401;
+    res.end(JSON.stringify({ error: "Unauthorized: Authentication required." }));
+    return;
+  }
+  if (session.role !== "ADMIN") {
+    res.statusCode = 403;
+    res.end(JSON.stringify({ error: "Forbidden: Admin access required." }));
+    return;
+  }
+  const data = await readJsonBody(req);
+  const sql = getDb();
+  const title = (data.title || "").trim();
+  if (!title) {
+    res.statusCode = 400;
+    res.end(JSON.stringify({ error: "Course title is required." }));
+    return;
+  }
+  const slug = (data.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")).trim();
+  const courseId = targetCourseId || data.id || `course-${slug || Date.now()}`;
+  const tag = (data.tag || "Masterclass").trim();
+  const shortDescription = (data.shortDescription || data.short_description || "").trim();
+  const description = (data.description || "").trim();
+  const thumbnail = data.thumbnail || data.image || "/images/hero-cake.png";
+  const image = data.image || thumbnail;
+  const previewMedia = data.previewMedia || data.preview_media || "";
+  const categoryId = data.categoryId || data.category_id || "cat-1";
+  const categoryName = data.categoryName || data.category_name || "Cake Baking";
+  const instructorName = data.instructorName || data.instructor_name || "Chef Camille Laurent";
+  const instructorBio = data.instructorBio || data.instructor_bio || "Executive pastry chef at Cakexperiment Atelier.";
+  const skillLevel = data.skillLevel || data.skill_level || "All Levels";
+  const price = Number(data.price) || 499;
+  const originalPrice = Number(data.originalPrice || data.original_price) || 1499;
+  const status = data.status === "draft" ? "draft" : "published";
+  const featured = Boolean(data.featured);
+  const totalDuration = data.totalDuration || data.total_duration || "2h 30m";
+  const incomingModules = Array.isArray(data.modules) ? data.modules : [];
+  const modulesCount = incomingModules.length;
+  const lessonsCount = incomingModules.reduce((acc, m3) => acc + (Array.isArray(m3.lessons) ? m3.lessons.length : 0), 0);
+  await sql`
+    INSERT INTO courses (
+      id, title, slug, tag, short_description, description,
+      thumbnail, image, preview_media, category_id, category_name,
+      instructor_name, instructor_bio, instructor_avatar, skill_level,
+      price, original_price, rating, reviews_count, status, featured,
+      total_duration, modules_count, lessons_count, created_at, updated_at
+    ) VALUES (
+      ${courseId}, ${title}, ${slug}, ${tag}, ${shortDescription}, ${description},
+      ${thumbnail}, ${image}, ${previewMedia}, ${categoryId}, ${categoryName},
+      ${instructorName}, ${instructorBio}, '', ${skillLevel},
+      ${price}, ${originalPrice}, 4.9, 0, ${status}, ${featured},
+      ${totalDuration}, ${modulesCount}, ${lessonsCount}, NOW(), NOW()
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      title = EXCLUDED.title,
+      slug = EXCLUDED.slug,
+      tag = EXCLUDED.tag,
+      short_description = EXCLUDED.short_description,
+      description = EXCLUDED.description,
+      thumbnail = EXCLUDED.thumbnail,
+      image = EXCLUDED.image,
+      preview_media = EXCLUDED.preview_media,
+      category_id = EXCLUDED.category_id,
+      category_name = EXCLUDED.category_name,
+      instructor_name = EXCLUDED.instructor_name,
+      instructor_bio = EXCLUDED.instructor_bio,
+      skill_level = EXCLUDED.skill_level,
+      price = EXCLUDED.price,
+      original_price = EXCLUDED.original_price,
+      status = EXCLUDED.status,
+      featured = EXCLUDED.featured,
+      total_duration = EXCLUDED.total_duration,
+      modules_count = EXCLUDED.modules_count,
+      lessons_count = EXCLUDED.lessons_count,
+      updated_at = NOW();
+  `;
+  for (let mIdx = 0; mIdx < incomingModules.length; mIdx++) {
+    const mod = incomingModules[mIdx];
+    const modId = mod.id || `mod-${courseId}-${mIdx + 1}`;
+    const modTitle = mod.title || `Module ${mIdx + 1}`;
+    const modDesc = mod.description || "";
+    const modOrder = Number(mod.order || mod.order_num || mIdx + 1);
+    await sql`
+      INSERT INTO modules (id, course_id, title, description, order_num)
+      VALUES (${modId}, ${courseId}, ${modTitle}, ${modDesc}, ${modOrder})
+      ON CONFLICT (id) DO UPDATE SET
+        title = EXCLUDED.title,
+        description = EXCLUDED.description,
+        order_num = EXCLUDED.order_num;
+    `;
+    const incomingLessons = Array.isArray(mod.lessons) ? mod.lessons : [];
+    for (let lIdx = 0; lIdx < incomingLessons.length; lIdx++) {
+      const les = incomingLessons[lIdx];
+      const lesId = les.id || `les-${modId}-${lIdx + 1}`;
+      const lesTitle = les.title || `Lesson ${lIdx + 1}`;
+      const lesDesc = les.description || "";
+      const lesVideo = les.videoReference || les.video_reference || "";
+      const lesDuration = les.duration || "15:00";
+      const lesIsPreview = Boolean(les.isPreview ?? les.is_preview);
+      const lesOrder = Number(les.order || les.order_num || lIdx + 1);
+      await sql`
+        INSERT INTO lessons (id, module_id, course_id, title, description, video_reference, duration, is_preview, status, order_num)
+        VALUES (${lesId}, ${modId}, ${courseId}, ${lesTitle}, ${lesDesc}, ${lesVideo}, ${lesDuration}, ${lesIsPreview}, 'published', ${lesOrder})
+        ON CONFLICT (id) DO UPDATE SET
+          title = EXCLUDED.title,
+          description = EXCLUDED.description,
+          video_reference = EXCLUDED.video_reference,
+          duration = EXCLUDED.duration,
+          is_preview = EXCLUDED.is_preview,
+          order_num = EXCLUDED.order_num;
+      `;
+    }
+  }
+  res.statusCode = 200;
+  res.end(JSON.stringify({
+    success: true,
+    message: "Course saved successfully in database.",
+    course: {
+      id: courseId,
+      title,
+      slug,
+      price,
+      status
+    }
+  }));
+}
+async function handleAdminToggleCoursePublish(courseId, req, res) {
+  const session = await getAuthenticatedUser(req);
+  if (!session) {
+    res.statusCode = 401;
+    res.end(JSON.stringify({ error: "Unauthorized: Authentication required." }));
+    return;
+  }
+  if (session.role !== "ADMIN") {
+    res.statusCode = 403;
+    res.end(JSON.stringify({ error: "Forbidden: Admin access required." }));
+    return;
+  }
+  const sql = getDb();
+  const rows = await sql`
+    UPDATE courses
+    SET status = CASE WHEN status = 'published' THEN 'draft' ELSE 'published' END,
+        updated_at = NOW()
+    WHERE id = ${courseId}
+    RETURNING id, title, status;
+  `;
+  if (rows.length === 0) {
+    res.statusCode = 404;
+    res.end(JSON.stringify({ error: "Course not found." }));
+    return;
+  }
+  res.statusCode = 200;
+  res.end(JSON.stringify({ success: true, course: rows[0] }));
+}
+async function handleAdminDeleteCourse(courseId, req, res) {
+  const session = await getAuthenticatedUser(req);
+  if (!session) {
+    res.statusCode = 401;
+    res.end(JSON.stringify({ error: "Unauthorized: Authentication required." }));
+    return;
+  }
+  if (session.role !== "ADMIN") {
+    res.statusCode = 403;
+    res.end(JSON.stringify({ error: "Forbidden: Admin access required." }));
+    return;
+  }
+  const sql = getDb();
+  await sql`DELETE FROM lesson_progress WHERE course_id = ${courseId};`;
+  await sql`DELETE FROM lessons WHERE course_id = ${courseId};`;
+  await sql`DELETE FROM modules WHERE course_id = ${courseId};`;
+  const deleted = await sql`DELETE FROM courses WHERE id = ${courseId} RETURNING id;`;
+  if (deleted.length === 0) {
+    res.statusCode = 404;
+    res.end(JSON.stringify({ error: "Course not found." }));
+    return;
+  }
+  res.statusCode = 200;
+  res.end(JSON.stringify({ success: true, message: "Course deleted successfully." }));
 }
 async function handleStatus(res) {
   const startTime = Date.now();

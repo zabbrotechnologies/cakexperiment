@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { Course } from '../../types';
@@ -23,6 +23,28 @@ export const AdminCourses: React.FC = () => {
   const [selectedCat, setSelectedCat] = useState('all');
   const categories = storageService.getCategories();
 
+  const fetchAdminCourses = async () => {
+    try {
+      const token = localStorage.getItem('cakexperiment_auth_token');
+      const res = await fetch('/api/admin/courses', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.courses) {
+          setCourses(data.courses);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not load courses from database, using cached fallback:', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdminCourses();
+  }, []);
+
   const filteredCourses = courses.filter((c) => {
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -36,16 +58,36 @@ export const AdminCourses: React.FC = () => {
     return true;
   });
 
-  const handleTogglePublish = (course: Course) => {
+  const handleTogglePublish = async (course: Course) => {
     const newStatus = course.status === 'published' ? 'draft' : 'published';
-    const updated = storageService.saveCourse({ ...course, status: newStatus });
-    setCourses(courses.map(c => c.id === course.id ? updated : c));
+    setCourses(prev => prev.map(c => c.id === course.id ? { ...c, status: newStatus } : c));
+    storageService.saveCourse({ ...course, status: newStatus });
+
+    try {
+      const token = localStorage.getItem('cakexperiment_auth_token');
+      await fetch(`/api/admin/courses/${course.id}/publish`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+    } catch (e) {
+      console.error('Error toggling publish in database:', e);
+    }
   };
 
-  const handleDelete = (id: string, title: string) => {
+  const handleDelete = async (id: string, title: string) => {
     if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
+      setCourses(prev => prev.filter(c => c.id !== id));
       storageService.deleteCourse(id);
-      setCourses(courses.filter(c => c.id !== id));
+
+      try {
+        const token = localStorage.getItem('cakexperiment_auth_token');
+        await fetch(`/api/admin/courses/${id}`, {
+          method: 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+      } catch (e) {
+        console.error('Error deleting course from database:', e);
+      }
     }
   };
 

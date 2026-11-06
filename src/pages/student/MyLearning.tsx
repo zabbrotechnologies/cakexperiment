@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { storageService } from '../../services/storage';
@@ -6,14 +6,63 @@ import { BarChart2, Award, CheckCircle, Clock, BookOpen, Download } from 'lucide
 
 export const MyLearning: React.FC = () => {
   const { user } = useAuth();
-  const enrollments = user ? storageService.getStudentEnrollments(user.id) : [];
-  const courses = storageService.getCourses();
+  const [courses, setCourses] = useState<any[]>([]);
 
-  const totalLessonsDone = enrollments.reduce((acc, e) => acc + (e.completedLessonIds?.length || 0), 0);
-  const completedCourses = enrollments
-    .filter(e => e.progress === 100)
-    .map(e => courses.find(c => c.id === e.courseId))
-    .filter(Boolean);
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchLearningData = async () => {
+      try {
+        const token = localStorage.getItem('cakexperiment_auth_token');
+        const res = await fetch('/api/user/courses', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.courses) && data.courses.length > 0) {
+            const mapped = data.courses.map((c: any) => ({
+              id: c.course_id || c.id,
+              title: c.title,
+              thumbnail: c.thumbnail || c.image || '/images/hero-cake.png',
+              categoryName: c.tag || 'Masterclass',
+              instructorName: c.instructor_name || 'Chef Camille Laurent',
+              totalDuration: c.total_duration || '2h 30m',
+              lessonCount: c.lessons_count || 6,
+              activatedAt: c.activated_at,
+              progress: Number(c.progress) || 0,
+              completedLessonIds: Array.isArray(c.completed_lessons) ? c.completed_lessons : []
+            }));
+            setCourses(mapped);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Could not load user courses for learning page:', err);
+      }
+
+      // Fallback
+      const enrollments = storageService.getStudentEnrollments(user.id);
+      const allCourses = storageService.getCourses();
+      const fallbackList = allCourses
+        .filter(c => enrollments.some(e => e.courseId === c.id))
+        .map(c => {
+          const enr = enrollments.find(e => e.courseId === c.id)!;
+          return {
+            ...c,
+            activatedAt: enr.purchasedAt || enr.activatedAt,
+            progress: enr.progress || 0,
+            completedLessonIds: enr.completedLessonIds || []
+          };
+        });
+      setCourses(fallbackList);
+    };
+
+    fetchLearningData();
+  }, [user]);
+
+  const totalLessonsDone = courses.reduce((acc, c) => acc + (c.completedLessonIds?.length || 0), 0);
+  const completedCourses = courses.filter(c => c.progress === 100);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
@@ -64,7 +113,7 @@ export const MyLearning: React.FC = () => {
           Course Progress Breakdown
         </h3>
         
-        {enrollments.length === 0 ? (
+        {courses.length === 0 ? (
           <p style={{ color: 'var(--text-muted)' }}>No courses enrolled yet.</p>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -79,33 +128,31 @@ export const MyLearning: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {enrollments.map((enr) => {
-                  const course = courses.find(c => c.id === enr.courseId);
-                  if (!course) return null;
+                {courses.map((c) => {
                   return (
-                    <tr key={enr.id} style={{ borderBottom: '1px solid #FAF0F2' }}>
+                    <tr key={c.id} style={{ borderBottom: '1px solid #FAF0F2' }}>
                       <td style={{ padding: '1rem', fontWeight: 600, color: 'var(--color-plum)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                          <img src={course.thumbnail} alt={course.title} style={{ width: '44px', height: '36px', borderRadius: '4px', objectFit: 'cover' }} />
-                          <span>{course.title}</span>
+                          <img src={c.thumbnail} alt={c.title} style={{ width: '44px', height: '36px', borderRadius: '4px', objectFit: 'cover' }} />
+                          <span>{c.title}</span>
                         </div>
                       </td>
                       <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>
-                        {enr.purchasedAt ? new Date(enr.purchasedAt).toLocaleDateString() : 'Active'}
+                        {c.activatedAt ? new Date(c.activatedAt).toLocaleDateString() : 'Active'}
                       </td>
                       <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>
-                        {enr.completedLessonIds?.length || 0} / {course.lessonCount || 6}
+                        {c.completedLessonIds?.length || 0} / {c.lessonCount || 6}
                       </td>
                       <td style={{ padding: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                           <div style={{ width: '90px', height: '6px', backgroundColor: 'var(--color-blush)', borderRadius: '3px', overflow: 'hidden' }}>
-                            <div style={{ width: `${enr.progress}%`, height: '100%', backgroundColor: enr.progress === 100 ? '#2E7D32' : 'var(--color-berry)' }} />
+                            <div style={{ width: `${c.progress}%`, height: '100%', backgroundColor: c.progress === 100 ? '#2E7D32' : 'var(--color-berry)' }} />
                           </div>
-                          <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{enr.progress}%</span>
+                          <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{c.progress}%</span>
                         </div>
                       </td>
                       <td style={{ padding: '1rem', textAlign: 'right' }}>
-                        <Link to={`/learn/${course.id}`} className="btn btn-secondary btn-sm">
+                        <Link to={`/learn/${c.id}`} className="btn btn-secondary btn-sm">
                           Continue
                         </Link>
                       </td>

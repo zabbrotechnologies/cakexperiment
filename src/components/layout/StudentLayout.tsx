@@ -33,11 +33,23 @@ export const StudentLayout: React.FC = () => {
         <div className="container">
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem', marginBottom: '1.8rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
-              <img
-                src={user?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80'}
-                alt={user?.name || 'Student'}
-                style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--color-blush)', boxShadow: 'var(--shadow-sm)' }}
-              />
+              <div
+                style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--color-blush)',
+                  color: 'var(--color-berry)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '3px solid var(--color-rose)',
+                  boxShadow: 'var(--shadow-sm)',
+                  flexShrink: 0
+                }}
+              >
+                <User size={32} />
+              </div>
               <div>
                 <h1 style={{ fontSize: '1.8rem', fontWeight: 600, color: 'var(--color-plum)', marginBottom: '0.2rem' }}>
                   Welcome back, {user?.name || 'Baker'}

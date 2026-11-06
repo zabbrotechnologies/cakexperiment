@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { useAuth } from '../../context/AuthContext';
@@ -36,7 +36,18 @@ export const Courses: React.FC = () => {
   const [displayCount, setDisplayCount] = useState(6);
 
   const categories = useMemo(() => storageService.getCategories(), []);
-  const allCourses = useMemo(() => storageService.getCourses(), []);
+  const [allCourses, setAllCourses] = useState<Course[]>(() => storageService.getCourses());
+
+  useEffect(() => {
+    fetch('/api/courses')
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (Array.isArray(data?.courses) && data.courses.length > 0) {
+          setAllCourses(data.courses);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Category course count map (only counting active/published courses)
   const categoryCounts = useMemo(() => {
@@ -131,10 +142,10 @@ export const Courses: React.FC = () => {
           return b.price - a.price;
         }
         if (sortBy === 'rating') {
-          return b.rating - a.rating;
+          return (Number(b.rating) || 0) - (Number(a.rating) || 0);
         }
         if (sortBy === 'popular') {
-          return b.reviewCount - a.reviewCount;
+          return (Number(b.reviewCount || b.reviewsCount) || 0) - (Number(a.reviewCount || a.reviewsCount) || 0);
         }
         // default: recommended (featured first)
         return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
@@ -1013,8 +1024,8 @@ export const Courses: React.FC = () => {
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#B36B00', fontWeight: 600 }}>
                               <Star size={13} fill="#FFB800" color="#FFB800" />
-                              <span>{course.rating.toFixed(1)}</span>
-                              <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>({course.reviewCount})</span>
+                              <span>{Number(course.rating || 4.9).toFixed(1)}</span>
+                              <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>({course.reviewCount ?? course.reviewsCount ?? 0})</span>
                             </div>
                           </div>
 
