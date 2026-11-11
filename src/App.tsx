@@ -9,6 +9,7 @@ import { AdminLayout } from './components/layout/AdminLayout';
 
 // Public Pages
 import { Home } from './pages/public/Home';
+import { GiftHampers } from './pages/public/GiftHampers';
 import { Courses } from './pages/public/Courses';
 import { CourseDetail } from './pages/public/CourseDetail';
 import { Checkout } from './pages/public/Checkout';
@@ -28,6 +29,7 @@ import { MyPurchases } from './pages/student/MyPurchases';
 
 // Admin Pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminProducts } from './pages/admin/AdminProducts';
 import { AdminCourses } from './pages/admin/AdminCourses';
 import { AdminCourseEdit } from './pages/admin/AdminCourseEdit';
 import { AdminCategories } from './pages/admin/AdminCategories';
@@ -71,6 +73,8 @@ export const App: React.FC = () => {
           {/* Public Web Experience */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<Home />} />
+            <Route path="/gift-hampers" element={<GiftHampers />} />
+            <Route path="/gift-hampers/order" element={<GiftHampers />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/:slug" element={<CourseDetail />} />
             <Route path="/checkout/:courseId" element={<Checkout />} />
@@ -125,6 +129,7 @@ export const App: React.FC = () => {
           >
             <Route index element={<AdminDashboard />} />
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="products" element={<AdminProducts />} />
             <Route path="courses" element={<AdminCourses />} />
             <Route path="courses/new" element={<AdminCourseEdit />} />
             <Route path="courses/:id/edit" element={<AdminCourseEdit />} />

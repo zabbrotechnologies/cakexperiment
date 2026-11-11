@@ -8,7 +8,10 @@ import {
   Order,
   Payment,
   Review,
-  AcademySettings
+  AcademySettings,
+  BakeryProduct,
+  BakeryOrder,
+  ProductTrackingStatus
 } from '../types';
 
 // Predefined Demo Credentials
@@ -34,7 +37,9 @@ const STORAGE_KEYS = {
   PAYMENTS: 'cakexperiment_payments',
   REVIEWS: 'cakexperiment_reviews',
   SETTINGS: 'cakexperiment_settings',
-  SESSION: 'cakexperiment_session'
+  SESSION: 'cakexperiment_session',
+  BAKERY_PRODUCTS: 'cakexperiment_bakery_products',
+  BAKERY_ORDERS: 'cakexperiment_bakery_orders'
 };
 
 // Seed Categories
@@ -1053,6 +1058,149 @@ const initialSettings: AcademySettings = {
   maintenanceMode: false
 };
 
+// Seed Bakery Products (E-Commerce Addon)
+export const initialBakeryProducts: BakeryProduct[] = [
+  {
+    id: 'prod-1',
+    name: 'Belgian Dark Chocolate Truffle Cake',
+    slug: 'belgian-dark-chocolate-truffle-cake',
+    category: 'Cakes',
+    price: 799,
+    originalPrice: 999,
+    weight: '1 Kg',
+    description: 'Decadent layers of moist Dutch cocoa sponge smothered in single-origin 70% Belgian chocolate ganache with roasted hazelnut crunch.',
+    image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80',
+    isEggless: true,
+    featured: true,
+    inStock: true,
+    rating: 4.9,
+    badge: 'Bestseller',
+    createdAt: '2026-01-10T10:00:00Z'
+  },
+  {
+    id: 'prod-2',
+    name: 'Classic Red Velvet Cream Cheese Bloom',
+    slug: 'classic-red-velvet-cream-cheese-bloom',
+    category: 'Cakes',
+    price: 849,
+    originalPrice: 1050,
+    weight: '1 Kg',
+    description: 'Authentic buttermilk crimson cocoa sponge with silky whipped Philadelphia cream cheese frosting and handmade berry accents.',
+    image: 'https://images.unsplash.com/photo-1616541823729-00fe0aacd32c?auto=format&fit=crop&w=800&q=80',
+    isEggless: true,
+    featured: true,
+    inStock: true,
+    rating: 5.0,
+    badge: 'Chef Special',
+    createdAt: '2026-01-11T10:00:00Z'
+  },
+  {
+    id: 'prod-3',
+    name: 'French Raspberry & Vanilla Entremet',
+    slug: 'french-raspberry-vanilla-entremet',
+    category: 'Pastries',
+    price: 899,
+    originalPrice: 1199,
+    weight: '500g',
+    description: 'Delicate Madagascar vanilla bean mousse layered with tart raspberry insert, almond joconde sponge, and glossy mirror glaze.',
+    image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=800&q=80',
+    isEggless: true,
+    featured: true,
+    inStock: true,
+    rating: 4.8,
+    badge: 'Luxury',
+    createdAt: '2026-01-12T10:00:00Z'
+  },
+  {
+    id: 'prod-4',
+    name: 'Signature Artisan Cupcake Assortment',
+    slug: 'signature-artisan-cupcake-assortment',
+    category: 'Cupcakes',
+    price: 549,
+    originalPrice: 699,
+    weight: 'Box of 6',
+    description: 'Six handcrafted gourmet cupcakes: Double Belgian Chocolate, Salted Caramel Crunch, Lemon Blueberry, and Strawberry Blush.',
+    image: 'https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&w=800&q=80',
+    isEggless: true,
+    featured: true,
+    inStock: true,
+    rating: 4.9,
+    badge: 'Fresh Today',
+    createdAt: '2026-01-13T10:00:00Z'
+  },
+  {
+    id: 'prod-5',
+    name: 'Fudgy Belgian Walnut Brownie Box',
+    slug: 'fudgy-belgian-walnut-brownie-box',
+    category: 'Brownies',
+    price: 499,
+    originalPrice: 650,
+    weight: 'Box of 6',
+    description: 'Thick, crackly top fudgy brownies baked with pure Callebaut dark chocolate and loaded with roasted California walnuts.',
+    image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=800&q=80',
+    isEggless: true,
+    featured: false,
+    inStock: true,
+    rating: 4.9,
+    badge: 'Popular',
+    createdAt: '2026-01-14T10:00:00Z'
+  },
+  {
+    id: 'prod-6',
+    name: 'Lotus Biscoff Baked Cheesecake',
+    slug: 'lotus-biscoff-baked-cheesecake',
+    category: 'Cheesecakes',
+    price: 999,
+    originalPrice: 1299,
+    weight: '1 Kg',
+    description: 'Slow-baked creamy New York cheesecake set on a buttery Lotus Biscoff biscuit crust and swirled with warm spiced cookie butter spread.',
+    image: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=800&q=80',
+    isEggless: true,
+    featured: true,
+    inStock: true,
+    rating: 5.0,
+    badge: 'Trending',
+    createdAt: '2026-01-15T10:00:00Z'
+  }
+];
+
+// Seed Bakery Orders
+export const initialBakeryOrders: BakeryOrder[] = [
+  {
+    id: 'bk-ord-1',
+    orderNumber: 'CK-BK-7492',
+    userId: 'usr-student',
+    customerName: 'Student Baker',
+    customerPhone: '9876543210',
+    customerEmail: 'student@cakexperiment.demo',
+    deliveryAddress: 'Flat 4B, Emerald Garden Apartments, Anna Nagar, Chennai - 600040',
+    deliveryDate: 'Tomorrow, 4:00 PM',
+    messageOnCake: 'Happy 25th Birthday Priya! 🎂',
+    specialInstructions: '100% Eggless, deliver with candle & knife kit',
+    items: [
+      {
+        productId: 'prod-1',
+        productName: 'Belgian Dark Chocolate Truffle Cake',
+        productImage: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80',
+        price: 799,
+        quantity: 1,
+        weight: '1 Kg',
+        isEggless: true
+      }
+    ],
+    totalAmount: 799,
+    paymentMethod: 'WHATSAPP_UPI',
+    paymentStatus: 'PAID',
+    trackingStatus: 'IN_KITCHEN',
+    statusHistory: [
+      { status: 'ORDER_RECEIVED', timestamp: '2026-02-10T14:30:00Z', note: 'Order confirmed and registered in Cakexperiment kitchen queue.' },
+      { status: 'IN_KITCHEN', timestamp: '2026-02-10T16:00:00Z', note: 'Sponge baked fresh; Chef Anisha is layering Belgian dark ganache.' }
+    ],
+    whatsappUrl: 'https://wa.me/918248957918?text=Order%20CK-BK-7492',
+    createdAt: '2026-02-10T14:30:00Z'
+  }
+];
+
 // LocalStorage Helper with fallback
 class StorageService {
   private get<T>(key: string, defaultValue: T): T {
@@ -1086,6 +1234,12 @@ class StorageService {
       this.set(STORAGE_KEYS.ENROLLMENTS, initialEnrollments);
       this.set(STORAGE_KEYS.REVIEWS, initialReviews);
       this.set(STORAGE_KEYS.SETTINGS, initialSettings);
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.BAKERY_PRODUCTS)) {
+      this.set(STORAGE_KEYS.BAKERY_PRODUCTS, initialBakeryProducts);
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.BAKERY_ORDERS)) {
+      this.set(STORAGE_KEYS.BAKERY_ORDERS, initialBakeryOrders);
     }
   }
 
@@ -1725,6 +1879,129 @@ class StorageService {
       recentStudents: students.slice(0, 5),
       popularCourses: courses.slice(0, 4)
     };
+  }
+
+  // --- Bakery Products (E-Commerce Addon) ---
+  public getBakeryProducts(): BakeryProduct[] {
+    this.init();
+    return this.get<BakeryProduct[]>(STORAGE_KEYS.BAKERY_PRODUCTS, initialBakeryProducts);
+  }
+
+  public getBakeryProductById(id: string): BakeryProduct | undefined {
+    return this.getBakeryProducts().find(p => p.id === id);
+  }
+
+  public getBakeryProductBySlug(slug: string): BakeryProduct | undefined {
+    return this.getBakeryProducts().find(p => p.slug === slug);
+  }
+
+  public saveBakeryProduct(product: Partial<BakeryProduct> & { name: string; price: number; category: any }): BakeryProduct {
+    const products = this.getBakeryProducts();
+    const existingIdx = product.id ? products.findIndex(p => p.id === product.id) : -1;
+
+    if (existingIdx >= 0) {
+      const updated = {
+        ...products[existingIdx],
+        ...product,
+        price: Number(product.price),
+        originalPrice: product.originalPrice ? Number(product.originalPrice) : undefined
+      };
+      products[existingIdx] = updated as BakeryProduct;
+      this.set(STORAGE_KEYS.BAKERY_PRODUCTS, products);
+      return updated as BakeryProduct;
+    } else {
+      const newProduct: BakeryProduct = {
+        id: product.id || `prod-${Date.now()}`,
+        name: product.name,
+        slug: product.slug || product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+        category: product.category || 'Cakes',
+        price: Number(product.price),
+        originalPrice: product.originalPrice ? Number(product.originalPrice) : undefined,
+        weight: product.weight || '1 Kg',
+        description: product.description || '',
+        image: product.image || 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80',
+        isEggless: product.isEggless ?? true,
+        featured: product.featured ?? false,
+        inStock: product.inStock ?? true,
+        badge: product.badge,
+        createdAt: new Date().toISOString()
+      };
+      products.unshift(newProduct);
+      this.set(STORAGE_KEYS.BAKERY_PRODUCTS, products);
+      return newProduct;
+    }
+  }
+
+  public deleteBakeryProduct(id: string): boolean {
+    const products = this.getBakeryProducts();
+    const filtered = products.filter(p => p.id !== id);
+    if (filtered.length !== products.length) {
+      this.set(STORAGE_KEYS.BAKERY_PRODUCTS, filtered);
+      return true;
+    }
+    return false;
+  }
+
+  // --- Bakery Orders & Tracking ---
+  public getBakeryOrders(): BakeryOrder[] {
+    this.init();
+    return this.get<BakeryOrder[]>(STORAGE_KEYS.BAKERY_ORDERS, initialBakeryOrders);
+  }
+
+  public getBakeryOrdersByUserId(userId: string): BakeryOrder[] {
+    return this.getBakeryOrders().filter(o => o.userId === userId);
+  }
+
+  public getBakeryOrderByNumber(orderNumber: string): BakeryOrder | undefined {
+    const clean = orderNumber.trim().toUpperCase();
+    return this.getBakeryOrders().find(o => o.orderNumber.toUpperCase() === clean || o.id === clean);
+  }
+
+  public createBakeryOrder(orderData: Omit<BakeryOrder, 'id' | 'orderNumber' | 'createdAt' | 'trackingStatus'>): BakeryOrder {
+    const orders = this.getBakeryOrders();
+    const orderNumber = `CK-BK-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newOrder: BakeryOrder = {
+      ...orderData,
+      id: `bk-ord-${Date.now()}`,
+      orderNumber,
+      trackingStatus: 'ORDER_RECEIVED',
+      statusHistory: [
+        {
+          status: 'ORDER_RECEIVED',
+          timestamp: new Date().toISOString(),
+          note: 'Order confirmed and registered in Cakexperiment kitchen queue.'
+        }
+      ],
+      createdAt: new Date().toISOString()
+    };
+    orders.unshift(newOrder);
+    this.set(STORAGE_KEYS.BAKERY_ORDERS, orders);
+    return newOrder;
+  }
+
+  public updateBakeryOrderStatus(orderId: string, status: ProductTrackingStatus, note?: string): BakeryOrder | null {
+    const orders = this.getBakeryOrders();
+    const idx = orders.findIndex(o => o.id === orderId || o.orderNumber === orderId);
+    if (idx < 0) return null;
+
+    const currentOrder = orders[idx];
+    const history = currentOrder.statusHistory || [];
+    history.push({
+      status,
+      timestamp: new Date().toISOString(),
+      note: note || `Status updated to ${status.replace(/_/g, ' ')}`
+    });
+
+    const updated: BakeryOrder = {
+      ...currentOrder,
+      trackingStatus: status,
+      statusHistory: history,
+      updatedAt: new Date().toISOString()
+    };
+
+    orders[idx] = updated;
+    this.set(STORAGE_KEYS.BAKERY_ORDERS, orders);
+    return updated;
   }
 
   public formatINR(amount: number): string {

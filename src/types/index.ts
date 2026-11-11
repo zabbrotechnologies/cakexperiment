@@ -192,3 +192,70 @@ export interface AcademySettings {
   defaultCoursePrice: number;
   maintenanceMode: boolean;
 }
+
+// ==========================================
+// E-COMMERCE BAKERY PRODUCTS & ORDER TRACKING
+// ==========================================
+
+export type ProductTrackingStatus =
+  | 'ORDER_RECEIVED'
+  | 'IN_KITCHEN'
+  | 'PACKED'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'CANCELLED';
+
+export interface BakeryProduct {
+  id: string;
+  name: string;
+  slug: string;
+  category: 'Cakes' | 'Cupcakes' | 'Pastries' | 'Brownies' | 'Cheesecakes' | 'Tarts' | 'Desserts';
+  price: number;
+  originalPrice?: number;
+  weight?: string; // e.g. "500g", "1 Kg", "Box of 6"
+  description: string;
+  image: string;
+  isEggless: boolean;
+  featured?: boolean;
+  inStock: boolean;
+  rating?: number;
+  badge?: string; // e.g. "Bestseller", "Chef Special", "Fresh Today", "Trending"
+  createdAt?: string;
+}
+
+export interface BakeryOrderItem {
+  productId: string;
+  productName: string;
+  productImage: string;
+  price: number;
+  quantity: number;
+  weight?: string;
+  isEggless?: boolean;
+}
+
+export interface BakeryOrder {
+  id: string;
+  orderNumber: string; // e.g. "CK-BK-7492"
+  userId?: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  deliveryAddress: string;
+  deliveryDate?: string;
+  messageOnCake?: string;
+  specialInstructions?: string;
+  items: BakeryOrderItem[];
+  totalAmount: number;
+  paymentMethod: 'ONLINE' | 'COD' | 'WHATSAPP_UPI';
+  paymentStatus: 'PAID' | 'PENDING';
+  trackingStatus: ProductTrackingStatus;
+  statusHistory?: {
+    status: ProductTrackingStatus;
+    timestamp: string;
+    note?: string;
+  }[];
+  whatsappUrl?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+

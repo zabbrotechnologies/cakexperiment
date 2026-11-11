@@ -17,7 +17,8 @@ import {
   X,
   Sparkles,
   ShieldCheck,
-  User
+  User,
+  Cake
 } from 'lucide-react';
 
 export const AdminLayout: React.FC = () => {
@@ -33,6 +34,7 @@ export const AdminLayout: React.FC = () => {
 
   const navItems = [
     { label: 'Overview', to: '/admin', icon: <LayoutDashboard size={18} />, end: true },
+    { label: 'Bakery Products & Orders', to: '/admin/products', icon: <Cake size={18} /> },
     { label: 'Courses', to: '/admin/courses', icon: <BookOpen size={18} /> },
     { label: 'Categories', to: '/admin/categories', icon: <FolderTree size={18} /> },
     { label: 'Videos & Lessons', to: '/admin/videos', icon: <Video size={18} /> },

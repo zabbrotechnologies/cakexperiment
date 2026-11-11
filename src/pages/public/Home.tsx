@@ -3,6 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
 import { Course, Category } from '../../types';
+import { FeaturedProductsSection } from '../../components/home/FeaturedProductsSection';
+import { BakeryProductsSection } from '../../components/home/BakeryProductsSection';
 import {
   Play,
   X,
@@ -809,6 +811,12 @@ export const Home: React.FC = () => {
       )}
 
       {/* =========================================================================
+          FEATURED PRODUCTS SECTION — Luxury Gift Hampers & Artisanal Treats
+          Prominently displayed directly after Hero Section
+          ========================================================================= */}
+      <FeaturedProductsSection />
+
+      {/* =========================================================================
           2. FEATURED COURSES SECTION — Main Product Prominently Displayed After Hero
           Fixed Center Stage Coverflow Showcase with Educational Information
           ========================================================================= */}
@@ -1031,6 +1039,12 @@ export const Home: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* =========================================================================
+          BAKERY PRODUCTS SECTION — Cakes, Cupcakes & Pastries (E-Commerce Addon)
+          Placed directly under the Courses Carousel
+          ========================================================================= */}
+      <BakeryProductsSection />
 
       {/* =========================================================================
           3. WHY LEARN WITH CAKEXPERIMENT — A Complete Learning Experience

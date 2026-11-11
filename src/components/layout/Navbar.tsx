@@ -50,7 +50,9 @@ export const Navbar: React.FC = () => {
 
   const navLinks = [
     { label: 'Home', href: '/', sectionId: '' },
+    { label: 'Gift Hampers', href: '/gift-hampers', sectionId: '' },
     { label: 'Courses', href: '/courses', sectionId: '' },
+    { label: 'Cakes & Treats', href: '/#products', sectionId: 'products' },
     { label: 'About', href: '/#about', sectionId: 'about' },
     { label: 'Categories', href: '/#categories', sectionId: 'categories' },
     { label: 'FAQ', href: '/#faq', sectionId: 'faq' }

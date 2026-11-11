@@ -2904,5 +2904,24 @@ a {
   }
 }
 
+/* Gift Hampers Customizer Responsive Styles */
+@media (max-width: 960px) {
+  .hamper-grid-layout {
+    grid-template-columns: 1fr !important;
+    gap: 2rem !important;
+  }
+  .hamper-grid-layout > div:last-child {
+    position: static !important;
+    top: auto !important;
+  }
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
 
 

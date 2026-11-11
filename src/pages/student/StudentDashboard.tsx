@@ -12,7 +12,9 @@ import {
   Sparkles,
   ArrowRight,
   TrendingUp,
-  Flame
+  Flame,
+  Truck,
+  Cake
 } from 'lucide-react';
 
 export const StudentDashboard: React.FC = () => {

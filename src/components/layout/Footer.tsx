@@ -42,6 +42,7 @@ export const Footer: React.FC = () => {
             </h4>
             <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.92rem' }}>
               <li><Link to="/courses" style={{ color: '#FFF8F5', opacity: 0.85 }}>All Baking Courses</Link></li>
+              <li><Link to="/gift-hampers" style={{ color: 'var(--color-blush)', fontWeight: 600 }}>Luxury Gift Hampers</Link></li>
               <li><Link to="/courses?category=cake-decorating" style={{ color: '#FFF8F5', opacity: 0.85 }}>Buttercream Techniques</Link></li>
               <li><Link to="/courses?category=cake-baking" style={{ color: '#FFF8F5', opacity: 0.85 }}>Sponge Perfection</Link></li>
               <li><Link to="/courses?category=fondant-art" style={{ color: '#FFF8F5', opacity: 0.85 }}>Fondant Architecture</Link></li>
