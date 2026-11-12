@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { storageService } from '../../services/storage';
-import { Course } from '../../types';
+import { Course, Category } from '../../types';
+import { ConfirmActionModal } from '../../components/admin/ConfirmActionModal';
 import {
   Plus,
   Search,
@@ -19,18 +20,29 @@ import {
 export const AdminCourses: React.FC = () => {
   const navigate = useNavigate();
   const [courses, setCourses] = useState<Course[]>(() => storageService.getCourses());
+  const [categories, setCategories] = useState<Category[]>(() => storageService.getCategories());
   const [search, setSearch] = useState('');
   const [selectedCat, setSelectedCat] = useState('all');
-  const categories = storageService.getCategories();
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchAdminCourses = async () => {
     try {
       const token = localStorage.getItem('cakexperiment_auth_token');
-      const res = await fetch('/api/admin/courses', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-      if (res.ok) {
-        const data = await res.json();
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+      const [coursesRes, catsRes] = await Promise.all([
+        fetch('/api/admin/courses', { headers }),
+        fetch('/api/admin/categories', { headers })
+      ]);
+      if (catsRes.ok) {
+        const catData = await catsRes.json();
+        if (Array.isArray(catData.categories)) {
+          setCategories(catData.categories);
+          storageService.setCategories(catData.categories);
+        }
+      }
+      if (coursesRes.ok) {
+        const data = await coursesRes.json();
         if (data.courses) {
           setCourses(data.courses);
           return;
@@ -74,20 +86,27 @@ export const AdminCourses: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string, title: string) => {
-    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
-      setCourses(prev => prev.filter(c => c.id !== id));
-      storageService.deleteCourse(id);
+  const handleDelete = (id: string, title: string) => {
+    setDeleteTarget({ id, title });
+  };
 
-      try {
-        const token = localStorage.getItem('cakexperiment_auth_token');
-        await fetch(`/api/admin/courses/${id}`, {
-          method: 'DELETE',
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
-      } catch (e) {
-        console.error('Error deleting course from database:', e);
-      }
+  const confirmDeleteCourse = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      setCourses(prev => prev.filter(c => c.id !== deleteTarget.id));
+      storageService.deleteCourse(deleteTarget.id);
+
+      const token = localStorage.getItem('cakexperiment_auth_token');
+      await fetch(`/api/admin/courses/${encodeURIComponent(deleteTarget.id)}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      setDeleteTarget(null);
+    } catch (e) {
+      console.error('Error deleting course from database:', e);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -232,6 +251,17 @@ export const AdminCourses: React.FC = () => {
           </table>
         </div>
       </div>
+
+      <ConfirmActionModal
+        open={Boolean(deleteTarget)}
+        title="Delete Masterclass Course?"
+        itemLabel={deleteTarget ? `"${deleteTarget.title}"` : undefined}
+        description="This will permanently delete the course along with its modules, lessons, and student progress records."
+        confirmLabel="Delete Course"
+        isProcessing={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDeleteCourse}
+      />
 
     </div>
   );

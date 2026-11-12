@@ -2,16 +2,22 @@ import React, { useState } from 'react';
 import { storageService } from '../../services/storage';
 import { Payment } from '../../types';
 import { CreditCard, Search, RotateCcw, CheckCircle, AlertCircle } from 'lucide-react';
+import { ConfirmActionModal } from '../../components/admin/ConfirmActionModal';
 
 export const AdminPayments: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>(() => storageService.getPayments());
   const [search, setSearch] = useState('');
+  const [refundTarget, setRefundTarget] = useState<Payment | null>(null);
 
   const handleRefund = (pay: Payment) => {
-    if (window.confirm(`Simulate refund for payment of ${storageService.formatINR(pay.amount)} to ${pay.userName}?`)) {
-      storageService.refundOrder(pay.orderId);
-      setPayments(storageService.getPayments());
-    }
+    setRefundTarget(pay);
+  };
+
+  const confirmRefund = () => {
+    if (!refundTarget) return;
+    storageService.refundOrder(refundTarget.orderId);
+    setPayments(storageService.getPayments());
+    setRefundTarget(null);
   };
 
   const filtered = payments.filter(p =>
@@ -105,6 +111,21 @@ export const AdminPayments: React.FC = () => {
           </table>
         </div>
       </div>
+
+      <ConfirmActionModal
+        open={Boolean(refundTarget)}
+        title="Confirm Payment Refund?"
+        itemLabel={refundTarget ? `${refundTarget.transactionReference} — ${refundTarget.userName}` : undefined}
+        description={
+          refundTarget
+            ? `This will record a refund of ${storageService.formatINR(refundTarget.amount)} for "${refundTarget.courseTitle}" and revoke associated access.`
+            : null
+        }
+        confirmLabel="Confirm Refund"
+        tone="warning"
+        onCancel={() => setRefundTarget(null)}
+        onConfirm={confirmRefund}
+      />
 
     </div>
   );

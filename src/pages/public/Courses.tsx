@@ -1,15 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { useAuth } from '../../context/AuthContext';
-import { Course } from '../../types';
+import { Course, Category } from '../../types';
 import {
   Search,
   Filter,
   X,
   Star,
   Clock,
-  Sparkles,
   ChevronDown,
   RotateCcw,
   BookOpen,
@@ -23,7 +22,8 @@ import {
 
 export const Courses: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user, hasCourseAccess } = useAuth();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, hasCourseAccess } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || 'all');
@@ -35,18 +35,51 @@ export const Courses: React.FC = () => {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [displayCount, setDisplayCount] = useState(6);
 
-  const categories = useMemo(() => storageService.getCategories(), []);
+  const [categories, setCategories] = useState<Category[]>(() => storageService.getCategories());
   const [allCourses, setAllCourses] = useState<Course[]>(() => storageService.getCourses());
 
   useEffect(() => {
-    fetch('/api/courses')
-      .then(res => (res.ok ? res.json() : null))
-      .then(data => {
-        if (Array.isArray(data?.courses) && data.courses.length > 0) {
-          setAllCourses(data.courses);
+    let active = true;
+
+    const loadCatalog = async () => {
+      try {
+        const [coursesRes, categoriesRes] = await Promise.all([
+          fetch('/api/courses'),
+          fetch('/api/categories')
+        ]);
+        if (!active) return;
+
+        if (coursesRes.ok) {
+          const data = await coursesRes.json();
+          if (Array.isArray(data?.courses)) {
+            setAllCourses(data.courses);
+          }
         }
-      })
-      .catch(() => {});
+        if (categoriesRes.ok) {
+          const catData = await categoriesRes.json();
+          if (Array.isArray(catData?.categories)) {
+            setCategories(catData.categories);
+          }
+        }
+      } catch {
+        // Fallback to cached local storage
+      }
+    };
+
+    const handleSync = () => {
+      setCategories(storageService.getCategories());
+      setAllCourses(storageService.getCourses());
+      loadCatalog();
+    };
+
+    loadCatalog();
+    window.addEventListener('cakexperiment-data-updated', handleSync);
+    window.addEventListener('focus', loadCatalog);
+    return () => {
+      active = false;
+      window.removeEventListener('cakexperiment-data-updated', handleSync);
+      window.removeEventListener('focus', loadCatalog);
+    };
   }, []);
 
   // Category course count map (only counting active/published courses)
@@ -1133,7 +1166,21 @@ export const Courses: React.FC = () => {
                                 Go to Class &rarr;
                               </Link>
                             ) : (
-                              <Link to={`/courses/${course.slug}`} className="btn btn-primary btn-sm">
+                              <Link
+                                to={`/courses/${course.slug}`}
+                                onClick={(e) => {
+                                  if (!isAuthenticated) {
+                                    e.preventDefault();
+                                    navigate('/signin', {
+                                      state: {
+                                        from: `/checkout/${course.slug}`,
+                                        message: `Please sign in to enroll in "${course.title}".`
+                                      }
+                                    });
+                                  }
+                                }}
+                                className="btn btn-primary btn-sm"
+                              >
                                 Enroll Now &rarr;
                               </Link>
                             )}

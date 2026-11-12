@@ -9,9 +9,14 @@ import {
 import { NodeHttpHandler } from '@smithy/node-http-handler';
 import { getDb, hashPassword, verifyPassword } from './neonDb.ts';
 import {
+  dispatchEmailAsync,
+  generateWelcomeEmail,
   generateOrderCreatedEmail,
-  generateCourseActivatedEmail
+  generateCourseActivatedEmail,
+  generateCourseCancelledEmail,
+  generateCourseCompletedEmail
 } from './emailService.ts';
+import { handleCommerceRoute } from './ecommerceApi.ts';
 
 const S3_HOST_IPS: Record<string, string> = {
   'br-soft-queen-bdn8ofgg.storage.c-8.us-east-2.aws.neon.tech': '18.119.63.132',
@@ -90,9 +95,16 @@ export interface AuthenticatedSession {
   name: string;
 }
 
+const sessionCache = new Map<string, { session: AuthenticatedSession; expiresAt: number }>();
+
 async function getAuthenticatedUser(req: IncomingMessage): Promise<AuthenticatedSession | null> {
   const token = extractSessionToken(req);
   if (!token) return null;
+
+  const cached = sessionCache.get(token);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.session;
+  }
 
   try {
     const sql = getDb();
@@ -106,12 +118,14 @@ async function getAuthenticatedUser(req: IncomingMessage): Promise<Authenticated
     if (rows.length === 0) return null;
 
     const row = rows[0];
-    return {
+    const session: AuthenticatedSession = {
       userId: row.user_id,
       role: row.user_role as 'USER' | 'ADMIN',
       email: row.email,
       name: row.name
     };
+    sessionCache.set(token, { session, expiresAt: Date.now() + 45_000 });
+    return session;
   } catch (err) {
     console.error('Session authentication error:', err);
     return null;
@@ -189,6 +203,18 @@ export async function handleNeonApi(req: IncomingMessage, res: ServerResponse, n
     }
 
     // -------------------------------------------------------------
+    // 1B. PHYSICAL PRODUCT E-COMMERCE, CART, WISHLIST, COD & CRM
+    // -------------------------------------------------------------
+    const handledCommerce = await handleCommerceRoute(pathname, parsedUrl, req, res, {
+      getAuthenticatedUser,
+      readJsonBody,
+      getS3
+    });
+    if (handledCommerce) {
+      return;
+    }
+
+    // -------------------------------------------------------------
     // 2. UNIFIED AUTHENTICATION ENDPOINTS
     // -------------------------------------------------------------
     if (pathname === '/api/auth/signup' && req.method === 'POST') {
@@ -241,8 +267,12 @@ export async function handleNeonApi(req: IncomingMessage, res: ServerResponse, n
     }
 
     // -------------------------------------------------------------
-    // 5. PUBLIC COURSE CATALOG (READ-ONLY)
+    // 5. PUBLIC COURSE CATALOG & CATEGORIES (READ-ONLY)
     // -------------------------------------------------------------
+    if (pathname === '/api/categories' && req.method === 'GET') {
+      await handleListCategories(res);
+      return;
+    }
     if (pathname === '/api/courses' && req.method === 'GET') {
       await handleListCourses(res);
       return;
@@ -288,6 +318,11 @@ export async function handleNeonApi(req: IncomingMessage, res: ServerResponse, n
       await handleAdminRefundOrder(orderId, req, res);
       return;
     }
+    if (pathname.startsWith('/api/admin/orders/') && req.method === 'DELETE') {
+      const orderId = decodeURIComponent(pathname.replace('/api/admin/orders/', ''));
+      await handleAdminDeleteOrder(orderId, req, res);
+      return;
+    }
     if (pathname === '/api/admin/users' && req.method === 'GET') {
       await handleAdminUsers(req, res);
       return;
@@ -295,6 +330,29 @@ export async function handleNeonApi(req: IncomingMessage, res: ServerResponse, n
     if (pathname.startsWith('/api/admin/users/') && pathname.endsWith('/status') && req.method === 'POST') {
       const targetUserId = pathname.replace('/api/admin/users/', '').replace('/status', '');
       await handleAdminToggleUserStatus(targetUserId, req, res);
+      return;
+    }
+    if (pathname.startsWith('/api/admin/users/') && req.method === 'DELETE') {
+      const targetUserId = decodeURIComponent(pathname.replace('/api/admin/users/', ''));
+      await handleAdminDeleteUser(targetUserId, req, res);
+      return;
+    }
+    if (pathname === '/api/admin/categories' && req.method === 'GET') {
+      await handleAdminListCategories(req, res);
+      return;
+    }
+    if (pathname === '/api/admin/categories' && req.method === 'POST') {
+      await handleAdminSaveCategory(null, req, res);
+      return;
+    }
+    if (pathname.startsWith('/api/admin/categories/') && req.method === 'PUT') {
+      const catId = decodeURIComponent(pathname.replace('/api/admin/categories/', ''));
+      await handleAdminSaveCategory(catId, req, res);
+      return;
+    }
+    if (pathname.startsWith('/api/admin/categories/') && req.method === 'DELETE') {
+      const catId = decodeURIComponent(pathname.replace('/api/admin/categories/', ''));
+      await handleAdminDeleteCategory(catId, req, res);
       return;
     }
     if (pathname === '/api/admin/stats' && req.method === 'GET') {
@@ -400,6 +458,9 @@ async function handleSignUp(req: IncomingMessage, res: ServerResponse) {
     'Set-Cookie',
     `cakexperiment_session=${sessionToken}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${7 * 24 * 3600}`
   );
+
+  // Send non-blocking welcome email to newly registered user
+  dispatchEmailAsync(generateWelcomeEmail(cleanEmail, cleanName));
 
   res.statusCode = 201;
   res.end(
@@ -548,6 +609,7 @@ async function handleAuthMe(req: IncomingMessage, res: ServerResponse) {
 async function handleSignOut(req: IncomingMessage, res: ServerResponse) {
   const token = extractSessionToken(req);
   if (token) {
+    sessionCache.delete(token);
     try {
       const sql = getDb();
       await sql`DELETE FROM sessions WHERE id = ${token};`;
@@ -716,8 +778,8 @@ async function handleCreateWhatsAppOrder(req: IncomingMessage, res: ServerRespon
 
     // Create Order in Neon PostgreSQL (compatible with unified schema & legacy columns)
     await sql`
-      INSERT INTO orders (id, order_number, user_id, status, total_amount, amount, course_id, course_title, payment_method)
-      VALUES (${orderId}, ${orderNumber}, ${session.userId}, 'PENDING', ${actualAmount}, ${actualAmount}, ${course.id}, ${course.title}, 'WHATSAPP_MANUAL');
+      INSERT INTO orders (id, order_number, user_id, order_type, status, total_amount, amount, course_id, course_title, payment_method)
+      VALUES (${orderId}, ${orderNumber}, ${session.userId}, 'COURSE', 'PENDING', ${actualAmount}, ${actualAmount}, ${course.id}, ${course.title}, 'WHATSAPP_MANUAL');
     `;
 
     // Create Order Item
@@ -733,7 +795,7 @@ async function handleCreateWhatsAppOrder(req: IncomingMessage, res: ServerRespon
     `;
 
     // Trigger non-blocking email
-    generateOrderCreatedEmail(session.name, orderNumber, course.title, actualAmount);
+    dispatchEmailAsync(generateOrderCreatedEmail(session.email, session.name, orderNumber, course.title, actualAmount));
   }
 
   // Construct official WhatsApp concierge message with actual database values
@@ -797,7 +859,7 @@ async function handleUserOrders(req: IncomingMessage, res: ServerResponse) {
     LEFT JOIN courses c ON oi.course_id = c.id
     LEFT JOIN payments p ON o.id = p.order_id
     LEFT JOIN enrollments e ON e.user_id = o.user_id AND e.course_id = oi.course_id
-    WHERE o.user_id = ${session.userId}
+    WHERE o.user_id = ${session.userId} AND COALESCE(o.order_type, 'COURSE') = 'COURSE'
     ORDER BY o.created_at DESC;
   `;
 
@@ -1039,14 +1101,25 @@ async function handleUserProgress(req: IncomingMessage, res: ServerResponse) {
   const totalLessons = lessonRows.length > 0 ? lessonRows.length : 1;
   const progressPercentage = Math.min(100, Math.round((completedLessonIds.length / totalLessons) * 100));
 
-  // 4. Update enrollments table in Neon DB
+  // 4. Update enrollments table in Neon DB & send 100% completion congratulations once
   try {
+    const prevRows = await sql`
+      SELECT progress FROM enrollments WHERE user_id = ${session.userId} AND course_id = ${courseId} LIMIT 1;
+    `;
+    const prevProgress = Number(prevRows[0]?.progress || 0);
+
     await sql`
       UPDATE enrollments
       SET progress = ${progressPercentage},
           completed_lessons = ${JSON.stringify(completedLessonIds)}
       WHERE user_id = ${session.userId} AND course_id = ${courseId};
     `;
+
+    if (progressPercentage === 100 && prevProgress < 100) {
+      const courseRows = await sql`SELECT title FROM courses WHERE id = ${courseId} LIMIT 1;`;
+      const courseTitle = courseRows[0]?.title || 'your course';
+      dispatchEmailAsync(generateCourseCompletedEmail(session.email, session.name, courseTitle));
+    }
   } catch (err) {
     console.warn('Could not update enrollments progress column:', err);
   }
@@ -1227,6 +1300,7 @@ async function handleAdminOrders(parsedUrl: URL, req: IncomingMessage, res: Serv
     LEFT JOIN courses c ON oi.course_id = c.id
     LEFT JOIN payments pay ON o.id = pay.order_id
     LEFT JOIN enrollments e ON e.user_id = o.user_id AND e.course_id = oi.course_id
+    WHERE COALESCE(o.order_type, 'COURSE') = 'COURSE'
     ORDER BY o.created_at DESC;
   `;
 
@@ -1274,7 +1348,7 @@ async function handleAdminConfirmPayment(orderId: string, req: IncomingMessage, 
 
   // Retrieve order details
   const orders = await sql`
-    SELECT o.id, o.order_number, o.user_id, o.status, oi.course_id, oi.course_name_snapshot, u.name, u.email
+    SELECT o.id, o.order_number, o.user_id, COALESCE(o.order_type, 'COURSE') as order_type, o.status, oi.course_id, oi.course_name_snapshot, u.name, u.email
     FROM orders o
     JOIN users u ON o.user_id = u.id
     LEFT JOIN order_items oi ON o.id = oi.order_id
@@ -1288,6 +1362,11 @@ async function handleAdminConfirmPayment(orderId: string, req: IncomingMessage, 
   }
 
   const ord = orders[0];
+  if (ord.order_type === 'PRODUCT') {
+    res.statusCode = 400;
+    res.end(JSON.stringify({ error: 'Physical product orders cannot use course WhatsApp confirmation.' }));
+    return;
+  }
 
   if (ord.status === 'CANCELLED' || ord.status === 'REFUNDED') {
     res.statusCode = 400;
@@ -1330,7 +1409,7 @@ async function handleAdminConfirmPayment(orderId: string, req: IncomingMessage, 
   `;
 
   // Dispatch non-blocking notification
-  generateCourseActivatedEmail(ord.name, ord.course_name_snapshot);
+  dispatchEmailAsync(generateCourseActivatedEmail(ord.email, ord.name, ord.course_name_snapshot, ord.order_number));
 
   res.statusCode = 200;
   res.end(
@@ -1355,7 +1434,14 @@ async function handleAdminCancelOrder(orderId: string, req: IncomingMessage, res
   }
 
   const sql = getDb();
-  const orders = await sql`SELECT id, status FROM orders WHERE id = ${orderId} OR order_number = ${orderId};`;
+  const orders = await sql`
+    SELECT o.id, o.order_number, o.status, oi.course_name_snapshot, u.name, u.email
+    FROM orders o
+    LEFT JOIN users u ON o.user_id = u.id
+    LEFT JOIN order_items oi ON o.id = oi.order_id
+    WHERE o.id = ${orderId} OR o.order_number = ${orderId}
+    LIMIT 1;
+  `;
   if (orders.length === 0) {
     res.statusCode = 404;
     res.end(JSON.stringify({ error: 'Order not found.' }));
@@ -1370,6 +1456,10 @@ async function handleAdminCancelOrder(orderId: string, req: IncomingMessage, res
     INSERT INTO admin_audit_logs (id, admin_user_id, order_id, action, previous_status, new_status)
     VALUES (${`audit_${Date.now()}`}, ${session.userId}, ${ord.id}, 'CANCEL_ORDER', ${ord.status}, 'CANCELLED');
   `;
+
+  if (ord.email && ord.course_name_snapshot) {
+    dispatchEmailAsync(generateCourseCancelledEmail(ord.email, ord.name || 'Student', ord.course_name_snapshot, ord.order_number));
+  }
 
   res.statusCode = 200;
   res.end(JSON.stringify({ success: true, message: 'Order has been cancelled.' }));
@@ -1736,26 +1826,41 @@ async function handleAdminToggleCoursePublish(courseId: string, req: IncomingMes
   res.end(JSON.stringify({ success: true, course: rows[0] }));
 }
 
-async function handleAdminDeleteCourse(courseId: string, req: IncomingMessage, res: ServerResponse) {
+async function requireAdminSession(req: IncomingMessage, res: ServerResponse): Promise<AuthenticatedSession | null> {
   const session = await getAuthenticatedUser(req);
   if (!session) {
     res.statusCode = 401;
     res.end(JSON.stringify({ error: 'Unauthorized: Authentication required.' }));
-    return;
+    return null;
   }
   if (session.role !== 'ADMIN') {
     res.statusCode = 403;
     res.end(JSON.stringify({ error: 'Forbidden: Admin access required.' }));
-    return;
+    return null;
   }
+  return session;
+}
 
-  const sql = getDb();
+async function deleteCourseAndDependencies(sql: any, courseId: string): Promise<boolean> {
   await sql`DELETE FROM lesson_progress WHERE course_id = ${courseId};`;
   await sql`DELETE FROM lessons WHERE course_id = ${courseId};`;
   await sql`DELETE FROM modules WHERE course_id = ${courseId};`;
+  await sql`DELETE FROM reviews WHERE course_id = ${courseId};`;
+  await sql`DELETE FROM enrollments WHERE course_id = ${courseId};`;
+  await sql`UPDATE order_items SET course_id = NULL WHERE course_id = ${courseId};`;
+  await sql`UPDATE orders SET course_id = NULL WHERE course_id = ${courseId};`;
   const deleted = await sql`DELETE FROM courses WHERE id = ${courseId} RETURNING id;`;
+  return deleted.length > 0;
+}
 
-  if (deleted.length === 0) {
+async function handleAdminDeleteCourse(courseId: string, req: IncomingMessage, res: ServerResponse) {
+  const session = await requireAdminSession(req, res);
+  if (!session) return;
+
+  const sql = getDb();
+  const removed = await deleteCourseAndDependencies(sql, courseId);
+
+  if (!removed) {
     res.statusCode = 404;
     res.end(JSON.stringify({ error: 'Course not found.' }));
     return;
@@ -1763,6 +1868,230 @@ async function handleAdminDeleteCourse(courseId: string, req: IncomingMessage, r
 
   res.statusCode = 200;
   res.end(JSON.stringify({ success: true, message: 'Course deleted successfully.' }));
+}
+
+async function handleListCategories(res: ServerResponse) {
+  const sql = getDb();
+  const rows = await sql`
+    SELECT c.id, c.name, c.slug, c.description, c.image,
+           COALESCE(c.status, 'active') as status,
+           c.created_at, c.updated_at,
+           COUNT(co.id) FILTER (WHERE co.status = 'published')::int as course_count
+    FROM categories c
+    LEFT JOIN courses co ON co.category_id = c.id
+    WHERE COALESCE(c.status, 'active') != 'inactive'
+    GROUP BY c.id
+    ORDER BY c.created_at ASC, c.id ASC;
+  `;
+
+  const categories = rows.map((r: any) => ({
+    id: r.id,
+    name: r.name,
+    slug: r.slug,
+    description: r.description || '',
+    image: r.image || '/images/hero-cake.png',
+    status: r.status || 'active',
+    courseCount: Number(r.course_count || 0),
+    createdAt: r.created_at,
+    updatedAt: r.updated_at
+  }));
+
+  res.statusCode = 200;
+  res.end(JSON.stringify({ categories }));
+}
+
+async function handleAdminListCategories(req: IncomingMessage, res: ServerResponse) {
+  const session = await requireAdminSession(req, res);
+  if (!session) return;
+
+  const sql = getDb();
+  const rows = await sql`
+    SELECT c.id, c.name, c.slug, c.description, c.image,
+           COALESCE(c.status, 'active') as status,
+           c.created_at, c.updated_at,
+           COUNT(co.id)::int as course_count
+    FROM categories c
+    LEFT JOIN courses co ON co.category_id = c.id
+    GROUP BY c.id
+    ORDER BY c.created_at ASC, c.id ASC;
+  `;
+
+  const categories = rows.map((r: any) => ({
+    id: r.id,
+    name: r.name,
+    slug: r.slug,
+    description: r.description || '',
+    image: r.image || '/images/hero-cake.png',
+    status: r.status || 'active',
+    courseCount: Number(r.course_count || 0),
+    createdAt: r.created_at,
+    updatedAt: r.updated_at
+  }));
+
+  res.statusCode = 200;
+  res.end(JSON.stringify({ categories }));
+}
+
+async function handleAdminSaveCategory(targetId: string | null, req: IncomingMessage, res: ServerResponse) {
+  const session = await requireAdminSession(req, res);
+  if (!session) return;
+
+  const data = await readJsonBody(req);
+  const name = String(data.name || '').trim();
+  if (!name) {
+    res.statusCode = 400;
+    res.end(JSON.stringify({ error: 'Course category name is required.' }));
+    return;
+  }
+
+  const slug = String(data.slug || name)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '') || `category-${Date.now()}`;
+  const description = String(data.description || '').trim();
+  const image = String(data.image || '').trim() || '/images/hero-cake.png';
+  const status = data.status === 'inactive' ? 'inactive' : 'active';
+  const categoryId = targetId || String(data.id || `cat-${Date.now()}`);
+
+  const sql = getDb();
+  const saved = await sql`
+    INSERT INTO categories (id, name, slug, description, image, status, course_count, created_at, updated_at)
+    VALUES (${categoryId}, ${name}, ${slug}, ${description}, ${image}, ${status}, 0, NOW(), NOW())
+    ON CONFLICT (id) DO UPDATE SET
+      name = EXCLUDED.name,
+      slug = EXCLUDED.slug,
+      description = EXCLUDED.description,
+      image = EXCLUDED.image,
+      status = EXCLUDED.status,
+      updated_at = NOW()
+    RETURNING *;
+  `;
+
+  // Keep denormalized category_name on courses in sync when editing a category
+  await sql`
+    UPDATE courses SET category_name = ${name}, updated_at = NOW()
+    WHERE category_id = ${categoryId};
+  `;
+
+  const cntRows = await sql`SELECT COUNT(*)::int as cnt FROM courses WHERE category_id = ${categoryId};`;
+  const row = saved[0];
+
+  res.statusCode = 200;
+  res.end(
+    JSON.stringify({
+      success: true,
+      category: {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        description: row.description || '',
+        image: row.image || '/images/hero-cake.png',
+        status: row.status || 'active',
+        courseCount: Number(cntRows[0]?.cnt || 0),
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      }
+    })
+  );
+}
+
+async function handleAdminDeleteCategory(categoryId: string, req: IncomingMessage, res: ServerResponse) {
+  const session = await requireAdminSession(req, res);
+  if (!session) return;
+
+  const sql = getDb();
+  const coursesInCat = await sql`SELECT id FROM courses WHERE category_id = ${categoryId};`;
+
+  let deletedCoursesCount = 0;
+  for (const c of coursesInCat) {
+    const removed = await deleteCourseAndDependencies(sql, c.id);
+    if (removed) deletedCoursesCount += 1;
+  }
+
+  const deletedCat = await sql`DELETE FROM categories WHERE id = ${categoryId} RETURNING id;`;
+  if (deletedCat.length === 0) {
+    res.statusCode = 404;
+    res.end(JSON.stringify({ error: 'Course category not found.' }));
+    return;
+  }
+
+  res.statusCode = 200;
+  res.end(
+    JSON.stringify({
+      success: true,
+      deletedCoursesCount,
+      message: `Deleted category and ${deletedCoursesCount} associated course(s).`
+    })
+  );
+}
+
+async function handleAdminDeleteOrder(orderIdOrNumber: string, req: IncomingMessage, res: ServerResponse) {
+  const session = await requireAdminSession(req, res);
+  if (!session) return;
+
+  const sql = getDb();
+  const rows = await sql`
+    SELECT id FROM orders
+    WHERE (id = ${orderIdOrNumber} OR order_number = ${orderIdOrNumber})
+      AND COALESCE(order_type, 'COURSE') = 'COURSE';
+  `;
+
+  if (rows.length === 0) {
+    res.statusCode = 404;
+    res.end(JSON.stringify({ error: 'Course purchase request not found.' }));
+    return;
+  }
+
+  const targetOrderId = rows[0].id;
+  await sql`DELETE FROM enrollments WHERE order_id = ${targetOrderId};`;
+  await sql`UPDATE admin_audit_logs SET order_id = NULL WHERE order_id = ${targetOrderId};`;
+  await sql`DELETE FROM orders WHERE id = ${targetOrderId};`;
+
+  res.statusCode = 200;
+  res.end(JSON.stringify({ success: true, message: 'Course purchase request deleted permanently.' }));
+}
+
+async function handleAdminDeleteUser(targetUserId: string, req: IncomingMessage, res: ServerResponse) {
+  const session = await requireAdminSession(req, res);
+  if (!session) return;
+
+  if (targetUserId === session.userId) {
+    res.statusCode = 400;
+    res.end(JSON.stringify({ error: 'You cannot delete the currently signed-in administrator account.' }));
+    return;
+  }
+
+  const sql = getDb();
+  const targetRows = await sql`SELECT id, role FROM users WHERE id = ${targetUserId};`;
+  if (targetRows.length === 0) {
+    res.statusCode = 404;
+    res.end(JSON.stringify({ error: 'Customer account not found.' }));
+    return;
+  }
+  if (String(targetRows[0].role).toUpperCase() === 'ADMIN') {
+    res.statusCode = 403;
+    res.end(JSON.stringify({ error: 'Administrator accounts cannot be deleted from CRM.' }));
+    return;
+  }
+
+  // Evict cached session entries for this user
+  for (const [token, entry] of sessionCache.entries()) {
+    if (entry.session.userId === targetUserId) {
+      sessionCache.delete(token);
+    }
+  }
+
+  // Clear optional admin audit/approver references on other records before cascade deleting the user
+  await sql`UPDATE orders SET approved_by = NULL WHERE approved_by = ${targetUserId};`;
+  await sql`UPDATE orders SET cod_collected_by = NULL WHERE cod_collected_by = ${targetUserId};`;
+  await sql`UPDATE payments SET confirmed_by = NULL WHERE confirmed_by = ${targetUserId};`;
+  await sql`UPDATE order_status_history SET changed_by = NULL WHERE changed_by = ${targetUserId};`;
+
+  await sql`DELETE FROM users WHERE id = ${targetUserId};`;
+
+  res.statusCode = 200;
+  res.end(JSON.stringify({ success: true, message: 'Customer account deleted permanently.' }));
 }
 
 // -------------------------------------------------------------
@@ -1797,7 +2126,10 @@ async function handleStatus(res: ServerResponse) {
   try {
     const s3 = getS3();
     const bucket = 'assets';
-    const list = await s3.send(new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 10 }));
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3000);
+    const list = await s3.send(new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 10 }), { abortSignal: controller.signal });
+    clearTimeout(timer);
     storageOk = true;
     storageInfo = {
       connected: true,

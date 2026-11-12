@@ -10,6 +10,12 @@ const CANDIDATE_IPS: Record<string, string[]> = {
   'br-soft-queen-bdn8ofgg.storage.c-8.us-east-2.aws.neon.tech': ['18.119.63.132', '3.142.41.151']
 };
 
+const keepAliveAgent = new https.Agent({
+  keepAlive: true,
+  maxSockets: 24,
+  keepAliveMsecs: 15000
+});
+
 function tryFetch(url: URL, targetIp: string, opts: any): Promise<any> {
   const hostname = url.hostname;
   const headers = {
@@ -27,7 +33,8 @@ function tryFetch(url: URL, targetIp: string, opts: any): Promise<any> {
         method: opts.method || 'POST',
         headers,
         servername: hostname, // Preserves TLS SNI & certificate verification
-        timeout: 6000
+        agent: keepAliveAgent,
+        timeout: 4500
       },
       res => {
         const chunks: Buffer[] = [];
@@ -57,25 +64,41 @@ function tryFetch(url: URL, targetIp: string, opts: any): Promise<any> {
   });
 }
 
-// Custom resilient fetch with multi-IP failover for Neon serverless queries
+// Cache fastest reachable transport per Neon hostname so subsequent queries don't pay failover delay
+const fastTransportCache = new Map<string, string>();
+
+// Custom resilient fetch with multi-IP failover and keep-alive transport caching for Neon queries
 neonConfig.fetchFunction = async (urlStr: any, opts: any = {}) => {
-  // First attempt native fetch with a 3.5s timeout (optimal for cloud/Vercel environments)
+  const url = new URL(urlStr);
+  const hostname = url.hostname;
+  const cachedTransport = fastTransportCache.get(hostname);
+
+  if (cachedTransport === 'native') {
+    return await fetch(urlStr, opts);
+  }
+  if (cachedTransport) {
+    try {
+      return await tryFetch(url, cachedTransport, opts);
+    } catch {
+      fastTransportCache.delete(hostname);
+    }
+  }
+
+  // First try native fetch quickly (900ms), or fall back immediately to keep-alive Anycast IP
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 3500);
+    const timer = setTimeout(() => controller.abort(), 900);
     const nativeRes = await fetch(urlStr, { ...opts, signal: controller.signal });
     clearTimeout(timer);
+    fastTransportCache.set(hostname, 'native');
     return nativeRes;
   } catch (nativeErr) {
-    // If native fetch fails (e.g. local Windows DNS ENOTFOUND), failover to candidate IPs
-    const url = new URL(urlStr);
-    const hostname = url.hostname;
     const ips = CANDIDATE_IPS[hostname] || [hostname];
-
     let lastErr: any = nativeErr;
     for (const ip of ips) {
       try {
         const res = await tryFetch(url, ip, opts);
+        fastTransportCache.set(hostname, ip);
         return res;
       } catch (err) {
         lastErr = err;

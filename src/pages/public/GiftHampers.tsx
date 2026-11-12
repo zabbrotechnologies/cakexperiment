@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ecommerceApi } from '../../services/ecommerceApi';
+import { useAuth } from '../../context/AuthContext';
+import type { ProductOrder } from '../../types';
 import {
   GIFT_HAMPERS,
   OCCASION_OPTIONS,
@@ -9,7 +12,6 @@ import {
 import {
   Gift,
   Check,
-  Sparkles,
   Heart,
   Calendar,
   MapPin,
@@ -42,15 +44,28 @@ export const GiftHampers: React.FC = () => {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [quantity, setQuantity] = useState(1);
 
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
   // UI State
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [modalOpen, setModalOpen] = useState(false);
   const [generatedWhatsAppUrl, setGeneratedWhatsAppUrl] = useState('');
   const [copied, setCopied] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [createdOrder, setCreatedOrder] = useState<ProductOrder | null>(null);
+  const idempotencyKeyRef = useRef<string>('');
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
+
+  useEffect(() => {
+    if (user?.name && !customerName) {
+      setCustomerName(user.name);
+    }
+  }, [user]);
 
   const totalPrice = hamper.price * quantity;
 
@@ -73,38 +88,51 @@ export const GiftHampers: React.FC = () => {
   };
 
   // Build structured WhatsApp message
-  const buildWhatsAppMessage = () => {
+  const buildWhatsAppMessage = (orderNumber?: string) => {
     const cleanPhone = customerPhone.trim();
     const formattedDate = deliveryDate ? deliveryDate : 'Earliest Available Batch';
     const noteContent = greetingMessage.trim() ? `"${greetingMessage.trim()}"` : 'Standard Studio Card';
+    const trackUrl = orderNumber ? `${window.location.origin}/track-hamper/${orderNumber}` : '';
 
     return (
-      `🎁 *NEW GIFT HAMPER ORDER — CAKEXPERIMENT*\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-      `✨ *Product:* ${hamper.name}\n` +
-      `🏷️ *Price:* ₹${hamper.price.toLocaleString('en-IN')} × ${quantity} = *₹${totalPrice.toLocaleString('en-IN')}*\n` +
-      `🎉 *Occasion:* ${selectedOccasion}\n\n` +
+      `*NEW GIFT HAMPER ORDER — CAKEXPERIMENT*\n` +
+      `------------------------\n` +
+      (orderNumber ? `*Order ID:* ${orderNumber}\n` : '') +
+      `*Product:* ${hamper.name}\n` +
+      `*Price:* ₹${hamper.price.toLocaleString('en-IN')} x ${quantity} = *₹${totalPrice.toLocaleString('en-IN')}*\n` +
+      `*Occasion:* ${selectedOccasion}\n\n` +
       `*HAMPER INCLUSIONS:*\n` +
       `• 6 to 9 Assorted Nut Loaded Handcrafted Chocolates\n` +
       `• 1 Jar Artisan Butter Cookies\n` +
       `• 1 Jar Gourmet Savoury Mixture\n` +
       `• Luxury Keepsake Gift Box Packaging\n` +
-      `🎀 *Ribbon Style:* ${selectedRibbon}\n\n` +
-      (specialRequirements.trim() ? `📝 *Specific Requirements:* ${specialRequirements.trim()}\n\n` : '') +
+      `*Ribbon Style:* ${selectedRibbon}\n\n` +
+      (specialRequirements.trim() ? `*Specific Requirements:* ${specialRequirements.trim()}\n\n` : '') +
       `*GREETING CARD DETAILS:*\n` +
-      `👤 *To / Recipient:* ${recipientName.trim() || 'Not specified'}\n` +
-      `💌 *Personal Note:* ${noteContent}\n\n` +
+      `*To / Recipient:* ${recipientName.trim() || 'Not specified'}\n` +
+      `*Personal Note:* ${noteContent}\n\n` +
       `*CUSTOMER & DELIVERY DETAILS:*\n` +
-      `👤 *Name:* ${customerName.trim()}\n` +
-      `📱 *WhatsApp:* ${cleanPhone}\n` +
-      `📅 *Preferred Delivery Date:* ${formattedDate}\n` +
-      `🏠 *Delivery Address:* ${deliveryAddress.trim()}\n` +
-      `━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `*Name:* ${customerName.trim()}\n` +
+      `*WhatsApp:* ${cleanPhone}\n` +
+      `*Preferred Delivery Date:* ${formattedDate}\n` +
+      `*Delivery Address:* ${deliveryAddress.trim()}\n` +
+      (trackUrl ? `*Track Status:* ${trackUrl}\n` : '') +
+      `------------------------\n` +
       `_Hello Chef Anisha! I have selected my gift hamper requirements on your website and would like to place my order._`
     );
   };
 
-  const handleContinueToWhatsApp = () => {
+  const handleContinueToWhatsApp = async () => {
+    if (!isAuthenticated) {
+      navigate('/signin', {
+        state: {
+          from: '/gift-hampers',
+          message: 'Please sign in to place your luxury gift hamper order.'
+        }
+      });
+      return;
+    }
+
     if (!validateForm()) {
       const firstErrorKey = Object.keys(errors)[0];
       if (firstErrorKey) {
@@ -114,22 +142,49 @@ export const GiftHampers: React.FC = () => {
       return;
     }
 
-    const message = buildWhatsAppMessage();
+    setSubmitError(null);
+    setSubmitting(true);
+
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current = `hmp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    }
+
+    let orderResult: ProductOrder | null = null;
+    try {
+      orderResult = await ecommerceApi.createHamperOrder({
+        idempotencyKey: idempotencyKeyRef.current,
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        deliveryDate: deliveryDate.trim() || 'Earliest Available Batch',
+        deliveryAddress: deliveryAddress.trim(),
+        occasion: selectedOccasion,
+        ribbonStyle: selectedRibbon,
+        recipientName: recipientName.trim() || undefined,
+        greetingMessage: greetingMessage.trim() || undefined,
+        specialRequirements: specialRequirements.trim() || undefined,
+        quantity
+      });
+      setCreatedOrder(orderResult);
+      // Fresh key for any subsequent separate order submission
+      idempotencyKeyRef.current = '';
+    } catch (err: any) {
+      setSubmitError(err.message || 'Could not record your Gift Hamper order. Please try again.');
+      setSubmitting(false);
+      return;
+    }
+
+    const message = buildWhatsAppMessage(orderResult?.orderNumber);
     const encoded = encodeURIComponent(message);
     const waUrl = `https://wa.me/${STUDIO_WHATSAPP_NUMBER}?text=${encoded}`;
     setGeneratedWhatsAppUrl(waUrl);
 
-    // Open WhatsApp
-    const win = window.open(waUrl, '_blank');
-    if (!win || win.closed || typeof win.closed === 'undefined') {
-      setModalOpen(true);
-    } else {
-      setModalOpen(true);
-    }
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+    setSubmitting(false);
+    setModalOpen(true);
   };
 
   const handleCopyMessage = () => {
-    const message = buildWhatsAppMessage();
+    const message = buildWhatsAppMessage(createdOrder?.orderNumber);
     navigator.clipboard.writeText(message);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -141,7 +196,7 @@ export const GiftHampers: React.FC = () => {
         {/* Back navigation */}
         <div style={{ marginBottom: '1.5rem' }}>
           <Link
-            to="/#featured-products"
+            to="/#gift-hampers-showcase"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -152,30 +207,17 @@ export const GiftHampers: React.FC = () => {
               textDecoration: 'none'
             }}
           >
-            <ChevronLeft size={18} /> Back to Featured Products
+            <ChevronLeft size={18} /> Back to Gift Hamper
           </Link>
         </div>
 
         {/* Studio Page Header */}
         <div style={{ textAlign: 'center', maxWidth: '820px', margin: '0 auto 3rem auto' }}>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              fontSize: '0.82rem',
-              fontWeight: 600,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: 'var(--color-berry)',
-              backgroundColor: 'var(--color-berry-light)',
-              padding: '0.35rem 1rem',
-              borderRadius: '999px',
-              marginBottom: '0.9rem'
-            }}
-          >
-            <Sparkles size={14} /> Gift Hamper Order & Customization
-          </span>
+          <div className="section-eyebrow-badge" style={{ marginBottom: '0.9rem' }}>
+            <span className="section-eyebrow-line" />
+            <span className="section-eyebrow-text">Gift Hamper Order &amp; Customization</span>
+            <span className="section-eyebrow-line" />
+          </div>
           <h1
             style={{
               fontFamily: 'var(--font-serif)',
@@ -254,7 +296,7 @@ export const GiftHampers: React.FC = () => {
               {/* Gifting Occasion */}
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ display: 'block', fontWeight: 600, fontSize: '0.92rem', color: 'var(--color-plum)', marginBottom: '0.5rem' }}>
-                  🎉 Gifting Occasion / Purpose
+                  Gifting Occasion / Purpose
                 </label>
                 <select
                   value={selectedOccasion}
@@ -349,7 +391,7 @@ export const GiftHampers: React.FC = () => {
               {/* Ribbon Selection */}
               <div>
                 <label style={{ display: 'block', fontWeight: 600, fontSize: '0.92rem', color: 'var(--color-plum)', marginBottom: '0.5rem' }}>
-                  🎀 Keepsake Ribbon & Satin Seal
+                  Keepsake Ribbon & Satin Seal
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
                   {RIBBON_OPTIONS.map(ribbon => (
@@ -586,7 +628,7 @@ export const GiftHampers: React.FC = () => {
                   </div>
                   {quantity >= 5 && (
                     <span style={{ fontSize: '0.75rem', color: 'var(--color-berry)', marginTop: '0.2rem', display: 'block', fontWeight: 600 }}>
-                      ✨ Corporate bulk order discount applied on WhatsApp!
+                      Corporate bulk order discount applied on WhatsApp
                     </span>
                   )}
                 </div>
@@ -734,20 +776,38 @@ export const GiftHampers: React.FC = () => {
                 )}
               </div>
 
+              {submitError && (
+                <div
+                  style={{
+                    marginBottom: '0.9rem',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '10px',
+                    backgroundColor: '#FFEBEE',
+                    border: '1px solid #EF9A9A',
+                    color: '#C62828',
+                    fontSize: '0.84rem',
+                    fontWeight: 600
+                  }}
+                >
+                  {submitError}
+                </div>
+              )}
+
               {/* MAIN WHATSAPP CTA BUTTON */}
               <button
                 type="button"
+                disabled={submitting}
                 onClick={handleContinueToWhatsApp}
                 style={{
                   width: '100%',
                   padding: '1.05rem 1.5rem',
                   borderRadius: '14px',
-                  backgroundColor: '#25D366',
+                  backgroundColor: submitting ? '#58D68D' : '#25D366',
                   color: '#FFFFFF',
                   border: 'none',
                   fontWeight: 700,
                   fontSize: '1.05rem',
-                  cursor: 'pointer',
+                  cursor: submitting ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -757,18 +817,20 @@ export const GiftHampers: React.FC = () => {
                   letterSpacing: '0.02em'
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.backgroundColor = '#1EBE5D';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  if (!submitting) {
+                    e.currentTarget.style.backgroundColor = '#1EBE5D';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.backgroundColor = '#25D366';
+                  e.currentTarget.style.backgroundColor = submitting ? '#58D68D' : '#25D366';
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.699c.96.523 1.761.8 2.796.8 3.181 0 5.768-2.587 5.768-5.766.001-3.182-2.585-5.786-5.768-5.786zm0 10.359c-.89 0-1.636-.244-2.434-.693l-.427-.24-1.579.414.421-1.54-.271-.433c-.512-.816-.782-1.488-.781-2.541.001-2.529 2.059-4.587 4.589-4.587 2.531 0 4.59 2.058 4.59 4.588-.001 2.53-2.058 4.589-4.589 4.589zm3.018-3.447c-.166-.083-.981-.484-1.133-.539-.152-.055-.262-.083-.373.083-.11.166-.428.539-.525.65-.097.11-.193.125-.359.042-.166-.083-.701-.258-1.335-.824-.493-.44-.826-.984-.923-1.15-.097-.166-.01-.256.073-.338.075-.074.166-.193.249-.29.083-.097.11-.166.166-.276.055-.11.028-.207-.014-.29-.042-.083-.373-.898-.511-1.23-.135-.323-.272-.279-.373-.284-.097-.005-.207-.006-.318-.006s-.29.041-.442.207c-.152.166-.58.567-.58 1.383 0 .816.594 1.605.677 1.715.083.11 1.169 1.785 2.832 2.502.396.171.705.273.946.35.398.126.76.108 1.047.065.32-.048.981-.401 1.119-.788.138-.387.138-.719.097-.788-.041-.07-.152-.11-.318-.193z" />
                 </svg>
-                <span>Continue to WhatsApp</span>
+                <span>{submitting ? 'Saving Order & Opening WhatsApp...' : 'Continue to WhatsApp'}</span>
               </button>
 
               {/* Concierge & Quality Trust Signals */}
@@ -836,10 +898,10 @@ export const GiftHampers: React.FC = () => {
                 <Check size={32} />
               </div>
               <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.6rem', color: 'var(--color-plum)', margin: '0 0 0.5rem 0' }}>
-                Order Details Ready!
+                Order Recorded &amp; Ready!
               </h3>
               <p style={{ fontSize: '0.92rem', color: '#6B575B', margin: 0, lineHeight: 1.6 }}>
-                Your order summary has been compiled. Click below to continue directly to WhatsApp chat.
+                Your hamper order has been saved to our studio system. Continue on WhatsApp to confirm with Chef Anisha or track live progress below.
               </p>
             </div>
 
@@ -855,10 +917,16 @@ export const GiftHampers: React.FC = () => {
                 marginBottom: '1.5rem'
               }}
             >
+              {createdOrder && (
+                <div style={{ fontWeight: 700, fontSize: '0.82rem', color: '#2E7D32', marginBottom: '0.35rem' }}>
+                  Order ID: #{createdOrder.orderNumber}
+                </div>
+              )}
               <div style={{ fontWeight: 700, marginBottom: '0.3rem', color: 'var(--color-berry)' }}>
                 {hamper.name} ({quantity} {quantity > 1 ? 'Boxes' : 'Box'}) — ₹{totalPrice.toLocaleString('en-IN')}
               </div>
               <div><strong>Occasion:</strong> {selectedOccasion}</div>
+              <div><strong>Ribbon:</strong> {selectedRibbon}</div>
               <div><strong>Customer:</strong> {customerName} ({customerPhone})</div>
               <div><strong>Address:</strong> {deliveryAddress}</div>
             </div>
@@ -886,6 +954,27 @@ export const GiftHampers: React.FC = () => {
               >
                 <ExternalLink size={18} /> Open WhatsApp Chat
               </a>
+
+              {createdOrder && (
+                <Link
+                  to={`/track-hamper/${createdOrder.orderNumber}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    padding: '0.88rem 1.2rem',
+                    borderRadius: '12px',
+                    backgroundColor: 'var(--color-plum)',
+                    color: '#FFF',
+                    fontWeight: 600,
+                    fontSize: '0.94rem',
+                    textDecoration: 'none'
+                  }}
+                >
+                  Track Gift Hamper Order <ArrowRight size={16} />
+                </Link>
+              )}
 
               <button
                 type="button"

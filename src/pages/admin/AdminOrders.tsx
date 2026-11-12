@@ -14,9 +14,11 @@ import {
   Filter,
   User,
   Check,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 import { storageService } from '../../services/storage';
+import { ConfirmActionModal } from '../../components/admin/ConfirmActionModal';
 
 interface OrderItem {
   id: string;
@@ -36,16 +38,21 @@ interface OrderItem {
 }
 
 export const AdminOrders: React.FC = () => {
+  // Course Orders State
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'cancelled' | 'refunded'>('all');
-  
+
   // Selected Order for Details Modal
   const [selectedOrder, setSelectedOrder] = useState<OrderItem | null>(null);
 
   // Confirmation Dialog State
   const [confirmDialogOrder, setConfirmDialogOrder] = useState<OrderItem | null>(null);
+  const [pendingAction, setPendingAction] = useState<{
+    type: 'delete' | 'cancel' | 'refund';
+    order: OrderItem;
+  } | null>(null);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
   const [actionErrorMsg, setActionErrorMsg] = useState<string | null>(null);
@@ -204,47 +211,75 @@ export const AdminOrders: React.FC = () => {
     }
   };
 
-  // Action 2: Cancel Order
-  const handleCancelOrder = async (order: OrderItem) => {
-    if (!confirm(`Are you sure you want to cancel Order ${order.order_number}?`)) return;
-    setIsProcessingAction(true);
-    try {
-      const token = localStorage.getItem('cakexperiment_auth_token');
-      const res = await fetch(`/api/admin/orders/${order.id}/cancel`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-      if (res.ok) {
-        setActionSuccessMsg(`Order ${order.order_number} cancelled.`);
-        await fetchOrders();
-        if (selectedOrder?.id === order.id) setSelectedOrder(null);
-      }
-    } finally {
-      setIsProcessingAction(false);
-      setTimeout(() => setActionSuccessMsg(null), 3000);
-    }
+  // Action 2 / 3 / Delete: Cancel, Refund, or Delete Purchase Request via Confirmation Modal
+  const handleCancelOrder = (order: OrderItem) => {
+    setActionErrorMsg(null);
+    setPendingAction({ type: 'cancel', order });
   };
 
-  // Action 3: Record Refund
-  const handleRefundOrder = async (order: OrderItem) => {
-    if (!confirm(`Are you sure you want to refund Order ${order.order_number}? Course access will be revoked immediately.`)) return;
+  const handleRefundOrder = (order: OrderItem) => {
+    setActionErrorMsg(null);
+    setPendingAction({ type: 'refund', order });
+  };
+
+  const handleDeleteOrder = (order: OrderItem) => {
+    setActionErrorMsg(null);
+    setPendingAction({ type: 'delete', order });
+  };
+
+  const executePendingAction = async () => {
+    if (!pendingAction) return;
+    const { type, order } = pendingAction;
     setIsProcessingAction(true);
+    setActionErrorMsg(null);
+
     try {
       const token = localStorage.getItem('cakexperiment_auth_token');
-      const res = await fetch(`/api/admin/orders/${order.id}/refund`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-      if (res.ok) {
-        setActionSuccessMsg(`Order ${order.order_number} refunded and access revoked.`);
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
+      if (type === 'delete') {
+        const res = await fetch(`/api/admin/orders/${encodeURIComponent(order.id)}`, {
+          method: 'DELETE',
+          credentials: 'include',
+          headers
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok && res.status !== 404) {
+          throw new Error(data.error || 'Failed to delete course purchase request.');
+        }
+        storageService.deleteOrder(order.id);
+        setOrders(prev => prev.filter(o => o.id !== order.id));
+        if (selectedOrder?.id === order.id) setSelectedOrder(null);
+        setPendingAction(null);
+        setActionSuccessMsg(`Deleted course purchase request ${order.order_number}.`);
+      } else {
+        const endpoint =
+          type === 'cancel'
+            ? `/api/admin/orders/${encodeURIComponent(order.id)}/cancel`
+            : `/api/admin/orders/${encodeURIComponent(order.id)}/refund`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          credentials: 'include',
+          headers
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || `Failed to ${type} order.`);
+        }
+        setPendingAction(null);
+        setActionSuccessMsg(
+          type === 'cancel'
+            ? `Order ${order.order_number} cancelled.`
+            : `Order ${order.order_number} refunded and access revoked.`
+        );
         await fetchOrders();
         if (selectedOrder?.id === order.id) setSelectedOrder(null);
       }
+      setTimeout(() => setActionSuccessMsg(null), 3500);
+    } catch (err: any) {
+      setActionErrorMsg(err.message || 'Unable to complete action.');
     } finally {
       setIsProcessingAction(false);
-      setTimeout(() => setActionSuccessMsg(null), 3000);
     }
   };
 
@@ -268,7 +303,7 @@ export const AdminOrders: React.FC = () => {
           </h1>
         </div>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
-          Manage incoming WhatsApp purchase inquiries, verify manual payments, and activate course classroom access.
+          Review online course manual WhatsApp payment confirmations, activate enrollments, and manage course refunds.
         </p>
       </div>
 
@@ -286,13 +321,12 @@ export const AdminOrders: React.FC = () => {
         </div>
       )}
 
-      {/* Filter and Search Bar */}
-      <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-md)', padding: '1.2rem', border: '1px solid var(--border-subtle)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
-        
-        <div style={{ position: 'relative', width: '100%', maxWidth: '340px' }}>
+      {/* Search Bar & Course Status Filters */}
+      <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-md)', padding: '1rem 1.2rem', border: '1px solid var(--border-subtle)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+        <div style={{ position: 'relative', width: '100%', maxWidth: '380px' }}>
           <input
             type="text"
-            placeholder="Search by Order #, User ID, email, course..."
+            placeholder="Search by Order ID, student name, email, phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="input-field"
@@ -300,11 +334,22 @@ export const AdminOrders: React.FC = () => {
           />
           <Search size={16} color="var(--text-light)" style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)' }} />
         </div>
+        <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+          Showing {orders.length} Course Purchase {orders.length === 1 ? 'Request' : 'Requests'}
+        </span>
+      </div>
+
+      {/* ================= COURSE PURCHASE REQUESTS (WHATSAPP MANUAL) ================= */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+        <h2 style={{ fontSize: '1.25rem', color: 'var(--color-plum)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <ShoppingBag size={19} color="var(--color-berry)" /> Course Purchase Requests ({orders.length})
+        </h2>
 
         {/* Tab-Style Status Filters */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
           {[
-            { id: 'all', label: 'All Orders' },
+            { id: 'all', label: 'All Courses' },
             { id: 'pending', label: 'Pending Confirmation' },
             { id: 'confirmed', label: 'Confirmed / Activated' },
             { id: 'cancelled', label: 'Cancelled' },
@@ -508,6 +553,17 @@ export const AdminOrders: React.FC = () => {
                             <MessageCircle size={14} color="#25D366" />
                           </button>
 
+                          {/* Delete Purchase Request */}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteOrder(ord)}
+                            className="btn btn-outline btn-sm"
+                            style={{ borderColor: '#FFCDD2', color: '#C62828', fontSize: '0.78rem', padding: '0.35rem 0.5rem', display: 'inline-flex', alignItems: 'center' }}
+                            title={`Delete request ${ord.order_number}`}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+
                         </div>
                       </td>
 
@@ -518,6 +574,7 @@ export const AdminOrders: React.FC = () => {
             </tbody>
           </table>
         </div>
+      </div>
       </div>
 
       {/* Confirmation Dialog for Manual Payment Verification */}
@@ -705,13 +762,61 @@ export const AdminOrders: React.FC = () => {
                     Record Refund & Revoke Access
                   </button>
                 )}
+
+                <button
+                  type="button"
+                  onClick={() => handleDeleteOrder(selectedOrder)}
+                  className="btn btn-outline btn-sm"
+                  style={{ borderColor: '#FFCDD2', color: '#C62828', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', marginLeft: 'auto' }}
+                >
+                  <Trash2 size={14} /> Delete Request
+                </button>
               </div>
 
+              {/* Action Buttons in Details */}
             </div>
           </div>
         </div>,
         document.body
       )}
+
+      <ConfirmActionModal
+        open={Boolean(pendingAction)}
+        title={
+          pendingAction?.type === 'delete'
+            ? 'Delete Course Purchase Request?'
+            : pendingAction?.type === 'cancel'
+            ? 'Cancel Course Order?'
+            : 'Refund Course Order?'
+        }
+        itemLabel={
+          pendingAction
+            ? `${pendingAction.order.order_number} — ${pendingAction.order.customer_name}`
+            : undefined
+        }
+        description={
+          pendingAction?.type === 'delete'
+            ? `This will permanently delete the course purchase request for "${pendingAction.order.course_name || 'Online Course'}" along with any enrollment linked to this request.`
+            : pendingAction?.type === 'cancel'
+            ? 'This will mark the pending course purchase request as CANCELLED.'
+            : 'This will mark the course order as REFUNDED and immediately revoke the student\'s course classroom access.'
+        }
+        confirmLabel={
+          pendingAction?.type === 'delete'
+            ? 'Delete Request'
+            : pendingAction?.type === 'cancel'
+            ? 'Cancel Order'
+            : 'Record Refund'
+        }
+        tone={pendingAction?.type === 'cancel' ? 'warning' : 'danger'}
+        isProcessing={isProcessingAction}
+        errorMessage={pendingAction ? actionErrorMsg : null}
+        onCancel={() => {
+          setPendingAction(null);
+          setActionErrorMsg(null);
+        }}
+        onConfirm={executePendingAction}
+      />
 
     </div>
   );

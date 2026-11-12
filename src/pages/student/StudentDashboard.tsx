@@ -9,7 +9,6 @@ import {
   Award,
   Clock,
   CheckCircle,
-  Sparkles,
   ArrowRight,
   TrendingUp,
   Flame,

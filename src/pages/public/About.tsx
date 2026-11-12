@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Heart, Award, Users, BookOpen, CheckCircle, ArrowRight } from 'lucide-react';
+import { Heart, Award, Users, BookOpen, CheckCircle, ArrowRight } from 'lucide-react';
 
 export const About: React.FC = () => {
   return (

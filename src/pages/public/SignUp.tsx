@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Cake, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export const SignUp: React.FC = () => {
   const { signUp, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const rawFrom = (location.state as any)?.from;
+  const fromPath = typeof rawFrom === 'string' ? rawFrom : rawFrom?.pathname;
+  const gateMessage = (location.state as any)?.message as string | undefined;
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -18,9 +22,9 @@ export const SignUp: React.FC = () => {
 
   React.useEffect(() => {
     if (isAuthenticated) {
-      navigate(isAdmin ? '/admin/dashboard' : '/learn', { replace: true });
+      navigate(fromPath || (isAdmin ? '/admin/dashboard' : '/learn'), { replace: true });
     }
-  }, [isAuthenticated, isAdmin, navigate]);
+  }, [isAuthenticated, isAdmin, navigate, fromPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,8 +51,8 @@ export const SignUp: React.FC = () => {
     const res = await signUp(name, email, password);
     setLoading(false);
 
-    if (res.success && res.redirectTo) {
-      navigate(res.redirectTo, { replace: true });
+    if (res.success && (fromPath || res.redirectTo)) {
+      navigate(fromPath || res.redirectTo!, { replace: true });
     } else {
       setError(res.message || 'Could not complete registration.');
     }
@@ -79,6 +83,13 @@ export const SignUp: React.FC = () => {
         {/* Card */}
         <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '2.5rem', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-card)' }}>
           
+          {gateMessage && !error && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', backgroundColor: '#FFF8F5', color: 'var(--color-plum)', padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)', fontSize: '0.88rem', marginBottom: '1.5rem', border: '1px solid var(--color-rose)' }}>
+              <AlertCircle size={18} color="var(--color-berry)" style={{ flexShrink: 0 }} />
+              <span>{gateMessage}</span>
+            </div>
+          )}
+
           {error && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', backgroundColor: '#FFEBEE', color: '#C62828', padding: '0.8rem 1rem', borderRadius: 'var(--radius-md)', fontSize: '0.88rem', marginBottom: '1.5rem', border: '1px solid #FFCDD2' }}>
               <AlertCircle size={18} style={{ flexShrink: 0 }} />
@@ -187,7 +198,7 @@ export const SignUp: React.FC = () => {
           {/* Sign In Link */}
           <div style={{ textAlign: 'center', marginTop: '1.8rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
             Already have an account?{' '}
-            <Link to="/signin" style={{ color: 'var(--color-berry)', fontWeight: 600 }}>
+            <Link to="/signin" state={location.state} style={{ color: 'var(--color-berry)', fontWeight: 600 }}>
               Sign in here
             </Link>
           </div>

@@ -4,22 +4,26 @@ import { useAuth } from '../../context/AuthContext';
 import { 
   Menu, 
   X, 
-  Search, 
   User as UserIcon, 
   LogOut, 
   BookOpen, 
   LayoutDashboard, 
-  Sparkles,
-  ChevronDown
+  ChevronDown,
+  ShoppingBag,
+  Heart,
+  Receipt
 } from 'lucide-react';
+import { useShopStore } from '../../store/useShopStore';
+import { CartDrawer } from '../shop/CartDrawer';
 
 export const Navbar: React.FC = () => {
   const { user, isAuthenticated, isAdmin, signOut } = useAuth();
+  const { cartItems, wishlistItems, setCartDrawerOpen } = useShopStore();
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const wishlistCount = wishlistItems.length;
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -38,24 +42,15 @@ export const Navbar: React.FC = () => {
     setUserDropdownOpen(false);
   }, [location.pathname]);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/courses?search=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchOpen(false);
-    }
-  };
-
   const [activeSection, setActiveSection] = useState<string>('home');
 
   const navLinks = [
     { label: 'Home', href: '/', sectionId: '' },
+    { label: 'Shop', href: '/shop', sectionId: '' },
     { label: 'Gift Hampers', href: '/gift-hampers', sectionId: '' },
     { label: 'Courses', href: '/courses', sectionId: '' },
-    { label: 'Cakes & Treats', href: '/#products', sectionId: 'products' },
     { label: 'About', href: '/#about', sectionId: 'about' },
-    { label: 'Categories', href: '/#categories', sectionId: 'categories' },
-    { label: 'FAQ', href: '/#faq', sectionId: 'faq' }
+    { label: 'Contact', href: '#site-footer', sectionId: 'site-footer' }
   ];
 
   // Track scroll position to update active nav underline as user scrolls through sections
@@ -76,7 +71,7 @@ export const Navbar: React.FC = () => {
 
       // Check sections from bottom to top
       const sections = [
-        { id: 'faq', name: 'faq' },
+        { id: 'site-footer', name: 'site-footer' },
         { id: 'categories', name: 'categories' },
         { id: 'about', name: 'about' }
       ];
@@ -106,6 +101,17 @@ export const Navbar: React.FC = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
         window.history.pushState(null, '', '/');
         setActiveSection('home');
+      }
+      setMobileMenuOpen(false);
+      return;
+    }
+
+    if (link.sectionId === 'site-footer') {
+      e.preventDefault();
+      const footerEl = document.getElementById('site-footer');
+      if (footerEl) {
+        footerEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setActiveSection('site-footer');
       }
       setMobileMenuOpen(false);
       return;
@@ -147,15 +153,15 @@ export const Navbar: React.FC = () => {
   return (
     <>
       <header className={`floating-navbar-wrapper ${isScrolled ? 'is-scrolled' : ''}`}>
-        <div className="floating-navbar-box">
+        <div className="floating-navbar-box" style={{ position: 'relative' }}>
           
-          {/* Brand Logo (Image 2) */}
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+          {/* Brand Logo */}
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
             <img
               src="/images/logo.png"
               alt="CakeXperiment - Celebrating Flavours"
               style={{
-                height: '42px',
+                height: '52px',
                 width: 'auto',
                 objectFit: 'contain',
                 display: 'block'
@@ -163,8 +169,19 @@ export const Navbar: React.FC = () => {
             />
           </Link>
 
-          {/* Desktop Navigation with Animated Underline */}
-          <nav style={{ display: 'none', alignItems: 'center', gap: '2rem' }} className="desktop-nav">
+          {/* Desktop Navigation — centered to the curved rectangular bar */}
+          <nav
+            style={{
+              display: 'none',
+              alignItems: 'center',
+              gap: '1.35rem',
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              whiteSpace: 'nowrap'
+            }}
+            className="desktop-nav"
+          >
             {navLinks.map((link) => {
               const active = isLinkActive(link);
               return (
@@ -181,72 +198,97 @@ export const Navbar: React.FC = () => {
           </nav>
 
           {/* Actions & User Menu */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            
-            {/* Search Trigger */}
-            <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setSearchOpen(!searchOpen)}
-                aria-label="Search courses"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--color-plum)',
-                  cursor: 'pointer',
-                  padding: '0.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  borderRadius: '50%'
-                }}
-              >
-                <Search size={20} />
-              </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexShrink: 0 }}>
 
-              {searchOpen && (
-                <form
-                  onSubmit={handleSearchSubmit}
+            {/* Wishlist Trigger */}
+            <button
+              type="button"
+              aria-label="Wishlist"
+              onClick={() => {
+                if (!isAuthenticated) {
+                  navigate('/signin', { state: { from: '/wishlist', message: 'Please sign in to view your saved wishlist.' } });
+                } else {
+                  navigate('/wishlist');
+                }
+              }}
+              style={{
+                position: 'relative',
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-plum)',
+                cursor: 'pointer',
+                padding: '0.45rem',
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: '50%'
+              }}
+            >
+              <Heart size={20} />
+              {isAuthenticated && wishlistCount > 0 && (
+                <span
                   style={{
                     position: 'absolute',
-                    right: 0,
-                    top: 'calc(100% + 10px)',
-                    width: '280px',
-                    padding: '0.5rem',
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: 'var(--radius-md)',
-                    boxShadow: 'var(--shadow-lg)',
-                    border: '1px solid var(--border-subtle)',
+                    top: '0px',
+                    right: '-2px',
+                    minWidth: '17px',
+                    height: '17px',
+                    borderRadius: '999px',
+                    backgroundColor: 'var(--color-berry)',
+                    color: '#FFFFFF',
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.5rem',
-                    zIndex: 999
+                    justifyContent: 'center',
+                    padding: '0 4px'
                   }}
                 >
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search cakes, frosting..."
-                    autoFocus
-                    style={{
-                      border: 'none',
-                      outline: 'none',
-                      width: '100%',
-                      padding: '0.4rem 0.6rem',
-                      fontFamily: 'var(--font-sans)',
-                      fontSize: '0.9rem',
-                      color: 'var(--color-plum)'
-                    }}
-                  />
-                  <button
-                    type="submit"
-                    className="btn btn-primary btn-sm"
-                    style={{ padding: '0.35rem 0.8rem' }}
-                  >
-                    Go
-                  </button>
-                </form>
+                  {wishlistCount}
+                </span>
               )}
-            </div>
+            </button>
+
+            {/* Shopping Cart Trigger */}
+            <button
+              type="button"
+              aria-label="Shopping Bag"
+              onClick={() => setCartDrawerOpen(true)}
+              style={{
+                position: 'relative',
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-plum)',
+                cursor: 'pointer',
+                padding: '0.45rem',
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: '50%'
+              }}
+            >
+              <ShoppingBag size={20} />
+              {isAuthenticated && cartCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '0px',
+                    right: '-2px',
+                    minWidth: '17px',
+                    height: '17px',
+                    borderRadius: '999px',
+                    backgroundColor: 'var(--color-plum)',
+                    color: '#FFFFFF',
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 4px'
+                  }}
+                >
+                  {cartCount}
+                </span>
+              )}
+            </button>
 
             {/* User State */}
             {isAuthenticated && user ? (
@@ -354,6 +396,32 @@ export const Navbar: React.FC = () => {
                           <BookOpen size={16} /> My Enrolled Courses
                         </Link>
                         <Link
+                          to="/my-purchases"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.6rem',
+                            padding: '0.6rem 1rem',
+                            fontSize: '0.9rem',
+                            color: 'var(--color-plum)'
+                          }}
+                        >
+                          <Receipt size={16} /> My Orders & Receipts
+                        </Link>
+                        <Link
+                          to="/wishlist"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.6rem',
+                            padding: '0.6rem 1rem',
+                            fontSize: '0.9rem',
+                            color: 'var(--color-plum)'
+                          }}
+                        >
+                          <Heart size={16} /> Wishlist ({wishlistCount})
+                        </Link>
+                        <Link
                           to="/profile"
                           style={{
                             display: 'flex',
@@ -364,7 +432,7 @@ export const Navbar: React.FC = () => {
                             color: 'var(--color-plum)'
                           }}
                         >
-                          <UserIcon size={16} /> My Profile & Purchases
+                          <UserIcon size={16} /> Profile Settings
                         </Link>
                       </>
                     )}
@@ -496,7 +564,7 @@ export const Navbar: React.FC = () => {
 
       {/* Responsive Style Overrides */}
       <style>{`
-        @media (min-width: 860px) {
+        @media (min-width: 1024px) {
           .desktop-nav {
             display: flex !important;
           }
@@ -504,7 +572,7 @@ export const Navbar: React.FC = () => {
             display: none !important;
           }
         }
-        @media (max-width: 859px) {
+        @media (max-width: 1023px) {
           .desktop-nav {
             display: none !important;
           }
@@ -513,6 +581,7 @@ export const Navbar: React.FC = () => {
           }
         }
       `}</style>
+      <CartDrawer />
     </>
   );
 };

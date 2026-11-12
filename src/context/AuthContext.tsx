@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { User } from '../types';
 import { storageService, DEMO_ADMIN, DEMO_STUDENT } from '../services/storage';
+import { useShopStore } from '../store/useShopStore';
 
 const TOKEN_KEY = 'cakexperiment_auth_token';
 
@@ -44,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (Array.isArray(data.user.enrolledCourseIds)) {
             setEnrolledCourseIds(data.user.enrolledCourseIds);
           }
+          useShopStore.getState().syncForUser(data.user.id);
           return;
         }
       }
@@ -52,13 +54,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem(TOKEN_KEY);
       setUser(null);
       setEnrolledCourseIds([]);
+      useShopStore.getState().clearActiveUser();
     } catch {
       setUser(null);
       setEnrolledCourseIds([]);
+      useShopStore.getState().clearActiveUser();
     }
   };
 
   useEffect(() => {
+    useShopStore.getState().loadStoreConfig();
     fetchCurrentUser().finally(() => setLoading(false));
   }, []);
 
@@ -79,10 +84,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data.token) {
           localStorage.setItem(TOKEN_KEY, data.token);
         }
-        setUser(data.user);
         if (Array.isArray(data.user.enrolledCourseIds)) {
           setEnrolledCourseIds(data.user.enrolledCourseIds);
         }
+        const hasPendingAction = Boolean(sessionStorage.getItem('cakexperiment_pending_shop_action'));
+        if (hasPendingAction) {
+          await useShopStore.getState().syncForUser(data.user.id);
+        } else {
+          void useShopStore.getState().syncForUser(data.user.id);
+        }
+        setUser(data.user);
         return {
           success: true,
           redirectTo: data.redirectTo || (data.user.role === 'ADMIN' ? '/admin/dashboard' : '/learn')
@@ -115,6 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.setItem(TOKEN_KEY, data.token);
         }
         setUser(data.user);
+        await useShopStore.getState().syncForUser(data.user.id);
         return {
           success: true,
           redirectTo: data.redirectTo || '/learn'
@@ -142,6 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     localStorage.removeItem(TOKEN_KEY);
     storageService.signOut();
+    useShopStore.getState().clearActiveUser();
     setUser(null);
     setEnrolledCourseIds([]);
   };

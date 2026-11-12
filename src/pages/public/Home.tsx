@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { storageService } from '../../services/storage';
+import { useAuth } from '../../context/AuthContext';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
 import { Course, Category } from '../../types';
 import { FeaturedProductsSection } from '../../components/home/FeaturedProductsSection';
@@ -8,7 +9,6 @@ import { BakeryProductsSection } from '../../components/home/BakeryProductsSecti
 import {
   Play,
   X,
-  Sparkles,
   Award,
   Clock,
   BookOpen,
@@ -29,12 +29,12 @@ import {
   GraduationCap,
   FlaskConical,
   Users,
-  Sparkle,
   ChefHat,
   Cake
 } from 'lucide-react';
 
 export const Home: React.FC = () => {
+  const { isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -77,16 +77,64 @@ export const Home: React.FC = () => {
       .filter(c => c.featured || c.status === 'published')
   );
 
+  // Category Taxonomy Showcase State (Vertical Parallax Center-Mode Carousel)
+  const [categoriesList, setCategoriesList] = useState<Category[]>(() =>
+    storageService.getCategories().filter(c => c.status !== 'inactive')
+  );
+  const [activeCategoryIdx, setActiveCategoryIdx] = useState(0);
+
   useEffect(() => {
-    fetch('/api/courses')
-      .then(res => (res.ok ? res.json() : null))
-      .then(data => {
-        if (Array.isArray(data?.courses) && data.courses.length > 0) {
-          setCourses(data.courses.filter((c: any) => c.featured || c.status === 'published'));
+    let active = true;
+
+    const syncCatalogFromApi = async () => {
+      try {
+        const [coursesRes, categoriesRes] = await Promise.all([
+          fetch('/api/courses'),
+          fetch('/api/categories')
+        ]);
+
+        if (!active) return;
+
+        if (coursesRes.ok) {
+          const data = await coursesRes.json();
+          if (Array.isArray(data?.courses)) {
+            setCourses(data.courses.filter((c: any) => c.featured || c.status === 'published'));
+          }
         }
-      })
-      .catch(() => {});
+
+        if (categoriesRes.ok) {
+          const catData = await categoriesRes.json();
+          if (Array.isArray(catData?.categories)) {
+            setCategoriesList(catData.categories.filter((c: Category) => c.status !== 'inactive'));
+          }
+        }
+      } catch {
+        // Retain cached local fallback when API is unreachable
+      }
+    };
+
+    const handleLocalUpdate = () => {
+      setCategoriesList(storageService.getCategories().filter(c => c.status !== 'inactive'));
+      setCourses(storageService.getCourses().filter(c => c.featured || c.status === 'published'));
+      syncCatalogFromApi();
+    };
+
+    syncCatalogFromApi();
+    window.addEventListener('cakexperiment-data-updated', handleLocalUpdate);
+    window.addEventListener('focus', syncCatalogFromApi);
+    window.addEventListener('storage', handleLocalUpdate);
+
+    return () => {
+      active = false;
+      window.removeEventListener('cakexperiment-data-updated', handleLocalUpdate);
+      window.removeEventListener('focus', syncCatalogFromApi);
+      window.removeEventListener('storage', handleLocalUpdate);
+    };
   }, []);
+
+  useEffect(() => {
+    setActiveCategoryIdx(prev => Math.min(prev, Math.max(0, categoriesList.length - 1)));
+  }, [categoriesList.length]);
   const [activeCourseIdx, setActiveCourseIdx] = useState(() => Math.min(2, Math.max(0, courses.length - 1)));
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -209,18 +257,16 @@ export const Home: React.FC = () => {
   const [hoveredSkillIdx, setHoveredSkillIdx] = useState<number | null>(null);
   const [isCenterHovered, setIsCenterHovered] = useState(false);
 
-  // Category Taxonomy Showcase State (Vertical Parallax Center-Mode Carousel)
-  const [categoriesList] = useState<Category[]>(() =>
-    storageService.getCategories().filter(c => c.status !== 'inactive')
-  );
-  const [activeCategoryIdx, setActiveCategoryIdx] = useState(0);
   const [categoryDragY, setCategoryDragY] = useState(0);
   const [isCarouselHovered, setIsCarouselHovered] = useState(false);
 
   const carouselViewportRef = useRef<HTMLDivElement | null>(null);
   const isCarouselHoveredRef = useRef(false);
   const activeCategoryIdxRef = useRef(activeCategoryIdx);
-  activeCategoryIdxRef.current = activeCategoryIdx;
+
+  useEffect(() => {
+    activeCategoryIdxRef.current = activeCategoryIdx;
+  }, [activeCategoryIdx]);
 
   const catPointerStartRef = useRef<{ y: number } | null>(null);
   const catLastWheelRef = useRef(0);
@@ -993,6 +1039,17 @@ export const Home: React.FC = () => {
                         </div>
 
                         <span
+                          onClick={(e) => {
+                            if (!isAuthenticated) {
+                              e.stopPropagation();
+                              navigate('/signin', {
+                                state: {
+                                  from: `/checkout/${course.slug}`,
+                                  message: `Please sign in to enroll in "${course.title}".`
+                                }
+                              });
+                            }
+                          }}
                           style={{
                             fontSize: '0.8rem',
                             fontWeight: 600,
@@ -1786,9 +1843,9 @@ export const Home: React.FC = () => {
                 const parallaxY = diff === 0 ? 0 : diff * -32;
 
                 const courseCount =
-                  storageService.getCourses().filter(c => c.categoryId === cat.id).length ||
-                  cat.courseCount ||
-                  3;
+                  typeof cat.courseCount === 'number'
+                    ? cat.courseCount
+                    : courses.filter(c => c.categoryId === cat.id).length;
 
                 return (
                   <div

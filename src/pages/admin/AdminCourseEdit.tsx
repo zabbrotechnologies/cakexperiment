@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { storageService } from '../../services/storage';
-import { Course, Module, Lesson, SkillLevel } from '../../types';
+import { Course, Module, Lesson, SkillLevel, Category } from '../../types';
+import { ConfirmActionModal } from '../../components/admin/ConfirmActionModal';
 import {
   ArrowLeft,
   Save,
   Plus,
   Trash2,
-  Sparkles,
   BookOpen,
   Play,
   Layers,
@@ -19,7 +19,13 @@ export const AdminCourseEdit: React.FC = () => {
   const navigate = useNavigate();
   const isNew = !id;
 
-  const categories = storageService.getCategories();
+  const [categories, setCategories] = useState<Category[]>(() => storageService.getCategories());
+  const [pendingRemoval, setPendingRemoval] = useState<{
+    type: 'module' | 'lesson';
+    modId: string;
+    lessonId?: string;
+    label: string;
+  } | null>(null);
 
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
@@ -39,6 +45,16 @@ export const AdminCourseEdit: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    fetch('/api/categories')
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (Array.isArray(data?.categories) && data.categories.length > 0) {
+          setCategories(data.categories);
+          storageService.setCategories(data.categories);
+        }
+      })
+      .catch(() => {});
+
     if (id) {
       fetch(`/api/courses/${id}`)
         .then(res => (res.ok ? res.json() : null))
@@ -139,7 +155,12 @@ export const AdminCourseEdit: React.FC = () => {
   };
 
   const handleRemoveModule = (modId: string) => {
-    setModules(modules.filter(m => m.id !== modId));
+    const target = modules.find(m => m.id === modId);
+    setPendingRemoval({
+      type: 'module',
+      modId,
+      label: target?.title || 'this module'
+    });
   };
 
   const handleAddLesson = (modId: string) => {
@@ -161,10 +182,30 @@ export const AdminCourseEdit: React.FC = () => {
   };
 
   const handleRemoveLesson = (modId: string, lessonId: string) => {
-    setModules(modules.map(m => {
-      if (m.id !== modId) return m;
-      return { ...m, lessons: m.lessons.filter(l => l.id !== lessonId) };
-    }));
+    const mod = modules.find(m => m.id === modId);
+    const les = mod?.lessons.find(l => l.id === lessonId);
+    setPendingRemoval({
+      type: 'lesson',
+      modId,
+      lessonId,
+      label: les?.title || 'this lesson'
+    });
+  };
+
+  const confirmCurriculumRemoval = () => {
+    if (!pendingRemoval) return;
+    if (pendingRemoval.type === 'module') {
+      setModules(modules.filter(m => m.id !== pendingRemoval.modId));
+    } else if (pendingRemoval.lessonId) {
+      setModules(
+        modules.map(m =>
+          m.id === pendingRemoval.modId
+            ? { ...m, lessons: m.lessons.filter(l => l.id !== pendingRemoval.lessonId) }
+            : m
+        )
+      );
+    }
+    setPendingRemoval(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -581,6 +622,20 @@ export const AdminCourseEdit: React.FC = () => {
         </div>
 
       </form>
+
+      <ConfirmActionModal
+        open={Boolean(pendingRemoval)}
+        title={pendingRemoval?.type === 'module' ? 'Remove Course Module?' : 'Remove Course Lesson?'}
+        itemLabel={pendingRemoval ? `"${pendingRemoval.label}"` : undefined}
+        description={
+          pendingRemoval?.type === 'module'
+            ? 'This will remove the module and all lessons inside it from this course curriculum.'
+            : 'This will remove the lesson from this module.'
+        }
+        confirmLabel={pendingRemoval?.type === 'module' ? 'Remove Module' : 'Remove Lesson'}
+        onCancel={() => setPendingRemoval(null)}
+        onConfirm={confirmCurriculumRemoval}
+      />
 
     </div>
   );

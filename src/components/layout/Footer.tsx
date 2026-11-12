@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Heart, Mail, Phone, MapPin, Globe, Share2, Video } from 'lucide-react';
+import { Heart, Mail, Phone, MapPin, Globe, Share2, Video } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer style={{ backgroundColor: 'var(--color-plum)', color: '#FFF8F5', paddingTop: '5rem', paddingBottom: '3rem' }}>
+    <footer id="site-footer" style={{ backgroundColor: 'var(--color-plum)', color: '#FFF8F5', paddingTop: '5rem', paddingBottom: '3rem' }}>
       <div className="container">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '3rem', marginBottom: '4rem' }}>
           

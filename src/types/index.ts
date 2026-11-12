@@ -259,3 +259,174 @@ export interface BakeryOrder {
   updatedAt?: string;
 }
 
+// ==========================================
+// DUAL-COMMERCE PHYSICAL SHOPPING PLATFORM
+// ==========================================
+
+export interface ProductCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  image: string;
+  isActive: boolean;
+  sortOrder?: number;
+  productCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ProductVariant {
+  id: string;
+  productId: string;
+  variantName: string;
+  size: string | null;
+  colour: string | null;
+  colourHex?: string | null;
+  sku?: string | null;
+  priceAdjustment: number;
+  stock: number;
+  image?: string | null;
+  isActive: boolean;
+}
+
+export interface PhysicalProduct {
+  id: string;
+  slug: string;
+  name: string;
+  shortDescription: string;
+  description: string;
+  categoryId: string | null;
+  categoryName?: string | null;
+  basePrice: number;
+  compareAtPrice?: number | null;
+  images: string[];
+  featured: boolean;
+  isExclusive: boolean;
+  isActive: boolean;
+  stock: number;
+  badge?: string | null;
+  productInfo?: string | null;
+  deliveryInfo?: string | null;
+  variants: ProductVariant[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CartItem {
+  id?: string;
+  productId: string;
+  variantId: string;
+  quantity: number;
+  product?: PhysicalProduct;
+  variant?: ProductVariant | null;
+  unitPrice?: number;
+  availableStock?: number;
+}
+
+export interface WishlistItem {
+  id?: string;
+  productId: string;
+  variantId: string;
+  product?: PhysicalProduct;
+  variant?: ProductVariant | null;
+  createdAt?: string;
+}
+
+export interface ShippingAddress {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  streetAddress: string;
+  apartment?: string;
+  city: string;
+  state: string;
+  pincode: string;
+  isDefault?: boolean;
+}
+
+export type DeliveryMethod = 'STANDARD' | 'EXPRESS' | 'BESPOKE';
+
+export interface HamperOrderDetails {
+  hamperName: string;
+  occasion: string;
+  ribbonStyle: string;
+  recipientName?: string | null;
+  greetingMessage?: string | null;
+  specialRequirements?: string | null;
+  preferredDeliveryDate: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface StoreConfig {
+  standardShippingFee: number;
+  expressShippingFee: number;
+  freeShippingThreshold: number;
+  standardDeliveryDaysMin: number;
+  standardDeliveryDaysMax: number;
+  expressDeliveryDaysMin: number;
+  expressDeliveryDaysMax: number;
+  whatsappNumber?: string;
+}
+
+export type ProductOrderStatus =
+  | 'pending'
+  | 'placed'
+  | 'confirmed'
+  | 'crafting'
+  | 'dispatched'
+  | 'delivered'
+  | 'cancelled';
+
+export interface ProductOrderItem {
+  id: string;
+  productId: string | null;
+  variantId: string | null;
+  productName: string;
+  variantLabel: string | null;
+  size: string | null;
+  colour: string | null;
+  sku: string | null;
+  image: string | null;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
+export interface ProductOrderStatusEvent {
+  id: string;
+  status: ProductOrderStatus;
+  note: string | null;
+  changedBy: string | null;
+  createdAt: string;
+}
+
+export interface ProductOrder {
+  id: string;
+  orderNumber: string;
+  userId: string | null;
+  orderType: 'PRODUCT' | 'HAMPER';
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  subtotalAmount: number;
+  shippingAmount: number;
+  totalAmount: number;
+  deliveryMethod: DeliveryMethod;
+  expectedDeliveryDate: string;
+  shippingAddress: Partial<ShippingAddress> & { fullName?: string; preferredDeliveryDate?: string };
+  hamperDetails?: HamperOrderDetails | null;
+  paymentMethod: 'COD' | 'WHATSAPP_MANUAL';
+  paymentStatus: 'PENDING_COD' | 'AWAITING_CONFIRMATION' | 'COLLECTED' | 'CANCELLED';
+  codCollected: boolean;
+  codCollectedAt?: string | null;
+  status: ProductOrderStatus;
+  items: ProductOrderItem[];
+  statusHistory?: ProductOrderStatusEvent[];
+  createdAt: string;
+  updatedAt?: string;
+}
+

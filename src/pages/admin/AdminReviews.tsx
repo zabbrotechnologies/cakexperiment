@@ -2,20 +2,26 @@ import React, { useState } from 'react';
 import { storageService } from '../../services/storage';
 import { Review } from '../../types';
 import { MessageSquare, Star, Check, EyeOff, Trash2, ShieldCheck } from 'lucide-react';
+import { ConfirmActionModal } from '../../components/admin/ConfirmActionModal';
 
 export const AdminReviews: React.FC = () => {
   const [reviews, setReviews] = useState<Review[]>(() => storageService.getReviews());
+  const [deleteTarget, setDeleteTarget] = useState<Review | null>(null);
 
   const handleStatusChange = (id: string, status: 'approved' | 'hidden') => {
     storageService.updateReviewStatus(id, status);
     setReviews(storageService.getReviews());
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Delete this review permanently?')) {
-      storageService.deleteReview(id);
-      setReviews(storageService.getReviews());
-    }
+  const handleDelete = (rev: Review) => {
+    setDeleteTarget(rev);
+  };
+
+  const confirmDeleteReview = () => {
+    if (!deleteTarget) return;
+    storageService.deleteReview(deleteTarget.id);
+    setReviews(storageService.getReviews());
+    setDeleteTarget(null);
   };
 
   return (
@@ -99,7 +105,7 @@ export const AdminReviews: React.FC = () => {
                 </button>
               )}
               <button
-                onClick={() => handleDelete(rev.id)}
+                onClick={() => handleDelete(rev)}
                 style={{ background: 'none', border: '1px solid #FFCDD2', color: '#D32F2F', borderRadius: 'var(--radius-full)', padding: '0.3rem 0.6rem', cursor: 'pointer', fontSize: '0.75rem' }}
               >
                 <Trash2 size={13} />
@@ -108,6 +114,16 @@ export const AdminReviews: React.FC = () => {
           </div>
         ))}
       </div>
+
+      <ConfirmActionModal
+        open={Boolean(deleteTarget)}
+        title="Delete Student Review?"
+        itemLabel={deleteTarget ? `${deleteTarget.userName} — ${deleteTarget.courseTitle}` : undefined}
+        description="This review will be permanently removed and will no longer appear on public course pages."
+        confirmLabel="Delete Review"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDeleteReview}
+      />
 
     </div>
   );

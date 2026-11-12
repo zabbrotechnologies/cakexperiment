@@ -15,12 +15,16 @@ export const SignIn: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // If already logged in, redirect based on securely stored server-side role
+  const rawFrom = (location.state as any)?.from;
+  const redirectTarget = typeof rawFrom === 'string' ? rawFrom : rawFrom?.pathname;
+  const gateMessage = (location.state as any)?.message as string | undefined;
+
+  // If already logged in, redirect based on intended target or role
   React.useEffect(() => {
     if (isAuthenticated) {
-      navigate(isAdmin ? '/admin/dashboard' : '/learn', { replace: true });
+      navigate(redirectTarget || (isAdmin ? '/admin/dashboard' : '/learn'), { replace: true });
     }
-  }, [isAuthenticated, isAdmin, navigate]);
+  }, [isAuthenticated, isAdmin, redirectTarget, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,9 +39,7 @@ export const SignIn: React.FC = () => {
     setLoading(false);
 
     if (res.success && res.redirectTo) {
-      // Check if there was an intended redirect
-      const from = (location.state as any)?.from?.pathname;
-      navigate(from || res.redirectTo, { replace: true });
+      navigate(redirectTarget || res.redirectTo, { replace: true });
     } else {
       setError(res.message || 'Invalid email or password.');
     }
@@ -68,6 +70,13 @@ export const SignIn: React.FC = () => {
         {/* Card */}
         <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '2.5rem', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-card)' }}>
           
+          {gateMessage && !error && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', backgroundColor: '#FFF8F5', color: 'var(--color-plum)', padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)', fontSize: '0.88rem', marginBottom: '1.5rem', border: '1px solid var(--color-rose)' }}>
+              <AlertCircle size={18} color="var(--color-berry)" style={{ flexShrink: 0 }} />
+              <span>{gateMessage}</span>
+            </div>
+          )}
+
           {error && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', backgroundColor: '#FFEBEE', color: '#C62828', padding: '0.8rem 1rem', borderRadius: 'var(--radius-md)', fontSize: '0.88rem', marginBottom: '1.5rem', border: '1px solid #FFCDD2' }}>
               <AlertCircle size={18} style={{ flexShrink: 0 }} />
@@ -151,7 +160,7 @@ export const SignIn: React.FC = () => {
           {/* Sign Up Link */}
           <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
             New to Cakexperiment?{' '}
-            <Link to="/signup" style={{ color: 'var(--color-berry)', fontWeight: 600 }}>
+            <Link to="/signup" state={location.state} style={{ color: 'var(--color-berry)', fontWeight: 600 }}>
               Create an account
             </Link>
           </div>

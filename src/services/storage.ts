@@ -1175,7 +1175,7 @@ export const initialBakeryOrders: BakeryOrder[] = [
     customerEmail: 'student@cakexperiment.demo',
     deliveryAddress: 'Flat 4B, Emerald Garden Apartments, Anna Nagar, Chennai - 600040',
     deliveryDate: 'Tomorrow, 4:00 PM',
-    messageOnCake: 'Happy 25th Birthday Priya! 🎂',
+    messageOnCake: 'Happy 25th Birthday Priya!',
     specialInstructions: '100% Eggless, deliver with candle & knife kit',
     items: [
       {
@@ -1325,9 +1325,22 @@ class StorageService {
     this.set(STORAGE_KEYS.USERS, users);
   }
 
+  private notifyDataChange(): void {
+    if (typeof window !== 'undefined') {
+      try {
+        window.dispatchEvent(new Event('cakexperiment-data-updated'));
+      } catch {}
+    }
+  }
+
   // --- Categories ---
   public getCategories(): Category[] {
     return this.get<Category[]>(STORAGE_KEYS.CATEGORIES, initialCategories);
+  }
+
+  public setCategories(categories: Category[]): void {
+    this.set(STORAGE_KEYS.CATEGORIES, categories);
+    this.notifyDataChange();
   }
 
   public saveCategory(cat: Omit<Category, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Category {
@@ -1338,25 +1351,36 @@ class StorageService {
       if (idx !== -1) {
         categories[idx] = { ...categories[idx], ...cat, updatedAt: now };
         this.set(STORAGE_KEYS.CATEGORIES, categories);
+        this.notifyDataChange();
         return categories[idx];
       }
     }
     const newCat: Category = {
       ...cat,
-      id: `cat-${Date.now()}`,
-      courseCount: 0,
+      id: cat.id || `cat-${Date.now()}`,
+      courseCount: cat.courseCount ?? 0,
       createdAt: now,
       updatedAt: now
     };
     categories.push(newCat);
     this.set(STORAGE_KEYS.CATEGORIES, categories);
+    this.notifyDataChange();
     return newCat;
   }
 
   public deleteCategory(catId: string): boolean {
     const categories = this.getCategories().filter(c => c.id !== catId);
     this.set(STORAGE_KEYS.CATEGORIES, categories);
+    // Delete courses belonging to this category as well
+    const remainingCourses = this.getCourses().filter(c => c.categoryId !== catId);
+    this.set(STORAGE_KEYS.COURSES, remainingCourses);
+    this.notifyDataChange();
     return true;
+  }
+
+  public setCourses(courses: Course[]): void {
+    this.set(STORAGE_KEYS.COURSES, courses);
+    this.notifyDataChange();
   }
 
   // --- Courses ---
@@ -1469,6 +1493,7 @@ class StorageService {
   public deleteCourse(courseId: string): boolean {
     const courses = this.getCourses().filter(c => c.id !== courseId);
     this.set(STORAGE_KEYS.COURSES, courses);
+    this.notifyDataChange();
     return true;
   }
 
@@ -1736,6 +1761,12 @@ class StorageService {
   // --- Orders & Simulated Purchase Flow ---
   public getOrders(): Order[] {
     return this.get<Order[]>(STORAGE_KEYS.ORDERS, initialOrders);
+  }
+
+  public deleteOrder(orderIdOrNumber: string): boolean {
+    const orders = this.getOrders().filter(o => o.id !== orderIdOrNumber && o.orderNumber !== orderIdOrNumber);
+    this.set(STORAGE_KEYS.ORDERS, orders);
+    return true;
   }
 
   public getPayments(): Payment[] {

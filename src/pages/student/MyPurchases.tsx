@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { storageService } from '../../services/storage';
-import { BakeryOrder, ProductTrackingStatus } from '../../types';
+import { ecommerceApi } from '../../services/ecommerceApi';
+import type { ProductOrder } from '../../types';
 import {
   Receipt,
   CheckCircle,
@@ -9,19 +11,16 @@ import {
   XCircle,
   AlertCircle,
   MessageCircle,
-  ExternalLink,
   ChevronRight,
-  Sparkles,
   X,
   BookOpen,
-  Cake,
   Truck,
   Package,
   Search,
-  CheckCircle2,
   Calendar,
   MapPin,
-  Check
+  Banknote,
+  ShoppingBag
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -40,27 +39,21 @@ interface UserOrder {
   whatsappUrl?: string;
 }
 
-const TRACKING_STEPS = [
-  { key: 'ORDER_RECEIVED', label: 'Order Received', desc: 'Order confirmed & queued in kitchen' },
-  { key: 'IN_KITCHEN', label: 'Baking in Kitchen', desc: 'Chef Anisha is preparing your bake' },
-  { key: 'PACKED', label: 'Packed & Boxed', desc: 'Cooled, decorated & ribbon-sealed' },
-  { key: 'OUT_FOR_DELIVERY', label: 'Out for Delivery', desc: 'Courier on the way / Ready for pickup' },
-  { key: 'DELIVERED', label: 'Delivered', desc: 'Enjoy your fresh artisan bake!' }
-];
-
 export const MyPurchases: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'bakery' | 'courses'>('bakery');
+  const [activeTab, setActiveTab] = useState<'products' | 'courses'>('products');
 
-  // Courses Orders
+  // Courses Orders (WhatsApp Manual Activation)
   const [orders, setOrders] = useState<UserOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedReceipt, setSelectedReceipt] = useState<UserOrder | null>(null);
 
-  // Bakery Orders & Tracking
-  const [bakeryOrders, setBakeryOrders] = useState<BakeryOrder[]>([]);
+  // Physical Product Orders (COD & 5-Step Tracking from Neon PostgreSQL)
+  const [productOrders, setProductOrders] = useState<ProductOrder[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const [searchTrackingNumber, setSearchTrackingNumber] = useState('');
-  const [searchedOrder, setSearchedOrder] = useState<BakeryOrder | null>(null);
+  const [searchedOrder, setSearchedOrder] = useState<ProductOrder | null>(null);
+  const [lookupError, setLookupError] = useState<string | null>(null);
 
   const fetchOrders = async () => {
     try {
@@ -98,45 +91,34 @@ export const MyPurchases: React.FC = () => {
     }
   };
 
-  const fetchBakeryOrders = () => {
-    if (user) {
-      const userOrders = storageService.getBakeryOrders().filter(
-        o => o.userId === user.id || o.customerEmail === user.email
-      );
-      setBakeryOrders(userOrders);
-    } else {
-      setBakeryOrders([]);
+  const fetchProductOrders = async () => {
+    setLoadingProducts(true);
+    try {
+      const list = await ecommerceApi.getMyProductOrders();
+      setProductOrders(list);
+    } catch {
+      setProductOrders([]);
+    } finally {
+      setLoadingProducts(false);
     }
   };
 
   useEffect(() => {
     fetchOrders().finally(() => setLoading(false));
-    fetchBakeryOrders();
+    fetchProductOrders();
   }, [user]);
 
-  const handleLookupOrder = (e: React.FormEvent) => {
+  const handleLookupOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchTrackingNumber.trim()) return;
-    const found = storageService.getBakeryOrderByNumber(searchTrackingNumber.trim());
-    setSearchedOrder(found || null);
-  };
-
-  const getStepIndex = (status: ProductTrackingStatus) => {
-    switch (status) {
-      case 'ORDER_RECEIVED':
-        return 0;
-      case 'IN_KITCHEN':
-        return 1;
-      case 'PACKED':
-        return 2;
-      case 'OUT_FOR_DELIVERY':
-        return 3;
-      case 'DELIVERED':
-        return 4;
-      case 'CANCELLED':
-        return -1;
-      default:
-        return 0;
+    const num = searchTrackingNumber.trim();
+    if (!num) return;
+    setLookupError(null);
+    try {
+      const found = await ecommerceApi.getSingleProductOrder(num);
+      setSearchedOrder(found);
+    } catch (err: any) {
+      setSearchedOrder(null);
+      setLookupError(err.message || `No order found matching "${num}".`);
     }
   };
 
@@ -169,10 +151,10 @@ export const MyPurchases: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '1rem', borderBottom: '2px solid #EEDCE0' }}>
+      <div style={{ display: 'flex', gap: '1rem', borderBottom: '2px solid #EEDCE0', flexWrap: 'wrap' }}>
         <button
           type="button"
-          onClick={() => setActiveTab('bakery')}
+          onClick={() => setActiveTab('products')}
           style={{
             padding: '0.75rem 1.4rem',
             border: 'none',
@@ -180,8 +162,8 @@ export const MyPurchases: React.FC = () => {
             fontFamily: 'inherit',
             fontWeight: 700,
             fontSize: '1rem',
-            color: activeTab === 'bakery' ? 'var(--color-berry)' : 'var(--color-plum)',
-            borderBottom: activeTab === 'bakery' ? '3px solid var(--color-berry)' : '3px solid transparent',
+            color: activeTab === 'products' ? 'var(--color-berry)' : 'var(--color-plum)',
+            borderBottom: activeTab === 'products' ? '3px solid var(--color-berry)' : '3px solid transparent',
             marginBottom: '-2px',
             cursor: 'pointer',
             display: 'flex',
@@ -189,8 +171,8 @@ export const MyPurchases: React.FC = () => {
             gap: '0.5rem'
           }}
         >
-          <Cake size={18} />
-          <span>Bakery Orders & Live Tracking ({bakeryOrders.length})</span>
+          <Package size={18} />
+          <span>Physical Product Orders ({productOrders.length})</span>
         </button>
 
         <button
@@ -213,14 +195,13 @@ export const MyPurchases: React.FC = () => {
           }}
         >
           <Receipt size={18} />
-          <span>Masterclass Course Receipts ({orders.length})</span>
+          <span>Course Orders ({orders.length})</span>
         </button>
       </div>
 
-      {/* ================= TAB 1: BAKERY ORDERS & LIVE TRACKING ================= */}
-      {activeTab === 'bakery' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          
+      {/* ================= TAB 1: PHYSICAL PRODUCT ORDERS (COD & 5-STEP TRACKING) ================= */}
+      {activeTab === 'products' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
           {/* Quick Lookup Bar */}
           <div
             style={{
@@ -238,17 +219,17 @@ export const MyPurchases: React.FC = () => {
           >
             <div>
               <div style={{ fontWeight: 700, color: 'var(--color-plum)', fontSize: '0.95rem' }}>
-                Track Any Order by Number
+                Track Any Product Order by ID
               </div>
               <div style={{ fontSize: '0.82rem', color: '#7E696E' }}>
-                Have an order ID? (e.g. CK-BK-7492) Enter it below to check real-time baking status:
+                Enter your Order ID (e.g. CAK-...) to open live 5-step delivery tracking:
               </div>
             </div>
 
             <form onSubmit={handleLookupOrder} style={{ display: 'flex', gap: '0.5rem', flex: 1, maxWidth: '400px' }}>
               <input
                 type="text"
-                placeholder="e.g. CK-BK-7492"
+                placeholder="e.g. CAK-179..."
                 value={searchTrackingNumber}
                 onChange={e => setSearchTrackingNumber(e.target.value)}
                 style={{
@@ -261,106 +242,56 @@ export const MyPurchases: React.FC = () => {
                   fontFamily: 'monospace'
                 }}
               />
-              <button
-                type="submit"
-                style={{
-                  padding: '0.6rem 1.2rem',
-                  borderRadius: '10px',
-                  border: 'none',
-                  backgroundColor: 'var(--color-berry)',
-                  color: '#FFF',
-                  fontWeight: 600,
-                  fontSize: '0.88rem',
-                  cursor: 'pointer'
-                }}
-              >
-                Track
+              <button type="submit" className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                <Search size={14} /> Track
               </button>
             </form>
           </div>
 
-          {/* Searched Order Result if any */}
-          {searchedOrder && (
-            <div
-              style={{
-                backgroundColor: '#FFF8F9',
-                borderRadius: '20px',
-                border: '2px solid var(--color-berry)',
-                padding: '1.75rem',
-                boxShadow: '0 8px 30px rgba(169, 87, 104, 0.12)'
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-berry)', textTransform: 'uppercase' }}>
-                  Live Tracking Search Result
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setSearchedOrder(null)}
-                  style={{ background: 'none', border: 'none', color: '#8A7378', cursor: 'pointer' }}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              {/* Render Order Card */}
-              {renderBakeryOrderCard(searchedOrder, getStepIndex)}
+          {lookupError && (
+            <div style={{ padding: '0.9rem 1.2rem', backgroundColor: '#FFEBEE', color: '#C62828', borderRadius: '12px', fontSize: '0.88rem' }}>
+              {lookupError}
             </div>
           )}
 
-          {/* User's Placed Bakery Orders */}
-          {bakeryOrders.length === 0 && !searchedOrder ? (
-            <div
-              style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: '16px',
-                border: '1px solid var(--border-subtle)',
-                padding: '3rem 1.5rem',
-                textAlign: 'center'
-              }}
-            >
+          {searchedOrder && (
+            <div style={{ backgroundColor: '#FFF8F9', borderRadius: '20px', border: '2px solid var(--color-berry)', padding: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.9rem' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-berry)', textTransform: 'uppercase' }}>
+                  Order Search Result
+                </span>
+                <button type="button" onClick={() => setSearchedOrder(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                  <X size={18} />
+                </button>
+              </div>
+              {renderProductOrderCard(searchedOrder)}
+            </div>
+          )}
+
+          {loadingProducts ? (
+            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              Loading your physical product orders from Neon PostgreSQL...
+            </div>
+          ) : productOrders.length === 0 ? (
+            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid var(--border-subtle)', padding: '3.5rem 1.5rem', textAlign: 'center' }}>
               <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'var(--color-blush)', color: 'var(--color-berry)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.2rem auto' }}>
-                <Cake size={26} />
+                <ShoppingBag size={26} />
               </div>
               <h3 style={{ fontSize: '1.3rem', color: 'var(--color-plum)', marginBottom: '0.4rem' }}>
-                No Bakery Orders Yet
+                No Physical Product Orders Yet
               </h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', maxWidth: '480px', margin: '0 auto 1.5rem auto' }}>
-                You haven't ordered any fresh designer cakes or gourmet treats yet. Explore our handcrafted creations on the home page!
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem', maxWidth: '460px', margin: '0 auto 1.5rem auto' }}>
+                Explore handcrafted cakes, gift hampers, chocolates, and baking studio equipment with Cash on Delivery.
               </p>
-              <Link
-                to="/#products"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '12px',
-                  backgroundColor: 'var(--color-berry)',
-                  color: '#FFFFFF',
-                  fontWeight: 600,
-                  fontSize: '0.92rem',
-                  textDecoration: 'none'
-                }}
-              >
-                <span>Browse Bakery Creations</span>
-                <ChevronRight size={16} />
+              <Link to="/shop" className="btn btn-primary">
+                Browse Physical Shop <ChevronRight size={16} style={{ marginLeft: '4px' }} />
               </Link>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-              {bakeryOrders.map(order => (
-                <div
-                  key={order.id}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '20px',
-                    border: '1.5px solid var(--border-subtle)',
-                    padding: '1.75rem',
-                    boxShadow: '0 4px 20px rgba(87, 51, 58, 0.04)'
-                  }}
-                >
-                  {renderBakeryOrderCard(order, getStepIndex)}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.35rem' }}>
+              {productOrders.map(ord => (
+                <div key={ord.id} style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid var(--border-subtle)', padding: '1.6rem', boxShadow: 'var(--shadow-sm)' }}>
+                  {renderProductOrderCard(ord)}
                 </div>
               ))}
             </div>
@@ -515,7 +446,7 @@ export const MyPurchases: React.FC = () => {
       )}
 
       {/* Read-Only Course Receipt Modal */}
-      {selectedReceipt && (
+      {selectedReceipt && createPortal(
         <div className="modal-overlay" onClick={() => setSelectedReceipt(null)}>
           <div className="modal-content" style={{ maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--color-cream)' }}>
@@ -564,149 +495,98 @@ export const MyPurchases: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
   );
 };
 
-// Helper: Render Bakery Order Card with Live Stepper
-function renderBakeryOrderCard(order: BakeryOrder, getStepIndex: (status: ProductTrackingStatus) => number) {
-  const currentStep = getStepIndex(order.trackingStatus);
-  const isCancelled = order.trackingStatus === 'CANCELLED';
+function renderProductOrderCard(order: ProductOrder) {
+  const isCancelled = order.status === 'cancelled';
+  const isDelivered = order.status === 'delivered';
+  const isHamper = order.orderType === 'HAMPER';
+  const addressSummary = order.shippingAddress.city
+    ? `${order.shippingAddress.city}${order.shippingAddress.state ? `, ${order.shippingAddress.state}` : ''}${order.shippingAddress.pincode ? ` (${order.shippingAddress.pincode})` : ''}`
+    : (order.shippingAddress.streetAddress || 'Delivery address recorded');
 
   return (
-    <div>
-      {/* Top Header */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '1.25rem' }}>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <img
-            src={order.items[0]?.productImage || 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=800&q=80'}
-            alt=""
-            style={{ width: '64px', height: '64px', borderRadius: '12px', objectFit: 'cover' }}
-          />
-          <div>
-            <div style={{ fontSize: '0.78rem', color: '#8A7378', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Tracking Order: <strong style={{ color: 'var(--color-berry)', fontFamily: 'monospace' }}>{order.orderNumber}</strong>
-            </div>
-            <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.25rem', color: 'var(--color-plum)', margin: '0.1rem 0 0.2rem 0' }}>
-              {order.items[0]?.productName}
-            </h3>
-            <div style={{ fontSize: '0.84rem', color: '#6F5B60' }}>
-              {order.items[0]?.weight} • Qty: {order.items[0]?.quantity} • Placed on {new Date(order.createdAt).toLocaleDateString()}
-            </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+        <div>
+          <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            {isHamper ? 'Gift Hamper Order ID:' : 'Product Order ID:'}{' '}
+            <strong style={{ color: 'var(--color-berry)', fontFamily: 'monospace' }}>{order.orderNumber}</strong>
+          </div>
+          <div style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+            Placed on {new Date(order.createdAt).toLocaleDateString()} • {isHamper ? 'Bespoke WhatsApp Order' : `${order.deliveryMethod} Delivery`}
           </div>
         </div>
 
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-berry)' }}>
-            ₹{order.totalAmount.toLocaleString('en-IN')}
-          </div>
-          <div style={{ fontSize: '0.78rem', color: '#7E696E' }}>
-            {order.paymentMethod === 'WHATSAPP_UPI' ? 'WhatsApp UPI' : 'Cash on Delivery'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <span
+            style={{
+              padding: '0.32rem 0.85rem',
+              borderRadius: '999px',
+              fontSize: '0.76rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              backgroundColor: isCancelled ? '#FFEBEE' : isDelivered ? '#E8F5E9' : '#FFF3E0',
+              color: isCancelled ? '#C62828' : isDelivered ? '#2E7D32' : '#E65100'
+            }}
+          >
+            {order.status}
+          </span>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-plum)' }}>
+              ₹{order.totalAmount.toLocaleString('en-IN')}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}>
+              <Banknote size={12} />{' '}
+              {order.codCollected ? 'Paid / Collected' : isHamper ? 'WhatsApp Confirmation' : 'Cash on Delivery'}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Message on Cake if any */}
-      {order.messageOnCake && (
-        <div style={{ backgroundColor: '#FFF5F7', borderRadius: '10px', padding: '0.6rem 0.9rem', fontSize: '0.85rem', color: 'var(--color-plum)', marginBottom: '1.25rem' }}>
-          ✨ <strong>Message on Cake:</strong> "{order.messageOnCake}"
-        </div>
-      )}
-
-      {/* LIVE VISUAL TRACKING STEPPER */}
-      <div style={{ backgroundColor: '#FDF9FA', borderRadius: '16px', padding: '1.25rem', border: '1px solid #F0D9DE', marginBottom: '1.25rem' }}>
-        <div style={{ fontSize: '0.78rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--color-berry)', marginBottom: '1rem' }}>
-          Live Kitchen & Delivery Tracking
-        </div>
-
-        {!isCancelled ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', position: 'relative' }}>
-            {TRACKING_STEPS.map((step, idx) => {
-              const isPast = idx < currentStep;
-              const isCurrent = idx === currentStep;
-              return (
-                <div key={step.key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                  <div
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      backgroundColor: isPast ? '#25D366' : isCurrent ? 'var(--color-berry)' : '#E6D7DA',
-                      color: '#FFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      marginBottom: '0.4rem',
-                      boxShadow: isCurrent ? '0 0 0 4px rgba(169, 87, 104, 0.2)' : 'none'
-                    }}
-                  >
-                    {isPast ? <Check size={16} /> : idx + 1}
-                  </div>
-                  <div style={{ fontWeight: isCurrent ? 700 : 500, fontSize: '0.8rem', color: isCurrent ? 'var(--color-plum)' : '#7E696E', lineHeight: 1.2 }}>
-                    {step.label}
-                  </div>
-                </div>
-              );
-            })}
+      {/* Items Thumbnails & Quantities */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+        {order.items.map(it => (
+          <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.6rem 0.85rem', borderRadius: '12px', backgroundColor: 'var(--color-cream)', border: '1px solid var(--border-subtle)', minWidth: '220px' }}>
+            {it.image && <img src={it.image} alt={it.productName} style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }} />}
+            <div>
+              <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--color-plum)' }}>{it.productName}</div>
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                {it.variantLabel ? `${it.variantLabel} • ` : ''}Qty {it.quantity} • ₹{it.lineTotal.toLocaleString('en-IN')}
+              </div>
+            </div>
           </div>
-        ) : (
-          <div style={{ color: '#D9383A', fontWeight: 600, fontSize: '0.9rem' }}>
-            ⚠️ This order has been cancelled.
-          </div>
-        )}
-
-        {/* Latest note from Chef */}
-        {order.statusHistory && order.statusHistory.length > 0 && (
-          <div style={{ borderTop: '1px solid #F0D9DE', marginTop: '1rem', paddingTop: '0.75rem', fontSize: '0.82rem', color: '#57333A', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <Clock size={14} color="var(--color-berry)" />
-            <span>
-              <strong>Latest Kitchen Update:</strong> {order.statusHistory[order.statusHistory.length - 1].note || 'Order is being actively prepared.'}
-            </span>
-          </div>
-        )}
+        ))}
       </div>
 
-      {/* Bottom Info & Contact Row */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', fontSize: '0.85rem', color: '#6F5B60' }}>
-        <div style={{ display: 'flex', gap: '1.2rem', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+      {/* Bottom Row: Expected Delivery & Track Button */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.85rem', paddingTop: '0.85rem', borderTop: '1px solid #FAF0F2', fontSize: '0.84rem', color: 'var(--text-muted)' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.2rem' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
             <Calendar size={14} color="var(--color-berry)" />
-            <span>Delivery: {order.deliveryDate || 'As scheduled'}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            {isHamper ? 'Preferred Date:' : 'Expected:'} <strong style={{ color: 'var(--color-plum)' }}>{order.expectedDeliveryDate}</strong>
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
             <MapPin size={14} color="var(--color-berry)" />
-            <span className="truncate" style={{ maxWidth: '250px' }} title={order.deliveryAddress}>
-              {order.deliveryAddress}
-            </span>
-          </div>
+            {addressSummary}
+          </span>
         </div>
 
-        <a
-          href={`https://wa.me/918248957918?text=${encodeURIComponent(
-            `Hello Chef Anisha! Regarding my bakery order #${order.orderNumber} (${order.items[0]?.productName}), I wanted to ask a question.`
-          )}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            padding: '0.5rem 1rem',
-            borderRadius: '10px',
-            backgroundColor: '#25D366',
-            color: '#FFFFFF',
-            fontWeight: 600,
-            fontSize: '0.82rem',
-            textDecoration: 'none'
-          }}
+        <Link
+          to={isHamper ? `/track-hamper/${order.orderNumber}` : `/orders/${order.orderNumber}/track`}
+          className="btn btn-primary btn-sm"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
         >
-          <MessageCircle size={14} /> Contact Chef on WhatsApp
-        </a>
+          <Truck size={15} />
+          <span>Track Order</span>
+          <ChevronRight size={14} />
+        </Link>
       </div>
     </div>
   );

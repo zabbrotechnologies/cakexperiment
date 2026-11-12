@@ -11,7 +11,6 @@ import {
   Download,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   BookOpen,
   Award,
   Lock,

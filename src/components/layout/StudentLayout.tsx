@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { BookOpen, GraduationCap, BarChart2, Receipt, User, ShieldAlert } from 'lucide-react';
+import { BookOpen, GraduationCap, BarChart2, Receipt, User, ShieldAlert, Heart, ShoppingBag } from 'lucide-react';
 
 export const StudentLayout: React.FC = () => {
   const { user, isAdmin } = useAuth();
@@ -9,9 +9,10 @@ export const StudentLayout: React.FC = () => {
   const tabs = [
     { label: 'Overview', to: '/learn', icon: <BookOpen size={16} /> },
     { label: 'My Courses', to: '/my-courses', icon: <GraduationCap size={16} /> },
+    { label: 'My Orders', to: '/my-purchases', icon: <Receipt size={16} /> },
+    { label: 'Wishlist', to: '/wishlist', icon: <Heart size={16} /> },
     { label: 'Learning Progress', to: '/my-learning', icon: <BarChart2 size={16} /> },
-    { label: 'Orders & Receipts', to: '/my-purchases', icon: <Receipt size={16} /> },
-    { label: 'Student Profile', to: '/profile', icon: <User size={16} /> }
+    { label: 'Profile Settings', to: '/profile', icon: <User size={16} /> }
   ];
 
   return (
@@ -60,9 +61,12 @@ export const StudentLayout: React.FC = () => {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <Link to="/shop" className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                <ShoppingBag size={14} /> Browse Shop
+              </Link>
               <Link to="/courses" className="btn btn-outline btn-sm">
-                Browse Marketplace
+                Browse Courses
               </Link>
             </div>
           </div>

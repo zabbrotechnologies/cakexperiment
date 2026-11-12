@@ -13,6 +13,13 @@ import { GiftHampers } from './pages/public/GiftHampers';
 import { Courses } from './pages/public/Courses';
 import { CourseDetail } from './pages/public/CourseDetail';
 import { Checkout } from './pages/public/Checkout';
+import { Shop } from './pages/public/Shop';
+import { ProductDetail } from './pages/public/ProductDetail';
+import { CartPage } from './pages/public/CartPage';
+import { WishlistPage } from './pages/public/WishlistPage';
+import { ProductCheckout } from './pages/public/ProductCheckout';
+import { OrderConfirmed } from './pages/public/OrderConfirmed';
+import { OrderTrackingPage } from './pages/public/OrderTrackingPage';
 import { About } from './pages/public/About';
 import { SignIn } from './pages/public/SignIn';
 import { SignUp } from './pages/public/SignUp';
@@ -36,6 +43,8 @@ import { AdminCategories } from './pages/admin/AdminCategories';
 import { AdminVideos } from './pages/admin/AdminVideos';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminOrders } from './pages/admin/AdminOrders';
+import { AdminProductOrders } from './pages/admin/AdminProductOrders';
+import { AdminHamperOrders } from './pages/admin/AdminHamperOrders';
 import { AdminPayments } from './pages/admin/AdminPayments';
 import { AdminReviews } from './pages/admin/AdminReviews';
 import { AdminSettings } from './pages/admin/AdminSettings';
@@ -75,6 +84,9 @@ export const App: React.FC = () => {
             <Route path="/" element={<Home />} />
             <Route path="/gift-hampers" element={<GiftHampers />} />
             <Route path="/gift-hampers/order" element={<GiftHampers />} />
+            <Route path="/track-hamper/:orderNumber" element={<OrderTrackingPage />} />
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/shop/:slug" element={<ProductDetail />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/:slug" element={<CourseDetail />} />
             <Route path="/checkout/:courseId" element={<Checkout />} />
@@ -87,7 +99,7 @@ export const App: React.FC = () => {
             <Route path="/admin/login" element={<Navigate to="/signin" replace />} />
           </Route>
 
-          {/* Student Dedicated Experience (Protected) */}
+          {/* Student & Shopper Authenticated Commerce Routes */}
           <Route
             element={
               <ProtectedRoute requireStudent>
@@ -95,10 +107,15 @@ export const App: React.FC = () => {
               </ProtectedRoute>
             }
           >
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/product-checkout" element={<ProductCheckout />} />
+            <Route path="/order-confirmed/:orderNumber" element={<OrderConfirmed />} />
+            <Route path="/orders/:orderNumber/track" element={<OrderTrackingPage />} />
             <Route element={<StudentLayout />}>
               <Route path="/learn" element={<StudentDashboard />} />
               <Route path="/my-courses" element={<MyCourses />} />
               <Route path="/my-learning" element={<MyLearning />} />
+              <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/profile" element={<StudentProfile />} />
               <Route path="/my-purchases" element={<MyPurchases />} />
               <Route path="/payment-history" element={<MyPurchases />} />
@@ -137,6 +154,8 @@ export const App: React.FC = () => {
             <Route path="videos" element={<AdminVideos />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="product-orders" element={<AdminProductOrders />} />
+            <Route path="hamper-orders" element={<AdminHamperOrders />} />
             <Route path="payments" element={<AdminPayments />} />
             <Route path="reviews" element={<AdminReviews />} />
             <Route path="settings" element={<AdminSettings />} />

@@ -28,7 +28,6 @@ import {
   Check,
   List,
   Grid,
-  Sparkles
 } from 'lucide-react';
 
 export const AdminVideos: React.FC = () => {

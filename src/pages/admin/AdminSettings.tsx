@@ -1,12 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { storageService } from '../../services/storage';
-import { AcademySettings } from '../../types';
-import { Settings, Save, Check, Database, HardDrive, RefreshCw, Server, ShieldCheck, UploadCloud } from 'lucide-react';
+import { ecommerceApi } from '../../services/ecommerceApi';
+import { AcademySettings, StoreConfig } from '../../types';
+import { Settings, Save, Check, Database, HardDrive, RefreshCw, Server, ShieldCheck, UploadCloud, Truck } from 'lucide-react';
 import { neonService, NeonStatus } from '../../services/neonService';
 
 export const AdminSettings: React.FC = () => {
   const [settings, setSettings] = useState<AcademySettings>(() => storageService.getSettings());
   const [saved, setSaved] = useState(false);
+
+  const [storeConfig, setStoreConfig] = useState<StoreConfig>({
+    standardShippingFee: 99,
+    expressShippingFee: 199,
+    freeShippingThreshold: 1499,
+    standardDeliveryDaysMin: 5,
+    standardDeliveryDaysMax: 7,
+    expressDeliveryDaysMin: 2,
+    expressDeliveryDaysMax: 3
+  });
+  const [storeSaved, setStoreSaved] = useState(false);
+  const [storeError, setStoreError] = useState<string | null>(null);
+  const [savingStore, setSavingStore] = useState(false);
 
   // Neon Services Status State
   const [neonStatus, setNeonStatus] = useState<NeonStatus | null>(null);
@@ -28,7 +42,24 @@ export const AdminSettings: React.FC = () => {
 
   useEffect(() => {
     fetchNeonStatus();
+    ecommerceApi.getStoreConfig().then(setStoreConfig).catch(() => {});
   }, []);
+
+  const handleSaveStoreConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingStore(true);
+    setStoreError(null);
+    try {
+      const updated = await ecommerceApi.adminUpdateStoreSettings(storeConfig);
+      setStoreConfig(updated);
+      setStoreSaved(true);
+      setTimeout(() => setStoreSaved(false), 2500);
+    } catch (err: any) {
+      setStoreError(err?.message || 'Failed to save shipping configuration.');
+    } finally {
+      setSavingStore(false);
+    }
+  };
 
   const handleTestQuery = async () => {
     try {
@@ -341,6 +372,134 @@ export const AdminSettings: React.FC = () => {
 
         </form>
 
+      </div>
+
+      {/* Physical Store Shipping & COD Settings */}
+      <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '2rem', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--color-plum)', fontWeight: 600, fontSize: '1.1rem', marginBottom: '1.25rem' }}>
+          <Truck size={20} color="var(--color-berry)" /> Physical Store Shipping &amp; COD Settings
+        </div>
+
+        {storeSaved && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#E8F5E9', color: '#2E7D32', padding: '0.8rem 1rem', borderRadius: 'var(--radius-md)', fontSize: '0.88rem', marginBottom: '1.2rem' }}>
+            <Check size={16} /> Store shipping &amp; COD rules saved to Neon PostgreSQL!
+          </div>
+        )}
+        {storeError && (
+          <div style={{ backgroundColor: '#FFEBEE', color: '#C62828', padding: '0.8rem 1rem', borderRadius: 'var(--radius-md)', fontSize: '0.88rem', marginBottom: '1.2rem' }}>
+            {storeError}
+          </div>
+        )}
+
+        <form onSubmit={handleSaveStoreConfig} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 600, color: 'var(--color-plum)', marginBottom: '0.35rem' }}>
+                Standard Shipping Fee (₹)
+              </label>
+              <input
+                type="number"
+                min="0"
+                required
+                value={storeConfig.standardShippingFee}
+                onChange={(e) => setStoreConfig({ ...storeConfig, standardShippingFee: Number(e.target.value) })}
+                className="input-field"
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 600, color: 'var(--color-plum)', marginBottom: '0.35rem' }}>
+                Express Shipping Fee (₹)
+              </label>
+              <input
+                type="number"
+                min="0"
+                required
+                value={storeConfig.expressShippingFee}
+                onChange={(e) => setStoreConfig({ ...storeConfig, expressShippingFee: Number(e.target.value) })}
+                className="input-field"
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 600, color: 'var(--color-plum)', marginBottom: '0.35rem' }}>
+                Free Standard Threshold (₹)
+              </label>
+              <input
+                type="number"
+                min="0"
+                required
+                value={storeConfig.freeShippingThreshold}
+                onChange={(e) => setStoreConfig({ ...storeConfig, freeShippingThreshold: Number(e.target.value) })}
+                className="input-field"
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--color-plum)', marginBottom: '0.35rem' }}>
+                Standard Days Min
+              </label>
+              <input
+                type="number"
+                min="1"
+                required
+                value={storeConfig.standardDeliveryDaysMin}
+                onChange={(e) => setStoreConfig({ ...storeConfig, standardDeliveryDaysMin: Number(e.target.value) })}
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--color-plum)', marginBottom: '0.35rem' }}>
+                Standard Days Max
+              </label>
+              <input
+                type="number"
+                min="1"
+                required
+                value={storeConfig.standardDeliveryDaysMax}
+                onChange={(e) => setStoreConfig({ ...storeConfig, standardDeliveryDaysMax: Number(e.target.value) })}
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--color-plum)', marginBottom: '0.35rem' }}>
+                Express Days Min
+              </label>
+              <input
+                type="number"
+                min="1"
+                required
+                value={storeConfig.expressDeliveryDaysMin}
+                onChange={(e) => setStoreConfig({ ...storeConfig, expressDeliveryDaysMin: Number(e.target.value) })}
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--color-plum)', marginBottom: '0.35rem' }}>
+                Express Days Max
+              </label>
+              <input
+                type="number"
+                min="1"
+                required
+                value={storeConfig.expressDeliveryDaysMax}
+                onChange={(e) => setStoreConfig({ ...storeConfig, expressDeliveryDaysMax: Number(e.target.value) })}
+                className="input-field"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={savingStore}
+            className="btn btn-primary"
+            style={{ width: 'fit-content', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+          >
+            <Save size={16} /> {savingStore ? 'Saving...' : 'Save Shipping & COD Settings'}
+          </button>
+        </form>
       </div>
 
     </div>
