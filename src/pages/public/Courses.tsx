@@ -1167,7 +1167,7 @@ export const Courses: React.FC = () => {
                               </Link>
                             ) : (
                               <Link
-                                to={`/courses/${course.slug}`}
+                                to={`/checkout/${course.slug}`}
                                 onClick={(e) => {
                                   if (!isAuthenticated) {
                                     e.preventDefault();

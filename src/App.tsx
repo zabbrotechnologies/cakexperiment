@@ -84,6 +84,7 @@ export const App: React.FC = () => {
             <Route path="/" element={<Home />} />
             <Route path="/gift-hampers" element={<GiftHampers />} />
             <Route path="/gift-hampers/order" element={<GiftHampers />} />
+            <Route path="/track-order/:orderNumber" element={<OrderTrackingPage />} />
             <Route path="/track-hamper/:orderNumber" element={<OrderTrackingPage />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/shop/:slug" element={<ProductDetail />} />

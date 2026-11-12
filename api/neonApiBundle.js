@@ -57470,7 +57470,7 @@ var nodemailer = {
 var nodemailer_default = nodemailer;
 
 // server/emailService.ts
-var DEFAULT_BASE_URL = "https://cakexperiment.vercel.app";
+var DEFAULT_BASE_URL = "https://www.thecakexperiment.com";
 function getAppBaseUrl() {
   return (process.env.APP_BASE_URL || DEFAULT_BASE_URL).replace(/\/$/, "");
 }
@@ -57511,32 +57511,29 @@ function buildBrandedHtml(title, preheader, bodyHtml) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${escapeHtml(title)}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#FAF4F2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#4A2B31;">
+<body style="margin:0;padding:0;background-color:#F5F5F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#333333;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${escapeHtml(preheader)}</div>
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#FAF4F2;padding:28px 12px;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#F5F5F5;padding:24px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;width:100%;background-color:#FFFFFF;border-radius:14px;border:1px solid #EEDCE0;overflow:hidden;">
+        <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;width:100%;background-color:#FFFFFF;border-radius:8px;border:1px solid #E5E5E5;overflow:hidden;">
           <tr>
-            <td style="padding:24px 32px 18px 32px;border-bottom:1px solid #F3E5E8;background-color:#FFFDFC;">
-              <div style="font-size:20px;font-weight:700;color:#57333A;letter-spacing:0.3px;">Cakexperiment</div>
-              <div style="font-size:12px;color:#8D6A71;margin-top:2px;">Baking Academy &amp; Artisan Studio</div>
+            <td style="padding:22px 28px 16px 28px;border-bottom:1px solid #EEEEEE;background-color:#FAFAFA;">
+              <div style="font-size:18px;font-weight:700;color:#222222;letter-spacing:0.2px;">Cakexperiment</div>
+              <div style="font-size:12px;color:#666666;margin-top:2px;">Baking Academy &amp; Studio</div>
             </td>
           </tr>
           <tr>
-            <td style="padding:28px 32px;font-size:15px;line-height:1.65;color:#4A2B31;">
+            <td style="padding:24px 28px;font-size:15px;line-height:1.6;color:#333333;">
               ${bodyHtml}
             </td>
           </tr>
           <tr>
-            <td style="padding:20px 32px;background-color:#FDF7F6;border-top:1px solid #F3E5E8;font-size:12px;line-height:1.6;color:#7D5E64;">
-              <div>This is a transactional notification from Cakexperiment regarding your account or order.</div>
-              <div style="margin-top:6px;">
-                <a href="${baseUrl}/shop" style="color:#A95768;text-decoration:none;">Shop</a> &middot;
-                <a href="${baseUrl}/courses" style="color:#A95768;text-decoration:none;">Academy Courses</a> &middot;
-                <a href="${baseUrl}/gift-hampers" style="color:#A95768;text-decoration:none;">Gift Hampers</a>
+            <td style="padding:18px 28px;background-color:#FAFAFA;border-top:1px solid #EEEEEE;font-size:12px;line-height:1.5;color:#666666;">
+              <div>This is a transactional email regarding your account or order with Cakexperiment.</div>
+              <div style="margin-top:4px;">
+                <a href="${baseUrl}" style="color:#8F2940;text-decoration:none;">thecakexperiment.com</a> &middot; info.cakexperiment@gmail.com
               </div>
-              <div style="margin-top:6px;color:#9A7E83;">Cakexperiment Studio &middot; info.cakexperiment@gmail.com</div>
             </td>
           </tr>
         </table>
@@ -57550,15 +57547,15 @@ function renderSummaryBox(rows) {
   const trs = rows.map(
     ([label, value]) => `
       <tr>
-        <td style="padding:6px 0;font-size:13px;color:#7D5E64;width:40%;vertical-align:top;">${escapeHtml(label)}</td>
-        <td style="padding:6px 0;font-size:14px;color:#4A2B31;font-weight:600;vertical-align:top;">${escapeHtml(value)}</td>
+        <td style="padding:5px 0;font-size:13px;color:#666666;width:40%;vertical-align:top;">${escapeHtml(label)}</td>
+        <td style="padding:5px 0;font-size:14px;color:#222222;font-weight:600;vertical-align:top;">${escapeHtml(value)}</td>
       </tr>`
   ).join("");
-  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#FDF7F6;border:1px solid #F0DFE3;border-radius:10px;padding:14px 18px;margin:18px 0;">${trs}</table>`;
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#FBFBFB;border:1px solid #EBEBEB;border-radius:6px;padding:12px 16px;margin:16px 0;">${trs}</table>`;
 }
 function renderActionButton(label, url) {
-  return `<div style="margin:22px 0;">
-    <a href="${escapeHtml(url)}" style="display:inline-block;background-color:#A95768;color:#FFFFFF;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">${escapeHtml(label)}</a>
+  return `<div style="margin:20px 0;">
+    <a href="${escapeHtml(url)}" style="display:inline-block;background-color:#8F2940;color:#FFFFFF;padding:11px 22px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;">${escapeHtml(label)}</a>
   </div>`;
 }
 async function sendTransactionalEmail(payload) {
@@ -57569,13 +57566,21 @@ async function sendTransactionalEmail(payload) {
     }
     const gmail = getGmailTransporter();
     if (gmail) {
+      const messageIdDomain = "thecakexperiment.com";
+      const customMessageId = `<${Date.now()}.${Math.random().toString(36).slice(2, 10)}@${messageIdDomain}>`;
       const info = await gmail.transporter.sendMail({
-        from: gmail.fromAddress,
-        replyTo: gmail.fromAddress,
+        from: `Cakexperiment <${process.env.GMAIL_USER?.trim() || "info.cakexperiment@gmail.com"}>`,
+        replyTo: `Cakexperiment Support <${process.env.GMAIL_USER?.trim() || "info.cakexperiment@gmail.com"}>`,
         to: recipient,
         subject: payload.subject,
         text: payload.text,
-        html: payload.html
+        html: payload.html,
+        messageId: customMessageId,
+        headers: {
+          "X-Auto-Response-Suppress": "OOF, AutoReply",
+          "Auto-Submitted": "auto-generated",
+          "Precedence": "bulk"
+        }
       });
       console.log(`[Email Sent - Gmail] To: ${recipient} | Subject: "${payload.subject}" | ID: ${info.messageId}`);
       return { sent: true };

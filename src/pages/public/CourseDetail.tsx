@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { useAuth } from '../../context/AuthContext';
-import { Course, Module, Lesson } from '../../types';
+import { Course } from '../../types';
 import {
   Star,
   Clock,
@@ -28,13 +28,57 @@ export const CourseDetail: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, hasCourseAccess } = useAuth();
 
-  const course = storageService.getCourseBySlug(slug || '');
+  const [course, setCourse] = useState<Course | null>(() => storageService.getCourseBySlug(slug || '') || null);
+  const [loading, setLoading] = useState<boolean>(!course);
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({ 'mod-1-1': true, 'mod-2-1': true });
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'Credit Card' | 'Debit Card' | 'UPI'>('Credit Card');
   const [isProcessing, setIsProcessing] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!slug) return;
+    let active = true;
+
+    fetch(`/api/courses/${encodeURIComponent(slug)}`)
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (!active) return;
+        if (data?.course) {
+          setCourse(data.course);
+        } else {
+          const fallback =
+            storageService.getCourseBySlug(slug) ||
+            storageService.getCourseById(slug) ||
+            null;
+          if (fallback) setCourse(fallback);
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        const fallback =
+          storageService.getCourseBySlug(slug) ||
+          storageService.getCourseById(slug) ||
+          null;
+        if (fallback) setCourse(fallback);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="container" style={{ padding: '6rem 1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+        Loading masterclass curriculum...
+      </div>
+    );
+  }
 
   if (!course) {
     return (
