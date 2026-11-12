@@ -459,8 +459,8 @@ async function handleSignUp(req: IncomingMessage, res: ServerResponse) {
     `cakexperiment_session=${sessionToken}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${7 * 24 * 3600}`
   );
 
-  // Send non-blocking welcome email to newly registered user
-  dispatchEmailAsync(generateWelcomeEmail(cleanEmail, cleanName));
+  // Send welcome email to newly registered user before ending serverless response
+  await dispatchEmailAsync(generateWelcomeEmail(cleanEmail, cleanName));
 
   res.statusCode = 201;
   res.end(
@@ -794,8 +794,8 @@ async function handleCreateWhatsAppOrder(req: IncomingMessage, res: ServerRespon
       VALUES (${`pay_${orderId}`}, ${orderId}, 'WHATSAPP_MANUAL', 'AWAITING_CONFIRMATION');
     `;
 
-    // Trigger non-blocking email
-    dispatchEmailAsync(generateOrderCreatedEmail(session.email, session.name, orderNumber, course.title, actualAmount));
+    // Trigger email before ending response
+    await dispatchEmailAsync(generateOrderCreatedEmail(session.email, session.name, orderNumber, course.title, actualAmount));
   }
 
   // Construct official WhatsApp concierge message with actual database values
@@ -1118,7 +1118,7 @@ async function handleUserProgress(req: IncomingMessage, res: ServerResponse) {
     if (progressPercentage === 100 && prevProgress < 100) {
       const courseRows = await sql`SELECT title FROM courses WHERE id = ${courseId} LIMIT 1;`;
       const courseTitle = courseRows[0]?.title || 'your course';
-      dispatchEmailAsync(generateCourseCompletedEmail(session.email, session.name, courseTitle));
+      await dispatchEmailAsync(generateCourseCompletedEmail(session.email, session.name, courseTitle));
     }
   } catch (err) {
     console.warn('Could not update enrollments progress column:', err);
@@ -1408,8 +1408,8 @@ async function handleAdminConfirmPayment(orderId: string, req: IncomingMessage, 
     VALUES (${`audit_${Date.now()}`}, ${session.userId}, ${ord.id}, 'CONFIRM_PAYMENT_AND_ACTIVATE', ${ord.status}, 'COMPLETED');
   `;
 
-  // Dispatch non-blocking notification
-  dispatchEmailAsync(generateCourseActivatedEmail(ord.email, ord.name, ord.course_name_snapshot, ord.order_number));
+  // Dispatch notification before ending response
+  await dispatchEmailAsync(generateCourseActivatedEmail(ord.email, ord.name, ord.course_name_snapshot, ord.order_number));
 
   res.statusCode = 200;
   res.end(
@@ -1458,7 +1458,7 @@ async function handleAdminCancelOrder(orderId: string, req: IncomingMessage, res
   `;
 
   if (ord.email && ord.course_name_snapshot) {
-    dispatchEmailAsync(generateCourseCancelledEmail(ord.email, ord.name || 'Student', ord.course_name_snapshot, ord.order_number));
+    await dispatchEmailAsync(generateCourseCancelledEmail(ord.email, ord.name || 'Student', ord.course_name_snapshot, ord.order_number));
   }
 
   res.statusCode = 200;

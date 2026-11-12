@@ -68,8 +68,9 @@ function getGmailTransporter(): { transporter: Transporter; fromAddress: string 
   if (!cachedTransporter || cachedCredKey !== key) {
     cachedTransporter = nodemailer.createTransport({
       service: 'gmail',
-      pool: true,
-      maxConnections: 3,
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 6000,
       auth: { user, pass }
     });
     cachedCredKey = key;
@@ -199,11 +200,16 @@ export async function sendTransactionalEmail(payload: EmailPayload): Promise<{ s
   }
 }
 
-/** Fire-and-forget helper so API handlers stay fast and resilient. */
-export function dispatchEmailAsync(payload: EmailPayload): void {
-  void sendTransactionalEmail(payload).catch((err) => {
-    console.warn('[Email Async Error]', err?.message || err);
-  });
+/** Awaitable safe helper (with 6s timeout) so serverless functions finish sending before closing. */
+export async function dispatchEmailAsync(payload: EmailPayload): Promise<void> {
+  try {
+    await Promise.race([
+      sendTransactionalEmail(payload),
+      new Promise<void>((resolve) => setTimeout(resolve, 6000))
+    ]);
+  } catch (err: any) {
+    console.warn('[Email Dispatch Error]', err?.message || err);
+  }
 }
 
 // ---------------------------------------------------------------------------

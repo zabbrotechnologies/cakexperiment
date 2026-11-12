@@ -1372,7 +1372,7 @@ async function handleCreateProductCodOrder(session: AuthenticatedSession, body: 
 
     const fullOrder = await fetchSingleProductOrder(orderId);
     if (fullOrder?.customerEmail) {
-      dispatchEmailAsync(generateProductOrderPlacedEmail(fullOrder.customerEmail, fullOrder));
+      await dispatchEmailAsync(generateProductOrderPlacedEmail(fullOrder.customerEmail, fullOrder));
     }
     sendJson(res, 200, { success: true, order: fullOrder });
   } catch (err: any) {
@@ -1496,7 +1496,7 @@ async function handleCreateHamperOrder(
   const fullOrder = await fetchSingleProductOrder(orderId);
   const hamperEmail = fullOrder?.customerEmail || session?.email;
   if (hamperEmail && fullOrder) {
-    dispatchEmailAsync(generateHamperOrderPlacedEmail(hamperEmail, fullOrder));
+    await dispatchEmailAsync(generateHamperOrderPlacedEmail(hamperEmail, fullOrder));
   }
   sendJson(res, 200, { success: true, order: fullOrder });
 }
@@ -2049,7 +2049,7 @@ async function handleAdminUpdateProductOrderStatus(
   invalidateAllCommerceCache();
   const updated = await fetchSingleProductOrder(ord.id);
   if (updated?.customerEmail) {
-    dispatchEmailAsync(generateProductOrderStatusEmail(updated.customerEmail, updated, nextStatus, note));
+    await dispatchEmailAsync(generateProductOrderStatusEmail(updated.customerEmail, updated, nextStatus, note));
   }
   sendJson(res, 200, { success: true, order: updated });
 }
@@ -2096,7 +2096,7 @@ async function handleAdminCollectCodPayment(orderId: string, adminUserId: string
   invalidateAllCommerceCache();
   const updated = await fetchSingleProductOrder(ord.id);
   if (updated?.customerEmail) {
-    dispatchEmailAsync(generatePaymentCollectedEmail(updated.customerEmail, updated));
+    await dispatchEmailAsync(generatePaymentCollectedEmail(updated.customerEmail, updated));
   }
   sendJson(res, 200, { success: true, order: updated });
 }

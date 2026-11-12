@@ -57490,8 +57490,9 @@ function getGmailTransporter() {
   if (!cachedTransporter || cachedCredKey !== key) {
     cachedTransporter = nodemailer_default.createTransport({
       service: "gmail",
-      pool: true,
-      maxConnections: 3,
+      connectionTimeout: 5e3,
+      greetingTimeout: 5e3,
+      socketTimeout: 6e3,
       auth: { user, pass: pass2 }
     });
     cachedCredKey = key;
@@ -57604,10 +57605,15 @@ async function sendTransactionalEmail(payload) {
     return { sent: false, reason: err.message };
   }
 }
-function dispatchEmailAsync(payload) {
-  void sendTransactionalEmail(payload).catch((err) => {
-    console.warn("[Email Async Error]", err?.message || err);
-  });
+async function dispatchEmailAsync(payload) {
+  try {
+    await Promise.race([
+      sendTransactionalEmail(payload),
+      new Promise((resolve3) => setTimeout(resolve3, 6e3))
+    ]);
+  } catch (err) {
+    console.warn("[Email Dispatch Error]", err?.message || err);
+  }
 }
 function generateWelcomeEmail(to2, name2) {
   const baseUrl = getAppBaseUrl();
@@ -59065,7 +59071,7 @@ async function handleCreateProductCodOrder(session, body, res) {
     invalidateAllCommerceCache();
     const fullOrder = await fetchSingleProductOrder(orderId);
     if (fullOrder?.customerEmail) {
-      dispatchEmailAsync(generateProductOrderPlacedEmail(fullOrder.customerEmail, fullOrder));
+      await dispatchEmailAsync(generateProductOrderPlacedEmail(fullOrder.customerEmail, fullOrder));
     }
     sendJson(res, 200, { success: true, order: fullOrder });
   } catch (err) {
@@ -59173,7 +59179,7 @@ async function handleCreateHamperOrder(session, body, res) {
   const fullOrder = await fetchSingleProductOrder(orderId);
   const hamperEmail = fullOrder?.customerEmail || session?.email;
   if (hamperEmail && fullOrder) {
-    dispatchEmailAsync(generateHamperOrderPlacedEmail(hamperEmail, fullOrder));
+    await dispatchEmailAsync(generateHamperOrderPlacedEmail(hamperEmail, fullOrder));
   }
   sendJson(res, 200, { success: true, order: fullOrder });
 }
@@ -59606,7 +59612,7 @@ async function handleAdminUpdateProductOrderStatus(orderId, body, adminUserId, r
   invalidateAllCommerceCache();
   const updated = await fetchSingleProductOrder(ord.id);
   if (updated?.customerEmail) {
-    dispatchEmailAsync(generateProductOrderStatusEmail(updated.customerEmail, updated, nextStatus, note));
+    await dispatchEmailAsync(generateProductOrderStatusEmail(updated.customerEmail, updated, nextStatus, note));
   }
   sendJson(res, 200, { success: true, order: updated });
 }
@@ -59649,7 +59655,7 @@ async function handleAdminCollectCodPayment(orderId, adminUserId, res) {
   invalidateAllCommerceCache();
   const updated = await fetchSingleProductOrder(ord.id);
   if (updated?.customerEmail) {
-    dispatchEmailAsync(generatePaymentCollectedEmail(updated.customerEmail, updated));
+    await dispatchEmailAsync(generatePaymentCollectedEmail(updated.customerEmail, updated));
   }
   sendJson(res, 200, { success: true, order: updated });
 }
@@ -60197,7 +60203,7 @@ async function handleSignUp(req, res) {
     "Set-Cookie",
     `cakexperiment_session=${sessionToken}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${7 * 24 * 3600}`
   );
-  dispatchEmailAsync(generateWelcomeEmail(cleanEmail, cleanName));
+  await dispatchEmailAsync(generateWelcomeEmail(cleanEmail, cleanName));
   res.statusCode = 201;
   res.end(
     JSON.stringify({
@@ -60466,7 +60472,7 @@ async function handleCreateWhatsAppOrder(req, res) {
       INSERT INTO payments (id, order_id, payment_method, status)
       VALUES (${`pay_${orderId}`}, ${orderId}, 'WHATSAPP_MANUAL', 'AWAITING_CONFIRMATION');
     `;
-    dispatchEmailAsync(generateOrderCreatedEmail(session.email, session.name, orderNumber, course.title, actualAmount));
+    await dispatchEmailAsync(generateOrderCreatedEmail(session.email, session.name, orderNumber, course.title, actualAmount));
   }
   const whatsappNumber = "918248957918";
   const whatsappMessage = `Hello! I would like to purchase a course from Cakexperiment.
@@ -60727,7 +60733,7 @@ async function handleUserProgress(req, res) {
     if (progressPercentage === 100 && prevProgress < 100) {
       const courseRows = await sql`SELECT title FROM courses WHERE id = ${courseId} LIMIT 1;`;
       const courseTitle = courseRows[0]?.title || "your course";
-      dispatchEmailAsync(generateCourseCompletedEmail(session.email, session.name, courseTitle));
+      await dispatchEmailAsync(generateCourseCompletedEmail(session.email, session.name, courseTitle));
     }
   } catch (err) {
     console.warn("Could not update enrollments progress column:", err);
@@ -60971,7 +60977,7 @@ async function handleAdminConfirmPayment(orderId, req, res) {
     INSERT INTO admin_audit_logs (id, admin_user_id, order_id, action, previous_status, new_status)
     VALUES (${`audit_${Date.now()}`}, ${session.userId}, ${ord.id}, 'CONFIRM_PAYMENT_AND_ACTIVATE', ${ord.status}, 'COMPLETED');
   `;
-  dispatchEmailAsync(generateCourseActivatedEmail(ord.email, ord.name, ord.course_name_snapshot, ord.order_number));
+  await dispatchEmailAsync(generateCourseActivatedEmail(ord.email, ord.name, ord.course_name_snapshot, ord.order_number));
   res.statusCode = 200;
   res.end(
     JSON.stringify({
@@ -61014,7 +61020,7 @@ async function handleAdminCancelOrder(orderId, req, res) {
     VALUES (${`audit_${Date.now()}`}, ${session.userId}, ${ord.id}, 'CANCEL_ORDER', ${ord.status}, 'CANCELLED');
   `;
   if (ord.email && ord.course_name_snapshot) {
-    dispatchEmailAsync(generateCourseCancelledEmail(ord.email, ord.name || "Student", ord.course_name_snapshot, ord.order_number));
+    await dispatchEmailAsync(generateCourseCancelledEmail(ord.email, ord.name || "Student", ord.course_name_snapshot, ord.order_number));
   }
   res.statusCode = 200;
   res.end(JSON.stringify({ success: true, message: "Order has been cancelled." }));
