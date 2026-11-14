@@ -272,7 +272,10 @@ export const Navbar: React.FC = () => {
               <div ref={userMenuRef} style={{ position: 'relative' }}>
                 <button
                   type="button"
-                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  onClick={() => {
+                    setUserDropdownOpen(!userDropdownOpen);
+                    setMobileMenuOpen(false);
+                  }}
                   className="nav-user-btn"
                   aria-label="User account menu"
                   aria-expanded={userDropdownOpen}
@@ -418,7 +421,10 @@ export const Navbar: React.FC = () => {
 
             {/* Mobile Hamburger Button */}
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              onClick={() => {
+                setMobileMenuOpen(!mobileMenuOpen);
+                setUserDropdownOpen(false);
+              }}
               className="mobile-menu-btn"
               aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
               aria-expanded={mobileMenuOpen}
@@ -803,14 +809,24 @@ export const Navbar: React.FC = () => {
             max-width: 120px;
           }
           .navbar-icon-btn {
-            padding: 0.35rem;
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
           .mobile-menu-btn {
-            padding: 0.35rem;
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
         }
 
-        /* 7. Tiny Phones (< 480px, e.g. 375px, 360px, 320px):
+        /* 7. Tiny Phones (< 480px, e.g. 393px, 375px, 360px, 320px):
               - User name hidden, avatar icon only
               - Logo scaled to 34px-36px
               - 100% fit with ZERO horizontal overflow */
@@ -820,7 +836,12 @@ export const Navbar: React.FC = () => {
             display: none !important;
           }
           .nav-user-btn {
-            padding: 0.25rem 0.35rem !important;
+            width: 36px !important;
+            height: 36px !important;
+            padding: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
             border-radius: 50% !important;
           }
           .navbar-brand-logo {
@@ -828,7 +849,10 @@ export const Navbar: React.FC = () => {
             max-width: 105px;
           }
           .mobile-nav-drawer {
-            padding: 1rem 1.15rem;
+            padding: 1.15rem 1.25rem;
+          }
+          .mobile-drawer-link {
+            padding: 0.5rem 0.2rem;
           }
         }
 

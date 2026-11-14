@@ -3340,10 +3340,10 @@ a {
 
 @media (max-width: 580px) {
   .founder-section {
-    padding: 4.5rem 0 5.5rem 0;
+    padding: 3.5rem 0 4.5rem 0;
   }
   .founder-portrait-wrap {
-    max-width: 360px;
+    max-width: 320px;
   }
   .founder-cards-grid {
     grid-template-columns: 1fr;
@@ -3368,6 +3368,217 @@ a {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* =========================================================================
+   COMPREHENSIVE MOBILE VIEW OPTIMIZATION (OnePlus Nord CE4 Lite & Modern Phones)
+   Viewport Width: 320px - 480px, Scale Factor: 2.5 - 3.0
+   ========================================================================= */
+
+@media (max-width: 768px) {
+  /* 1. Global Section Spacing */
+  section {
+    scroll-margin-top: 4.8rem !important;
+  }
+  #courses,
+  #why-learn,
+  #skills,
+  #about,
+  #categories,
+  #how-it-works,
+  #testimonials,
+  #faq,
+  #enroll {
+    padding-top: 3.8rem !important;
+    padding-bottom: 3.8rem !important;
+  }
+
+  /* 2. Fluid Editorial Headings (Proportional and balanced on mobile) */
+  h1 {
+    font-size: clamp(1.85rem, 6.5vw, 2.35rem) !important;
+    line-height: 1.18 !important;
+  }
+  h2,
+  section h2,
+  .container h2 {
+    font-size: clamp(1.55rem, 5.2vw, 1.95rem) !important;
+    line-height: 1.22 !important;
+  }
+  h3,
+  section h3 {
+    font-size: clamp(1.15rem, 3.8vw, 1.4rem) !important;
+    line-height: 1.25 !important;
+  }
+
+  /* 3. Section Eyebrow Badges */
+  .section-eyebrow-badge {
+    margin-bottom: 0.75rem !important;
+  }
+  .section-eyebrow-text {
+    font-size: 0.68rem !important;
+    letter-spacing: 0.12em !important;
+  }
+
+  /* 4. Hero Section Mobile Optimization */
+  .hero-section {
+    padding-top: 6.2rem !important;
+    padding-bottom: 3.5rem !important;
+  }
+  .hero-reveal-title {
+    font-size: clamp(1.85rem, 6.5vw, 2.35rem) !important;
+    line-height: 1.18 !important;
+    margin-bottom: 1rem !important;
+  }
+  .hero-reveal-title span {
+    font-size: 1.08em !important;
+  }
+  .hero-reveal-subtitle {
+    font-size: 0.96rem !important;
+    line-height: 1.58 !important;
+    margin-bottom: 1.8rem !important;
+  }
+  .hero-reveal-buttons {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.85rem !important;
+    margin-bottom: 2rem !important;
+  }
+  .hero-reveal-buttons .btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .hero-reveal-benefits {
+    grid-template-columns: 1fr !important;
+    gap: 0.85rem !important;
+    padding: 1rem 1.15rem !important;
+  }
+  .hero-reveal-benefits > div {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 0.85rem !important;
+  }
+
+  /* 5. Featured Courses Section Controls */
+  #courses .showcase-nav-pill {
+    display: none !important;
+  }
+  #courses a.btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* 6. Categories Parallax Carousel Mobile Optimization */
+  .category-parallax-section {
+    padding: 3.8rem 0 !important;
+  }
+  .category-parallax-viewport {
+    height: 500px !important;
+    max-width: 94vw !important;
+  }
+  .category-parallax-card {
+    height: 300px !important;
+    max-width: 92vw !important;
+    border-radius: 20px !important;
+  }
+  .category-parallax-img-wrap {
+    inset: 0 !important;
+  }
+  .category-parallax-content {
+    padding: 1.15rem 1.25rem !important;
+  }
+  .category-parallax-card h3 {
+    font-size: 1.25rem !important;
+    line-height: 1.22 !important;
+    margin-bottom: 0.35rem !important;
+  }
+  .category-parallax-card p {
+    font-size: 0.82rem !important;
+    line-height: 1.4 !important;
+    margin-bottom: 0.5rem !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+
+  /* 7. Testimonials Cinema Showcase Glows & Cards */
+  .curved-cinema-section {
+    padding: 3.8rem 0 4.2rem 0 !important;
+    max-width: 100vw !important;
+    overflow: hidden !important;
+  }
+  .curved-cinema-glow-1 {
+    left: 0 !important;
+    width: min(200px, 50vw) !important;
+    height: min(200px, 50vw) !important;
+  }
+  .curved-cinema-glow-2 {
+    right: 0 !important;
+    width: min(200px, 50vw) !important;
+    height: min(200px, 50vw) !important;
+  }
+  .curved-cinema-card {
+    width: min(290px, 78vw) !important;
+    padding: 1.35rem !important;
+  }
+
+  /* 8. Skills Section Mobile Center Alignment */
+  .skills-scalloped-badge {
+    width: 170px !important;
+    height: 170px !important;
+  }
+  .skills-card-pill {
+    flex-direction: column !important;
+    text-align: center !important;
+    padding: 1.2rem 1rem !important;
+  }
+  .skills-card-header {
+    justify-content: center !important;
+  }
+  .skills-card-tags {
+    justify-content: center !important;
+  }
+
+  /* 9. Founder Section Mobile Typography & Layout */
+  .founder-name-heading {
+    font-size: clamp(2rem, 6.5vw, 2.5rem) !important;
+  }
+  .founder-portrait-wrap {
+    max-width: 320px !important;
+  }
+  .founder-cards-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .founder-cta-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* 10. Learning Arc (How You Learn) */
+  .learning-arc-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 20px !important;
+  }
+
+  /* 11. Enroll Final CTA Section */
+  #enroll .btn {
+    width: 100% !important;
+    max-width: 340px !important;
+    justify-content: center !important;
+  }
+
+  /* 12. Subpage Top Padding for Floating Navbar */
+  .subpage-main {
+    padding-top: 5.6rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .subpage-main {
+    padding-top: 5.8rem !important;
+  }
+}
+
 
 
 
