@@ -268,7 +268,7 @@ export const Shop: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '1.8rem' }}>
+          <div className="products-grid">
             {products.map(p => (
               <ProductCard key={p.id} product={p} />
             ))}

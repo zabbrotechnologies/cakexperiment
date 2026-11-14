@@ -70,6 +70,26 @@ export const Home: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashScroll);
   }, [location.hash, location.pathname]);
 
+  // Hero Parallax Background Scroll State
+  const [heroScrollY, setHeroScrollY] = useState(0);
+
+  useEffect(() => {
+    let ticking = false;
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          if (window.scrollY < window.innerHeight * 1.6) {
+            setHeroScrollY(window.scrollY);
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   // Center-Anchored Coverflow Masterclasses Carousel State
   const [courses, setCourses] = useState<Course[]>(() =>
     storageService
@@ -560,15 +580,18 @@ export const Home: React.FC = () => {
           minHeight: '100dvh',
           display: 'flex',
           alignItems: 'center',
-          backgroundImage: "image-set(url('/images/hero-cake.webp') type('image/webp'), url('/images/hero-cake.png') type('image/png'))",
-          backgroundPosition: 'center right',
-          backgroundSize: 'cover',
-          backgroundRepeat: 'no-repeat',
           overflow: 'hidden',
           paddingTop: '7.8rem',
           paddingBottom: '4.5rem'
         }}
       >
+        {/* Parallax Background Layer */}
+        <div
+          className="hero-parallax-bg"
+          style={{
+            transform: `translate3d(0, ${heroScrollY * 0.38}px, 0)`
+          }}
+        />
         {/* Editorial Double-Ring Elliptical Badge (Online Masterclasses Branding) */}
         <div
           className="hero-badge hero-reveal-badge animate-float"

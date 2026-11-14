@@ -611,10 +611,19 @@ export const Navbar: React.FC = () => {
           top: calc(100% + 8px);
           width: 220px;
           max-width: calc(100vw - 32px);
-          background-color: #FFFFFF;
+          background: linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.92) 0%,
+            rgba(255, 255, 255, 0.84) 100%
+          );
+          backdrop-filter: blur(24px) saturate(190%);
+          -webkit-backdrop-filter: blur(24px) saturate(190%);
           border-radius: var(--radius-md);
-          box-shadow: var(--shadow-lg);
-          border: 1px solid var(--border-subtle);
+          box-shadow:
+            0 18px 45px -8px rgba(87, 51, 58, 0.12),
+            inset 0 1.5px 0.5px rgba(255, 255, 255, 0.95),
+            inset 0 0 18px rgba(255, 255, 255, 0.3);
+          border: 1px solid rgba(255, 255, 255, 0.85);
           padding: 0.5rem 0;
           z-index: 1000;
         }
@@ -670,13 +679,20 @@ export const Navbar: React.FC = () => {
           top: calc(100% + 8px);
           left: 0;
           right: 0;
-          background-color: rgba(255, 255, 255, 0.98);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
+          background: linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.88) 0%,
+            rgba(255, 255, 255, 0.80) 100%
+          );
+          backdrop-filter: blur(28px) saturate(190%) brightness(102%);
+          -webkit-backdrop-filter: blur(28px) saturate(190%) brightness(102%);
           border-radius: 20px;
-          border: 1px solid rgba(220, 165, 175, 0.45);
+          border: 1px solid rgba(255, 255, 255, 0.85);
           padding: 1.25rem 1.5rem;
-          box-shadow: 0 16px 40px -6px rgba(87, 51, 58, 0.16);
+          box-shadow:
+            0 24px 50px -10px rgba(87, 51, 58, 0.14),
+            inset 0 1.5px 0.5px rgba(255, 255, 255, 0.95),
+            inset 0 0 24px rgba(255, 255, 255, 0.35);
           max-height: calc(100dvh - 100px);
           overflow-y: auto;
           overscroll-behavior: contain;

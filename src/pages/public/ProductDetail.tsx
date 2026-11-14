@@ -535,7 +535,7 @@ export const ProductDetail: React.FC = () => {
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', color: 'var(--color-plum)', marginBottom: '1.5rem' }}>
               You May Also Love
             </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: '1.75rem' }}>
+            <div className="products-grid">
               {related.map(r => (
                 <ProductCard key={r.id} product={r} />
               ))}
