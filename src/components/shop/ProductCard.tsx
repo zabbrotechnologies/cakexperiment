@@ -105,87 +105,35 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   };
 
   return (
-    <div
-      className="cake-card"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: '#FFFFFF',
-        borderRadius: '20px',
-        border: '1px solid var(--border-subtle)',
-        overflow: 'hidden',
-        transition: 'transform 0.25s ease, box-shadow 0.25s ease'
-      }}
-    >
+    <div className="cake-card product-tile-card">
       {/* Image & Overlays */}
       <Link
         to={`/shop/${product.slug}`}
-        style={{
-          position: 'relative',
-          display: 'block',
-          height: '240px',
-          backgroundColor: 'var(--color-cream)',
-          overflow: 'hidden'
-        }}
+        className="product-tile-image-link"
       >
         <img
           src={displayImage}
           alt={product.name}
+          className="product-tile-image"
           style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            opacity: product.stock <= 0 ? 0.65 : 1,
-            transition: 'transform 0.35s ease'
+            opacity: product.stock <= 0 ? 0.65 : 1
           }}
         />
 
         {/* Badges Top-Left */}
-        <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+        <div className="product-tile-badges">
           {product.isExclusive && (
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                backgroundColor: '#57333A',
-                color: '#FFE29A',
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                padding: '0.25rem 0.6rem',
-                borderRadius: '999px',
-                letterSpacing: '0.04em'
-              }}
-            >
+            <span className="product-badge-exclusive">
               EXCLUSIVE
             </span>
           )}
           {product.badge && !product.isExclusive && (
-            <span
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.95)',
-                color: 'var(--color-berry)',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                padding: '0.25rem 0.6rem',
-                borderRadius: '999px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-              }}
-            >
+            <span className="product-badge-custom">
               {product.badge}
             </span>
           )}
           {product.stock <= 0 && (
-            <span
-              style={{
-                backgroundColor: '#C62828',
-                color: '#FFFFFF',
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                padding: '0.25rem 0.6rem',
-                borderRadius: '999px'
-              }}
-            >
+            <span className="product-badge-outofstock">
               Out of Stock
             </span>
           )}
@@ -196,51 +144,31 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           type="button"
           onClick={handleWishlist}
           aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+          className="product-tile-wishlist-btn"
           style={{
-            position: 'absolute',
-            top: '12px',
-            right: '12px',
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            border: '1px solid var(--border-subtle)',
-            backgroundColor: 'rgba(255,255,255,0.94)',
-            color: wishlisted ? '#D81B60' : 'var(--color-plum)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.08)'
+            color: wishlisted ? '#D81B60' : 'var(--color-plum)'
           }}
         >
-          <Heart size={16} fill={wishlisted ? '#D81B60' : 'none'} />
+          <Heart size={16} className="product-wishlist-icon" fill={wishlisted ? '#D81B60' : 'none'} />
         </button>
       </Link>
 
       {/* Body */}
-      <div style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
-        <div style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-berry)', fontWeight: 700, marginBottom: '0.35rem' }}>
+      <div className="product-tile-body">
+        <div className="product-tile-category">
           {product.categoryName || 'Artisan Shop'}
         </div>
 
         <Link
           to={`/shop/${product.slug}`}
-          style={{
-            fontSize: '1.08rem',
-            fontWeight: 700,
-            color: 'var(--color-plum)',
-            lineHeight: 1.3,
-            marginBottom: '0.65rem',
-            textDecoration: 'none',
-            fontFamily: 'var(--font-display)'
-          }}
+          className="product-tile-title"
         >
           {product.name}
         </Link>
 
         {/* Colour Swatches only when multiple colour finishes exist */}
         {colourSwatches.length > 1 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+          <div className="product-tile-swatches">
             {colourSwatches.map(sw => {
               const isSelected = selectedVariant?.colour === sw.colour;
               return (
@@ -249,16 +177,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                   type="button"
                   title={sw.colour}
                   onClick={() => setSelectedVariant(sw.variant)}
+                  className={`product-tile-swatch-btn ${isSelected ? 'is-selected' : ''}`}
                   style={{
-                    width: '18px',
-                    height: '18px',
-                    borderRadius: '50%',
-                    backgroundColor: sw.hex,
-                    border: isSelected ? '2px solid var(--color-plum)' : '1px solid rgba(0,0,0,0.18)',
-                    outline: isSelected ? '2px solid #FFF' : 'none',
-                    outlineOffset: '-3px',
-                    cursor: 'pointer',
-                    padding: 0
+                    backgroundColor: sw.hex
                   }}
                 />
               );
@@ -267,61 +188,57 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         )}
 
         {/* Pricing Row */}
-        <div style={{ marginTop: 'auto', paddingTop: '0.6rem', borderTop: '1px solid #F7E8EC', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '0.9rem' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.45rem' }}>
-            <span style={{ fontSize: '1.28rem', fontWeight: 800, color: 'var(--color-plum)' }}>
+        <div className="product-tile-price-row">
+          <div className="product-tile-prices">
+            <span className="product-tile-current-price">
               ₹{unitPrice.toLocaleString('en-IN')}
             </span>
             {product.compareAtPrice && product.compareAtPrice > unitPrice && (
-              <span style={{ fontSize: '0.88rem', color: 'var(--text-light)', textDecoration: 'line-through' }}>
+              <span className="product-tile-compare-price">
                 ₹{product.compareAtPrice.toLocaleString('en-IN')}
               </span>
             )}
           </div>
-          <span style={{ fontSize: '0.74rem', fontWeight: 600, color: isAvailable ? '#2E7D32' : '#C62828' }}>
+          <span
+            className="product-tile-stock-status"
+            style={{ color: isAvailable ? '#2E7D32' : '#C62828' }}
+          >
             {isAvailable ? (availableStock <= 5 ? `Only ${availableStock} left` : 'In Stock') : 'Unavailable'}
           </span>
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div className="product-tile-actions">
           <button
             type="button"
             disabled={!isAvailable || adding}
             onClick={handleQuickAdd}
-            className="btn btn-primary btn-sm"
+            className="btn btn-primary btn-sm product-tile-quick-add"
             style={{
-              flex: 1,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.4rem',
               opacity: isAvailable ? 1 : 0.55,
               cursor: isAvailable ? 'pointer' : 'not-allowed'
             }}
           >
             {adding ? (
               <>
-                <Check size={14} /> Adding...
+                <Check size={13} /> <span>Adding...</span>
               </>
             ) : (
               <>
-                <ShoppingBag size={14} /> {isAvailable ? 'Quick Add' : 'Sold Out'}
+                <ShoppingBag size={13} /> <span>{isAvailable ? 'Quick Add' : 'Sold Out'}</span>
               </>
             )}
           </button>
 
           <Link
             to={`/shop/${product.slug}`}
-            className="btn btn-secondary btn-sm"
-            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', padding: '0.45rem 0.75rem' }}
+            className="btn btn-secondary btn-sm product-tile-view-btn"
             title="View Product Details"
           >
-            <Eye size={15} />
+            <Eye size={14} />
           </Link>
         </div>
       </div>
     </div>
   );
 };
-
