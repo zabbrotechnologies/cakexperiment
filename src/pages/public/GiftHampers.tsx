@@ -191,7 +191,7 @@ export const GiftHampers: React.FC = () => {
   };
 
   return (
-    <div style={{ backgroundColor: 'var(--color-cream)', minHeight: '100vh', paddingTop: '6.5rem', paddingBottom: '6rem' }}>
+    <div className="gift-hampers-page subpage-main" style={{ backgroundColor: 'var(--color-cream)', minHeight: '100vh', paddingBottom: '6rem' }}>
       <div className="container">
         {/* Back navigation */}
         <div style={{ marginBottom: '1.5rem' }}>

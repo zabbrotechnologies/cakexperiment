@@ -114,25 +114,10 @@ export const FeaturedProductsSection: React.FC = () => {
         </div>
 
         {/* Main Bespoke Showcase Card */}
-        <div
-          style={{
-            borderRadius: '28px',
-            backgroundColor: 'var(--color-cream)',
-            border: '1px solid var(--border-subtle)',
-            padding: 'clamp(1.25rem, 3vw, 2.5rem)',
-            boxShadow: 'var(--shadow-card)'
-          }}
-        >
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))',
-              gap: 'clamp(1.5rem, 3.5vw, 2.75rem)',
-              alignItems: 'center'
-            }}
-          >
+        <div className="hamper-main-card">
+          <div className="hamper-showcase-grid">
             {/* Single Clean Poster Frame */}
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div className="hamper-poster-col" style={{ display: 'flex', justifyContent: 'center' }}>
               <div
                 style={{
                   position: 'relative',
@@ -159,7 +144,7 @@ export const FeaturedProductsSection: React.FC = () => {
             </div>
 
             {/* Clean Bespoke Details & Action */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div className="hamper-details-col" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem' }}>
                 <span
                   style={{
@@ -217,13 +202,7 @@ export const FeaturedProductsSection: React.FC = () => {
                 >
                   Inside Every Box
                 </div>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(195px, 1fr))',
-                    gap: '0.55rem 1rem'
-                  }}
-                >
+                <div className="hamper-contents-grid">
                   {highlights.map((item) => (
                     <div
                       key={item}

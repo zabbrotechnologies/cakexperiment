@@ -3691,8 +3691,65 @@ a {
   }
 }
 
+/* Hamper Showcase Desktop & Mobile Architecture */
+.hamper-main-card {
+  border-radius: 28px;
+  background-color: var(--color-cream);
+  border: 1px solid var(--border-subtle);
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+  box-shadow: var(--shadow-card);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.hamper-showcase-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: clamp(1.5rem, 3.5vw, 2.75rem);
+  align-items: center;
+  width: 100%;
+}
+
+.hamper-contents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.55rem 1rem;
+  width: 100%;
+}
+
+@media (max-width: 860px) {
+  .hamper-showcase-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.8rem !important;
+  }
+}
+
 /* Hamper CTA & Guarantees Mobile Alignment */
 @media (max-width: 640px) {
+  #gift-hampers-showcase .container {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  .hamper-main-card {
+    border-radius: 20px !important;
+    padding: 1.25rem 1rem !important;
+  }
+  .hamper-showcase-grid {
+    grid-template-columns: 100% !important;
+    gap: 1.5rem !important;
+  }
+  .hamper-poster-col {
+    width: 100% !important;
+    max-width: 320px !important;
+    margin: 0 auto !important;
+  }
+  .hamper-details-col {
+    width: 100% !important;
+  }
+  .hamper-contents-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+  }
   .hamper-cta-row {
     width: 100% !important;
     flex-direction: column !important;
@@ -3712,6 +3769,26 @@ a {
   }
   .hamper-guarantee-item:last-child {
     border-bottom: none !important;
+  }
+
+  /* Gift Hampers Customizer Page Mobile Polish */
+  .gift-hampers-page .container {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  .gift-hampers-page .hamper-grid-layout > div > div {
+    padding: 1.25rem 1rem !important;
+    border-radius: 18px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  #gift-hampers-showcase .container {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+  .hamper-main-card {
+    padding: 1rem 0.75rem !important;
   }
 }
 
