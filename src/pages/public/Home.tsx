@@ -557,10 +557,10 @@ export const Home: React.FC = () => {
         className="hero-section hero-bg-animated"
         style={{
           position: 'relative',
-          minHeight: '100vh',
+          minHeight: '100dvh',
           display: 'flex',
           alignItems: 'center',
-          backgroundImage: "url('/images/hero-cake.png')",
+          backgroundImage: "image-set(url('/images/hero-cake.webp') type('image/webp'), url('/images/hero-cake.png') type('image/png'))",
           backgroundPosition: 'center right',
           backgroundSize: 'cover',
           backgroundRepeat: 'no-repeat',
@@ -799,8 +799,12 @@ export const Home: React.FC = () => {
         </div>
 
         <style>{`
+          .hero-section {
+            background-image: url('/images/hero-cake.webp'), url('/images/hero-cake.png');
+          }
           @media (max-width: 900px) {
             .hero-section {
+              background-image: url('/images/hero-cake-mobile.webp'), url('/images/hero-cake.png') !important;
               background-position: center bottom !important;
             }
             .hero-badge {
@@ -2310,7 +2314,7 @@ export const Home: React.FC = () => {
                   {/* Smooth height and opacity expansion */}
                   <div
                     style={{
-                      maxHeight: isOpen ? '300px' : '0px',
+                      maxHeight: isOpen ? '1000px' : '0px',
                       opacity: isOpen ? 1 : 0,
                       overflow: 'hidden',
                       transition:

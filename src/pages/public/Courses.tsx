@@ -402,7 +402,7 @@ export const Courses: React.FC = () => {
             )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', maxWidth: '100%' }}>
             {/* Mobile Filter Button (opens drawer) */}
             <button
               onClick={() => setMobileFilterOpen(true)}
@@ -417,21 +417,22 @@ export const Courses: React.FC = () => {
               <Filter size={14} /> Filter & Tracks
             </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>Sort:</span>
               <select
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value)}
                 style={{
-                  padding: '0.45rem 0.85rem',
+                  padding: '0.45rem 0.75rem',
                   borderRadius: 'var(--radius-md)',
                   border: '1px solid var(--border-subtle)',
                   backgroundColor: '#FFFFFF',
                   fontFamily: 'var(--font-sans)',
-                  fontSize: '0.85rem',
+                  fontSize: '0.82rem',
                   color: 'var(--color-plum)',
                   cursor: 'pointer',
-                  outline: 'none'
+                  outline: 'none',
+                  maxWidth: '100%'
                 }}
               >
                 <option value="recommended">Recommended</option>
@@ -446,12 +447,14 @@ export const Courses: React.FC = () => {
         </div>
 
         {/* Mobile Horizontal Swipeable Category Bar (Visible only on mobile/tablet) */}
-        <div className="mobile-category-bar" style={{ display: 'none', marginBottom: '1.25rem' }}>
+        <div className="mobile-category-bar" style={{ display: 'none', marginBottom: '1.25rem', width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
           <div
             style={{
               display: 'flex',
               gap: '0.5rem',
               overflowX: 'auto',
+              width: '100%',
+              maxWidth: '100%',
               paddingBottom: '0.35rem',
               scrollbarWidth: 'none',
               msOverflowStyle: 'none'
