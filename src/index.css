@@ -66,7 +66,7 @@ html {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  overflow-x: clip;
   width: 100%;
 }
 
@@ -75,7 +75,7 @@ body {
   color: var(--text-main);
   min-height: 100vh;
   line-height: 1.6;
-  overflow-x: hidden;
+  overflow-x: clip;
   width: 100%;
 }
 
@@ -731,14 +731,13 @@ a {
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
 /* Page Transition Wrapper */
 .page-transition {
-  animation: pageEnter var(--duration-page) var(--ease-out-editorial) forwards;
-  will-change: opacity, transform;
+  animation: pageEnter var(--duration-page) var(--ease-out-editorial);
 }
 
 /* Scroll-Triggered Viewport Reveals */
@@ -785,10 +784,10 @@ a {
 
 .hero-parallax-bg {
   position: absolute;
-  top: -16%;
+  top: -24%;
   left: 0;
   right: 0;
-  height: 132%;
+  height: 148%;
   background-image: image-set(
     url('/images/hero-cake.webp') type('image/webp'),
     url('/images/hero-cake.png') type('image/png')
@@ -799,7 +798,7 @@ a {
   will-change: transform;
   pointer-events: none;
   z-index: 1;
-  transition: transform 0.06s ease-out;
+  transition: none;
 }
 
 @media (max-width: 900px) {
@@ -811,8 +810,8 @@ a {
     );
     background-position: center bottom;
     background-size: cover;
-    top: -12%;
-    height: 124%;
+    top: -18%;
+    height: 138%;
   }
 }
 
@@ -1089,7 +1088,7 @@ a {
   width: max-content;
   transform-style: preserve-3d;
   will-change: transform;
-  animation: curvedCinemaFlow 46s linear infinite;
+  animation: curvedCinemaFlow 115s linear infinite;
 }
 
 .curved-cinema-track:hover {
@@ -1101,15 +1100,15 @@ a {
 }
 
 .curved-cinema-track.speed-slow {
-  animation-duration: 70s;
+  animation-duration: 150s;
 }
 
 .curved-cinema-track.speed-normal {
-  animation-duration: 46s;
+  animation-duration: 115s;
 }
 
 .curved-cinema-track.speed-fast {
-  animation-duration: 28s;
+  animation-duration: 80s;
 }
 
 @keyframes curvedCinemaFlow {
@@ -3461,7 +3460,8 @@ a {
     grid-template-columns: 1fr !important;
     gap: 2rem !important;
   }
-  .hamper-grid-layout > div:last-child {
+  .hamper-grid-layout > div:last-child,
+  .hamper-sticky-card {
     position: static !important;
     top: auto !important;
   }

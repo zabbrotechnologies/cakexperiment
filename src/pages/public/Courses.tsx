@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { useAuth } from '../../context/AuthContext';
 import { Course, Category } from '../../types';
+import { CustomerReviewMarquee } from '../../components/home/CustomerReviewMarquee';
 import {
   Search,
   Filter,
@@ -348,8 +349,13 @@ export const Courses: React.FC = () => {
         </div>
       </div>
 
+      {/* Customer Review Marquee Strip directly above Course Showcasing Area */}
+      <div style={{ marginTop: '1.6rem', marginBottom: '0.6rem' }}>
+        <CustomerReviewMarquee speedSeconds={150} />
+      </div>
+
       {/* Main Filter & Course Grid Area */}
-      <div className="container" style={{ marginTop: '2rem' }}>
+      <div className="container" style={{ marginTop: '1.5rem' }}>
         {/* Top Control Bar: Result count & Sort Dropdown */}
         <div
           style={{

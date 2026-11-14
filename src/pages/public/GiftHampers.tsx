@@ -671,10 +671,18 @@ export const GiftHampers: React.FC = () => {
           </div>
 
           {/* ================= RIGHT COLUMN: LIVE SUMMARY & WHATSAPP CTA (STICKY) ================= */}
-          <div style={{ position: 'sticky', top: '90px' }}>
+          <div className="hamper-sticky-col" style={{ position: 'relative', height: '100%' }}>
             <div
+              className="hamper-sticky-card"
               style={{
-                backgroundColor: '#FFFFFF',
+                position: 'sticky',
+                top: '96px',
+                zIndex: 10
+              }}
+            >
+              <div
+                style={{
+                  backgroundColor: '#FFFFFF',
                 borderRadius: '24px',
                 padding: '2rem',
                 border: '1.5px solid var(--color-rose)',
@@ -851,6 +859,7 @@ export const GiftHampers: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* ================= ORDER CONFIRMATION MODAL ================= */}

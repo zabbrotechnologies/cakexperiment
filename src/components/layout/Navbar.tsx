@@ -160,11 +160,9 @@ export const Navbar: React.FC = () => {
       if (location.pathname !== '/') {
         navigate(`/${link.href.startsWith('/#') ? link.href.slice(1) : link.href}`);
       } else {
-        const el = document.getElementById(link.sectionId);
+        const el = document.getElementById(link.sectionId) || (link.sectionId === 'about' ? document.getElementById('chef') : null);
         if (el) {
-          const navOffset = 90;
-          const targetY = el.getBoundingClientRect().top + window.pageYOffset - navOffset;
-          window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
           window.history.pushState(null, '', link.href);
           setActiveSection(link.sectionId);
         }

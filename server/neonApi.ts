@@ -1191,9 +1191,10 @@ async function handleListCourses(res: ServerResponse) {
 
 async function handleGetCourseDetail(idOrSlug: string, res: ServerResponse) {
   const sql = getDb();
+  const clean = (idOrSlug || '').trim();
   const courses = await sql`
     SELECT * FROM courses
-    WHERE id = ${idOrSlug} OR slug = ${idOrSlug};
+    WHERE id = ${clean} OR slug = ${clean} OR LOWER(slug) = LOWER(${clean}) OR LOWER(id) = LOWER(${clean});
   `;
 
   if (courses.length === 0) {
@@ -1715,6 +1716,10 @@ async function handleAdminSaveCourse(targetCourseId: string | null, req: Incomin
   const modulesCount = incomingModules.length;
   const lessonsCount = incomingModules.reduce((acc: number, m: any) => acc + (Array.isArray(m.lessons) ? m.lessons.length : 0), 0);
 
+  const incomingOutcomes = Array.isArray(data.learningOutcomes) ? data.learningOutcomes : (Array.isArray(data.learning_outcomes) ? data.learning_outcomes : []);
+  const incomingPrereqs = Array.isArray(data.prerequisites) ? data.prerequisites : [];
+  const incomingEquipment = Array.isArray(data.equipmentNeeded) ? data.equipmentNeeded : (Array.isArray(data.equipment_needed) ? data.equipment_needed : []);
+
   // Upsert course in Neon PostgreSQL
   await sql`
     INSERT INTO courses (
@@ -1753,6 +1758,35 @@ async function handleAdminSaveCourse(targetCourseId: string | null, req: Incomin
       lessons_count = EXCLUDED.lessons_count,
       updated_at = NOW();
   `;
+
+  // Upsert dynamic learning outcomes and requirements if column exists or can be added
+  if (incomingOutcomes.length > 0 || incomingPrereqs.length > 0 || incomingEquipment.length > 0) {
+    try {
+      await sql`
+        UPDATE courses SET
+          learning_outcomes = ${JSON.stringify(incomingOutcomes)}::jsonb,
+          prerequisites = ${JSON.stringify(incomingPrereqs)}::jsonb,
+          equipment_needed = ${JSON.stringify(incomingEquipment)}::jsonb
+        WHERE id = ${courseId};
+      `;
+    } catch {
+      try {
+        await sql`ALTER TABLE courses ADD COLUMN IF NOT EXISTS learning_outcomes JSONB DEFAULT '[]'::jsonb;`;
+        await sql`ALTER TABLE courses ADD COLUMN IF NOT EXISTS prerequisites JSONB DEFAULT '[]'::jsonb;`;
+        await sql`ALTER TABLE courses ADD COLUMN IF NOT EXISTS equipment_needed JSONB DEFAULT '[]'::jsonb;`;
+        await sql`
+          UPDATE courses SET
+            learning_outcomes = ${JSON.stringify(incomingOutcomes)}::jsonb,
+            prerequisites = ${JSON.stringify(incomingPrereqs)}::jsonb,
+            equipment_needed = ${JSON.stringify(incomingEquipment)}::jsonb
+          WHERE id = ${courseId};
+        `;
+      } catch (colErr) {
+        // Fallback gracefully without breaking course save
+        console.warn('Postgres outcome columns skipped:', colErr);
+      }
+    }
+  }
 
   // Upsert modules & lessons if provided
   for (let mIdx = 0; mIdx < incomingModules.length; mIdx++) {

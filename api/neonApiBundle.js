@@ -60801,9 +60801,10 @@ async function handleListCourses(res) {
 }
 async function handleGetCourseDetail(idOrSlug, res) {
   const sql = getDb();
+  const clean = (idOrSlug || "").trim();
   const courses = await sql`
     SELECT * FROM courses
-    WHERE id = ${idOrSlug} OR slug = ${idOrSlug};
+    WHERE id = ${clean} OR slug = ${clean} OR LOWER(slug) = LOWER(${clean}) OR LOWER(id) = LOWER(${clean});
   `;
   if (courses.length === 0) {
     res.statusCode = 404;
@@ -61254,6 +61255,9 @@ async function handleAdminSaveCourse(targetCourseId, req, res) {
   const incomingModules = Array.isArray(data.modules) ? data.modules : [];
   const modulesCount = incomingModules.length;
   const lessonsCount = incomingModules.reduce((acc, m3) => acc + (Array.isArray(m3.lessons) ? m3.lessons.length : 0), 0);
+  const incomingOutcomes = Array.isArray(data.learningOutcomes) ? data.learningOutcomes : Array.isArray(data.learning_outcomes) ? data.learning_outcomes : [];
+  const incomingPrereqs = Array.isArray(data.prerequisites) ? data.prerequisites : [];
+  const incomingEquipment = Array.isArray(data.equipmentNeeded) ? data.equipmentNeeded : Array.isArray(data.equipment_needed) ? data.equipment_needed : [];
   await sql`
     INSERT INTO courses (
       id, title, slug, tag, short_description, description,
@@ -61291,6 +61295,32 @@ async function handleAdminSaveCourse(targetCourseId, req, res) {
       lessons_count = EXCLUDED.lessons_count,
       updated_at = NOW();
   `;
+  if (incomingOutcomes.length > 0 || incomingPrereqs.length > 0 || incomingEquipment.length > 0) {
+    try {
+      await sql`
+        UPDATE courses SET
+          learning_outcomes = ${JSON.stringify(incomingOutcomes)}::jsonb,
+          prerequisites = ${JSON.stringify(incomingPrereqs)}::jsonb,
+          equipment_needed = ${JSON.stringify(incomingEquipment)}::jsonb
+        WHERE id = ${courseId};
+      `;
+    } catch {
+      try {
+        await sql`ALTER TABLE courses ADD COLUMN IF NOT EXISTS learning_outcomes JSONB DEFAULT '[]'::jsonb;`;
+        await sql`ALTER TABLE courses ADD COLUMN IF NOT EXISTS prerequisites JSONB DEFAULT '[]'::jsonb;`;
+        await sql`ALTER TABLE courses ADD COLUMN IF NOT EXISTS equipment_needed JSONB DEFAULT '[]'::jsonb;`;
+        await sql`
+          UPDATE courses SET
+            learning_outcomes = ${JSON.stringify(incomingOutcomes)}::jsonb,
+            prerequisites = ${JSON.stringify(incomingPrereqs)}::jsonb,
+            equipment_needed = ${JSON.stringify(incomingEquipment)}::jsonb
+          WHERE id = ${courseId};
+        `;
+      } catch (colErr) {
+        console.warn("Postgres outcome columns skipped:", colErr);
+      }
+    }
+  }
   for (let mIdx = 0; mIdx < incomingModules.length; mIdx++) {
     const mod = incomingModules[mIdx];
     const modId = mod.id || `mod-${courseId}-${mIdx + 1}`;

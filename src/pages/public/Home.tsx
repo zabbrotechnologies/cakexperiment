@@ -6,6 +6,7 @@ import { useScrollReveal } from '../../hooks/useScrollReveal';
 import { Course, Category } from '../../types';
 import { FeaturedProductsSection } from '../../components/home/FeaturedProductsSection';
 import { BakeryProductsSection } from '../../components/home/BakeryProductsSection';
+import { CustomerReviewMarquee } from '../../components/home/CustomerReviewMarquee';
 import {
   Play,
   X,
@@ -38,56 +39,81 @@ export const Home: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Smooth Hash Scroll on mount or hash change (for #about, #courses, #categories, #testimonials, #faq)
+  // Smooth Hash Scroll on mount or hash change (for #about, #chef, #courses, #categories, #testimonials, #faq)
   useEffect(() => {
-    const handleHashScroll = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (!hash) return;
+    let timer: any;
 
-      const scrollToElement = () => {
-        const el = document.getElementById(hash);
+    const handleHashScroll = () => {
+      const rawHash = window.location.hash.replace('#', '');
+      if (!rawHash) return;
+
+      const targetId = (rawHash === 'about' || rawHash === 'chef' || rawHash === 'founder' || rawHash === 'instructor')
+        ? 'about'
+        : rawHash;
+
+      const scrollToElement = (behavior: ScrollBehavior = 'instant') => {
+        const el = document.getElementById(targetId) || document.getElementById(rawHash);
         if (el) {
-          const navOffset = 90;
-          const targetY = el.getBoundingClientRect().top + window.pageYOffset - navOffset;
-          window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+          el.scrollIntoView({ behavior, block: 'start' });
           return true;
         }
         return false;
       };
 
-      if (!scrollToElement()) {
-        const timer1 = setTimeout(scrollToElement, 150);
-        const timer2 = setTimeout(scrollToElement, 400);
-        return () => {
-          clearTimeout(timer1);
-          clearTimeout(timer2);
-        };
-      }
+      // Jump immediately, then re-anchor once layout images settle
+      scrollToElement('instant');
+      timer = setTimeout(() => {
+        scrollToElement('instant');
+      }, 350);
     };
 
     handleHashScroll();
     window.addEventListener('hashchange', handleHashScroll);
-    return () => window.removeEventListener('hashchange', handleHashScroll);
+    return () => {
+      window.removeEventListener('hashchange', handleHashScroll);
+      clearTimeout(timer);
+    };
   }, [location.hash, location.pathname]);
 
-  // Hero Parallax Background Scroll State
-  const [heroScrollY, setHeroScrollY] = useState(0);
+  // Ultra-Smooth Hero Parallax (Lerp RAF loop, zero component re-renders on scroll)
+  const heroParallaxBgRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    let ticking = false;
-    const onScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          if (window.scrollY < window.innerHeight * 1.6) {
-            setHeroScrollY(window.scrollY);
-          }
-          ticking = false;
-        });
-        ticking = true;
+    let targetY = 0;
+    let currentY = 0;
+    let rafId: number | null = null;
+    let isRunning = false;
+
+    const updateParallax = () => {
+      // Smooth linear interpolation (lerp) for silky fluid momentum
+      currentY += (targetY - currentY) * 0.085;
+
+      if (heroParallaxBgRef.current) {
+        heroParallaxBgRef.current.style.transform = `translate3d(0, ${(currentY * 0.52).toFixed(2)}px, 0)`;
+      }
+
+      if (Math.abs(targetY - currentY) > 0.08) {
+        rafId = requestAnimationFrame(updateParallax);
+      } else {
+        isRunning = false;
       }
     };
+
+    const onScroll = () => {
+      if (window.scrollY < window.innerHeight * 1.8) {
+        targetY = window.scrollY;
+        if (!isRunning) {
+          isRunning = true;
+          rafId = requestAnimationFrame(updateParallax);
+        }
+      }
+    };
+
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   // Center-Anchored Coverflow Masterclasses Carousel State
@@ -587,9 +613,10 @@ export const Home: React.FC = () => {
       >
         {/* Parallax Background Layer */}
         <div
+          ref={heroParallaxBgRef}
           className="hero-parallax-bg"
           style={{
-            transform: `translate3d(0, ${heroScrollY * 0.38}px, 0)`
+            transform: 'translate3d(0, 0, 0)'
           }}
         />
         {/* Editorial Double-Ring Elliptical Badge (Online Masterclasses Branding) */}
@@ -836,6 +863,9 @@ export const Home: React.FC = () => {
           }
         `}</style>
       </section>
+
+      {/* Continuously Scrolling Customer Review Marquee directly below Hero */}
+      <CustomerReviewMarquee />
 
       {/* Trailer Video Modal */}
       {introVideoOpen && (
@@ -1695,9 +1725,10 @@ export const Home: React.FC = () => {
       </section>
 
       {/* =========================================================================
-          5. MEET THE FOUNDER — Anisha Arthur (Has #about & #instructor anchors)
+          5. MEET THE FOUNDER — Chef Anisha Arthur (Has #about, #chef & #instructor anchors)
           ========================================================================= */}
-      <section id="about" ref={instructorRef} className="founder-section">
+      <section id="about" data-section="chef" ref={instructorRef} className="founder-section" style={{ scrollMarginTop: '6rem' }}>
+        <div id="chef" style={{ position: 'absolute', top: '-90px', visibility: 'hidden' }} aria-hidden="true" />
         {/* Organic Bottom Wave */}
         <div className="founder-wave-bottom" aria-hidden="true">
           <svg viewBox="0 0 1440 90" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block' }}>

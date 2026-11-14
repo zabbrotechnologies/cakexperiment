@@ -50,12 +50,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // If token is expired or unauthorized, clear token
+      // If token is expired or unauthorized, check local fallback
+      const offlineUser = storageService.getCurrentUser();
+      if (offlineUser) {
+        setUser(offlineUser);
+        return;
+      }
+
       localStorage.removeItem(TOKEN_KEY);
       setUser(null);
       setEnrolledCourseIds([]);
       useShopStore.getState().clearActiveUser();
     } catch {
+      const offlineUser = storageService.getCurrentUser();
+      if (offlineUser) {
+        setUser(offlineUser);
+        return;
+      }
       setUser(null);
       setEnrolledCourseIds([]);
       useShopStore.getState().clearActiveUser();
@@ -105,6 +116,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         message: data.error || 'Invalid email or password.'
       };
     } catch (err: any) {
+      const localRes = storageService.signIn(email, pass);
+      if (localRes.success && localRes.user) {
+        setUser(localRes.user);
+        localStorage.setItem(TOKEN_KEY, 'local_demo_token');
+        return {
+          success: true,
+          redirectTo: localRes.user.role === 'admin' || localRes.user.role === 'ADMIN' ? '/admin/courses' : '/learn'
+        };
+      }
       return {
         success: false,
         message: 'Unable to connect to the authentication server. Please check your connection or try again.'

@@ -967,8 +967,9 @@ const initialEnrollments: Enrollment[] = [
 
 // Seed Reviews
 const initialReviews: Review[] = [
+  // --- Course 1: Buttercream Decoration Masterclass ---
   {
-    id: 'rev-401',
+    id: 'rev-101',
     userId: 'user-student',
     userName: 'Aria Montgomery',
     userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
@@ -981,7 +982,57 @@ const initialReviews: Review[] = [
     createdAt: '2026-02-10T14:00:00Z'
   },
   {
-    id: 'rev-402',
+    id: 'rev-102',
+    userId: 'user-8',
+    userName: 'Meera Krishnan',
+    userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-1',
+    courseTitle: 'Buttercream Decoration Masterclass',
+    rating: 5,
+    comment: 'The palette knife floral technique was so clearly filmed. Seeing the wrist angle in 4K macro made it click instantly after months of struggling with domed petals.',
+    status: 'approved',
+    createdAt: '2026-02-28T11:20:00Z'
+  },
+  {
+    id: 'rev-103',
+    userId: 'user-9',
+    userName: 'Liam Thorne',
+    userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-1',
+    courseTitle: 'Buttercream Decoration Masterclass',
+    rating: 4,
+    comment: 'Excellent instruction on Swiss meringue stability in warm climates. Would love even more troubleshooting for high humidity rooms, but the recipes are golden.',
+    status: 'approved',
+    createdAt: '2026-03-04T15:45:00Z'
+  },
+  {
+    id: 'rev-104',
+    userId: 'user-15',
+    userName: 'Divya Ramesh',
+    userAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-1',
+    courseTitle: 'Buttercream Decoration Masterclass',
+    rating: 5,
+    comment: 'The acrylic disc technique gave me the sharpest 90-degree buttercream edges I have ever achieved. The video pacing and explanation of room temperature butter emulsion were flawless.',
+    status: 'approved',
+    createdAt: '2026-03-12T10:15:00Z'
+  },
+  {
+    id: 'rev-105',
+    userId: 'user-16',
+    userName: 'Charlotte Davies',
+    userAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-1',
+    courseTitle: 'Buttercream Decoration Masterclass',
+    rating: 5,
+    comment: 'Finally mastered French piping nozzle pressure! My floral rosettes look like they came straight out of a boutique Parisian patisserie.',
+    status: 'approved',
+    createdAt: '2026-03-20T16:30:00Z'
+  },
+
+  // --- Course 2: Classic Cake Baking & Sponge Perfection ---
+  {
+    id: 'rev-201',
     userId: 'user-3',
     userName: 'David Sterling',
     userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
@@ -994,7 +1045,45 @@ const initialReviews: Review[] = [
     createdAt: '2026-02-15T09:30:00Z'
   },
   {
-    id: 'rev-403',
+    id: 'rev-202',
+    userId: 'user-17',
+    userName: 'Priya Sundaram',
+    userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-2',
+    courseTitle: 'Classic Cake Baking & Sponge Perfection',
+    rating: 5,
+    comment: 'The explanation of gluten formation and flour protein percentages demystified why my previous sponges were rubbery. Now every sponge is melt-in-the-mouth soft.',
+    status: 'approved',
+    createdAt: '2026-02-25T14:40:00Z'
+  },
+  {
+    id: 'rev-203',
+    userId: 'user-18',
+    userName: 'Arjun Kapoor',
+    userAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-2',
+    courseTitle: 'Classic Cake Baking & Sponge Perfection',
+    rating: 4,
+    comment: 'Incredible insights into oven hot-spots and thermometer calibration. My chocolate sponge rose completely level and stayed tender for four full days.',
+    status: 'approved',
+    createdAt: '2026-03-05T12:10:00Z'
+  },
+  {
+    id: 'rev-204',
+    userId: 'user-19',
+    userName: 'Sarah Jenkins',
+    userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-2',
+    courseTitle: 'Classic Cake Baking & Sponge Perfection',
+    rating: 5,
+    comment: 'The gram-scale measurements and pan conversion tables alone are worth the course fee. Baking with weight precision changed everything for my bakery.',
+    status: 'approved',
+    createdAt: '2026-03-15T18:20:00Z'
+  },
+
+  // --- Course 3: Modern Celebration Cakes & Sugar Art ---
+  {
+    id: 'rev-301',
     userId: 'user-4',
     userName: 'Sophie Moreau',
     userAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
@@ -1007,25 +1096,175 @@ const initialReviews: Review[] = [
     createdAt: '2026-02-20T18:15:00Z'
   },
   {
-    id: 'rev-404',
+    id: 'rev-302',
+    userId: 'user-14',
+    userName: 'Camilla Gomez',
+    userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-3',
+    courseTitle: 'Modern Celebration Cakes & Sugar Art',
+    rating: 4,
+    comment: 'The wafer paper conditioning recipe is ingenious. Flexible, translucent sails that held their curve all evening during a summer outdoor banquet.',
+    status: 'approved',
+    createdAt: '2026-03-02T10:40:00Z'
+  },
+  {
+    id: 'rev-303',
+    userId: 'user-20',
+    userName: 'Jonathan Blake',
+    userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-3',
+    courseTitle: 'Modern Celebration Cakes & Sugar Art',
+    rating: 5,
+    comment: 'The gold leaf application tutorial saved me from wasting delicate 24k leaf sheets. Elena demonstrates the exact brush static technique to position leaf with zero tearing.',
+    status: 'approved',
+    createdAt: '2026-03-10T14:50:00Z'
+  },
+  {
+    id: 'rev-304',
+    userId: 'user-21',
+    userName: 'Maya Patel',
+    userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-3',
+    courseTitle: 'Modern Celebration Cakes & Sugar Art',
+    rating: 5,
+    comment: 'The palette knife abstract texture technique brought high-fashion elegance to my celebration designs. My clients cannot stop raving about the organic finish!',
+    status: 'approved',
+    createdAt: '2026-03-18T19:00:00Z'
+  },
+
+  // --- Course 4: Artisan Chocolate Cake & Ganache Alchemy ---
+  {
+    id: 'rev-401',
+    userId: 'user-7',
+    userName: 'Clara Delacroix',
+    userAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-4',
+    courseTitle: 'Artisan Chocolate Cake & Ganache Alchemy',
+    rating: 5,
+    comment: 'No bubbles, mirror-like reflection, and exact 32°C pour viscosity. My family could not believe I made this in my regular kitchen oven. Truly world-class instruction.',
+    studentCreationImg: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=600&q=80',
+    status: 'approved',
+    createdAt: '2026-02-22T19:10:00Z'
+  },
+  {
+    id: 'rev-402',
+    userId: 'user-13',
+    userName: 'Lucas Weber',
+    userAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-4',
+    courseTitle: 'Artisan Chocolate Cake & Ganache Alchemy',
+    rating: 5,
+    comment: 'The chocolate temperature curve guide saved my ganache from splitting. Clean, professional presentation and deep culinary science that explains cocoa butter crystals.',
+    status: 'approved',
+    createdAt: '2026-03-01T17:10:00Z'
+  },
+  {
+    id: 'rev-403',
     userId: 'user-5',
     userName: 'Elena Rostova',
     userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
     courseId: 'course-4',
-    courseTitle: 'Boutique Cupcakes & High-Tea Treats',
+    courseTitle: 'Artisan Chocolate Cake & Ganache Alchemy',
     rating: 5,
-    comment: 'The fruit curd inject core technique blew my customers away at our spring high-tea popup. Sold out within two hours! Camille makes complex French patisserie feel effortless.',
-    studentCreationImg: 'https://images.unsplash.com/photo-1587668178277-295251f900ce?auto=format&fit=crop&w=600&q=80',
+    comment: 'The drip ratio formulation holds perfectly at room temperature without sliding down the cake board. Camille makes complex confectionery science feel approachable and effortless.',
     status: 'approved',
-    createdAt: '2026-02-22T11:20:00Z'
+    createdAt: '2026-03-06T11:20:00Z'
+  },
+  {
+    id: 'rev-404',
+    userId: 'user-22',
+    userName: 'Nikhil Verma',
+    userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-4',
+    courseTitle: 'Artisan Chocolate Cake & Ganache Alchemy',
+    rating: 5,
+    comment: 'I used to fear chocolate tempering, but the seed method explained here made it completely foolproof on my home induction stove. The gloss and snap are unbelievable.',
+    status: 'approved',
+    createdAt: '2026-03-12T14:35:00Z'
   },
   {
     id: 'rev-405',
+    userId: 'user-23',
+    userName: 'Sylvie Dubois',
+    userAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-4',
+    courseTitle: 'Artisan Chocolate Cake & Ganache Alchemy',
+    rating: 4,
+    comment: 'The dark Belgian 70% ganache pairing with salted butter caramel is sublime. Easy to follow, great audio quality, and fantastic recipe PDFs.',
+    status: 'approved',
+    createdAt: '2026-03-18T16:15:00Z'
+  },
+  {
+    id: 'rev-406',
+    userId: 'user-24',
+    userName: 'Tara Sengupta',
+    userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-4',
+    courseTitle: 'Artisan Chocolate Cake & Ganache Alchemy',
+    rating: 5,
+    comment: 'My mirror glaze cakes are now the bestseller on my home studio menu. Crystal-clear reflection, zero air pockets, and balanced sweetness!',
+    status: 'approved',
+    createdAt: '2026-03-24T09:45:00Z'
+  },
+
+  // --- Course 5: French Pastry & Gourmet Cupcake Collection ---
+  {
+    id: 'rev-501',
+    userId: 'user-12',
+    userName: 'Priya Nambiar',
+    userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-5',
+    courseTitle: 'French Pastry & Gourmet Cupcake Collection',
+    rating: 5,
+    comment: 'Our weekend studio orders doubled after adding the raspberry coulis inject cores taught in Module 2. Flawless texture and magnificent crumb.',
+    status: 'approved',
+    createdAt: '2026-02-26T13:00:00Z'
+  },
+  {
+    id: 'rev-502',
+    userId: 'user-25',
+    userName: 'Vikram Seth',
+    userAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-5',
+    courseTitle: 'French Pastry & Gourmet Cupcake Collection',
+    rating: 4,
+    comment: 'The toasted marshmallow meringue swirl holds its peak all afternoon without weeping. Clear explanations of sugar syrup temperatures.',
+    status: 'approved',
+    createdAt: '2026-03-05T15:20:00Z'
+  },
+  {
+    id: 'rev-503',
+    userId: 'user-26',
+    userName: 'Chloe Martin',
+    userAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-5',
+    courseTitle: 'French Pastry & Gourmet Cupcake Collection',
+    rating: 5,
+    comment: 'Every single recipe works reliably in a normal home convection oven. The Meyer lemon curd core combined with vanilla bean cake is heavenly.',
+    status: 'approved',
+    createdAt: '2026-03-14T11:40:00Z'
+  },
+  {
+    id: 'rev-504',
+    userId: 'user-27',
+    userName: 'Devina Roy',
+    userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-5',
+    courseTitle: 'French Pastry & Gourmet Cupcake Collection',
+    rating: 5,
+    comment: 'Boutique pastry presentation broken down into simple, repeatable steps. Truly inspiring masterclass for any dessert caterer.',
+    status: 'approved',
+    createdAt: '2026-03-21T18:10:00Z'
+  },
+
+  // --- Course 6: Fondant Art, Sculpting & Wedding Architecture ---
+  {
+    id: 'rev-601',
     userId: 'user-6',
     userName: 'Marcus Chen',
     userAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
-    courseId: 'course-1',
-    courseTitle: 'Wedding Cake Architecture & Tier Assembly',
+    courseId: 'course-6',
+    courseTitle: 'Fondant Art, Sculpting & Wedding Architecture',
     rating: 5,
     comment: 'Transported my very first 3-tier wedding cake 45 kilometers with zero shifting or cracking! The doweling and acrylic disk guide gave me absolute structural confidence.',
     studentCreationImg: 'https://images.unsplash.com/photo-1535254973040-607b474cb50d?auto=format&fit=crop&w=600&q=80',
@@ -1033,17 +1272,52 @@ const initialReviews: Review[] = [
     createdAt: '2026-02-24T15:40:00Z'
   },
   {
-    id: 'rev-406',
-    userId: 'user-7',
-    userName: 'Clara Delacroix',
-    userAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80',
-    courseId: 'course-2',
-    courseTitle: 'Chocolate Mirror Glaze & Ganache Alchemy',
+    id: 'rev-602',
+    userId: 'user-10',
+    userName: 'Ananya Sharma',
+    userAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-6',
+    courseTitle: 'Fondant Art, Sculpting & Wedding Architecture',
     rating: 5,
-    comment: 'No bubbles, mirror-like reflection, and exact 32°C pour viscosity. My family could not believe I made this in my regular kitchen oven. Truly world-class instruction.',
-    studentCreationImg: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=600&q=80',
+    comment: 'The internal doweling matrix and acrylic disc technique gave me total peace of mind for wedding deliveries. Zero settling or tilting on an 80km transit.',
     status: 'approved',
-    createdAt: '2026-02-26T19:10:00Z'
+    createdAt: '2026-03-08T09:15:00Z'
+  },
+  {
+    id: 'rev-603',
+    userId: 'user-11',
+    userName: 'Julian Vance',
+    userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-6',
+    courseTitle: 'Fondant Art, Sculpting & Wedding Architecture',
+    rating: 5,
+    comment: 'Sharp edges without tearing fondant finally achieved! The smoothing pressure demonstration is worth the entire masterclass fee on its own.',
+    status: 'approved',
+    createdAt: '2026-03-11T16:30:00Z'
+  },
+  {
+    id: 'rev-604',
+    userId: 'user-28',
+    userName: 'Fiona Gallagher',
+    userAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-6',
+    courseTitle: 'Fondant Art, Sculpting & Wedding Architecture',
+    rating: 4,
+    comment: 'The sugar peony veining and wire ruffling techniques look breathtaking in real life. Requires practice, but Elena’s camera angles make every fold clear.',
+    status: 'approved',
+    createdAt: '2026-03-17T12:05:00Z'
+  },
+  {
+    id: 'rev-605',
+    userId: 'user-29',
+    userName: 'Rajesh Nair',
+    userAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+    courseId: 'course-6',
+    courseTitle: 'Fondant Art, Sculpting & Wedding Architecture',
+    rating: 5,
+    comment: 'Essential viewing for any baker transitioning from single cakes to multi-tier wedding commissions. Real culinary architecture explained with passion.',
+    status: 'approved',
+    createdAt: '2026-03-22T17:30:00Z'
   }
 ];
 
@@ -1404,11 +1678,28 @@ class StorageService {
   }
 
   public getCourseBySlug(slug: string): Course | undefined {
-    return this.getCourses().find(c => c.slug === slug || c.id === slug);
+    if (!slug) return undefined;
+    const cleanSlug = slug.trim().toLowerCase();
+    return this.getCourses().find(c => {
+      const cSlug = (c.slug || '').trim().toLowerCase();
+      const cId = (c.id || '').trim().toLowerCase();
+      const cTitleSlug = (c.title || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      return cSlug === cleanSlug || cId === cleanSlug || cTitleSlug === cleanSlug;
+    });
   }
 
   public getCourseById(id: string): Course | undefined {
-    return this.getCourses().find(c => c.id === id);
+    if (!id) return undefined;
+    const cleanId = id.trim().toLowerCase();
+    return this.getCourses().find(c => {
+      const cId = (c.id || '').trim().toLowerCase();
+      const cSlug = (c.slug || '').trim().toLowerCase();
+      return cId === cleanId || cSlug === cleanId;
+    });
   }
 
   public saveCourse(courseData: Partial<Course> & { title: string }): Course {
@@ -1857,11 +2148,50 @@ class StorageService {
 
   // --- Reviews ---
   public getReviews(): Review[] {
-    return this.get<Review[]>(STORAGE_KEYS.REVIEWS, initialReviews);
+    const stored = this.get<Review[]>(STORAGE_KEYS.REVIEWS, initialReviews);
+    // Ensure all seed reviews are merged and synced to localStorage
+    const existingIds = new Set(stored.map(r => r.id));
+    let hasUpdates = false;
+    const merged = [...stored];
+
+    for (const initRev of initialReviews) {
+      if (!existingIds.has(initRev.id)) {
+        merged.push(initRev);
+        existingIds.add(initRev.id);
+        hasUpdates = true;
+      }
+    }
+
+    // Sync courseId and courseTitle corrections for seed reviews
+    for (let i = 0; i < merged.length; i++) {
+      const seed = initialReviews.find(r => r.id === merged[i].id);
+      if (seed && (merged[i].courseId !== seed.courseId || merged[i].courseTitle !== seed.courseTitle)) {
+        merged[i].courseId = seed.courseId;
+        merged[i].courseTitle = seed.courseTitle;
+        hasUpdates = true;
+      }
+    }
+
+    if (hasUpdates) {
+      this.set(STORAGE_KEYS.REVIEWS, merged);
+    }
+    return merged;
   }
 
   public getApprovedReviews(): Review[] {
     return this.getReviews().filter(r => r.status === 'approved');
+  }
+
+  public getReviewsForCourse(courseId: string, courseTitle?: string): Review[] {
+    const allApproved = this.getApprovedReviews();
+    const cleanId = (courseId || '').trim().toLowerCase();
+    const cleanTitle = (courseTitle || '').trim().toLowerCase();
+    const matched = allApproved.filter(r => {
+      const rCourseId = (r.courseId || '').trim().toLowerCase();
+      const rTitle = (r.courseTitle || '').trim().toLowerCase();
+      return rCourseId === cleanId || (cleanTitle && (rTitle.includes(cleanTitle) || cleanTitle.includes(rTitle)));
+    });
+    return matched.length > 0 ? matched : allApproved;
   }
 
   public updateReviewStatus(reviewId: string, status: 'approved' | 'pending' | 'hidden'): void {
