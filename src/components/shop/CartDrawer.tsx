@@ -35,7 +35,7 @@ export const CartDrawer: React.FC = () => {
             onClick={clearToast}
             style={{
               position: 'fixed',
-              bottom: '24px',
+              bottom: 'max(24px, env(safe-area-inset-bottom, 24px))',
               right: '24px',
               zIndex: 10050,
               backgroundColor: 'var(--color-plum)',

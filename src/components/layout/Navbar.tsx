@@ -610,6 +610,7 @@ export const Navbar: React.FC = () => {
           right: 0;
           top: calc(100% + 8px);
           width: 220px;
+          max-width: calc(100vw - 32px);
           background-color: #FFFFFF;
           border-radius: var(--radius-md);
           box-shadow: var(--shadow-lg);
@@ -676,7 +677,7 @@ export const Navbar: React.FC = () => {
           border: 1px solid rgba(220, 165, 175, 0.45);
           padding: 1.25rem 1.5rem;
           box-shadow: 0 16px 40px -6px rgba(87, 51, 58, 0.16);
-          max-height: calc(100vh - 100px);
+          max-height: calc(100dvh - 100px);
           overflow-y: auto;
           overscroll-behavior: contain;
           z-index: 1001;

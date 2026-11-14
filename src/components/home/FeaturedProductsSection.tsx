@@ -267,7 +267,7 @@ export const FeaturedProductsSection: React.FC = () => {
                   </p>
                 </div>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.65rem' }}>
+                <div className="hamper-cta-row" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.65rem' }}>
                   <Link
                     to="/gift-hampers"
                     onClick={handleCustomizeOrder}
@@ -299,6 +299,7 @@ export const FeaturedProductsSection: React.FC = () => {
 
         {/* Value Guarantee Strip */}
         <div
+          className="hamper-guarantee-strip"
           style={{
             marginTop: '2.25rem',
             paddingTop: '1.75rem',
@@ -313,6 +314,7 @@ export const FeaturedProductsSection: React.FC = () => {
             return (
               <div
                 key={g.title}
+                className="hamper-guarantee-item"
                 style={{
                   display: 'flex',
                   alignItems: 'center',

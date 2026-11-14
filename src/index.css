@@ -41,6 +41,8 @@
 
   /* Fonts */
   --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-heading: 'Cormorant Garamond', Georgia, serif;
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
   --font-sans: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-script: 'Allura', cursive;
 
@@ -496,14 +498,14 @@ a {
     min-height: 130px !important;
   }
   .product-tile-wishlist-btn {
-    width: 28px !important;
-    height: 28px !important;
+    width: 32px !important;
+    height: 32px !important;
     top: 6px !important;
     right: 6px !important;
   }
   .product-wishlist-icon {
-    width: 13px !important;
-    height: 13px !important;
+    width: 15px !important;
+    height: 15px !important;
   }
   .product-tile-badges {
     top: 6px !important;
@@ -1196,7 +1198,7 @@ a {
 
 .floating-navbar-wrapper {
   position: fixed;
-  top: 1.1rem;
+  top: max(1.1rem, env(safe-area-inset-top, 1.1rem));
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 2.5rem);
@@ -1223,7 +1225,7 @@ a {
 }
 
 .floating-navbar-wrapper.is-scrolled {
-  top: 0.75rem;
+  top: max(0.75rem, env(safe-area-inset-top, 0.75rem));
 }
 
 .floating-navbar-wrapper.is-scrolled .floating-navbar-box {
@@ -1290,7 +1292,7 @@ a {
 
 @media (max-width: 860px) {
   .floating-navbar-wrapper {
-    top: 0.65rem;
+    top: max(0.65rem, env(safe-area-inset-top, 0.65rem));
     width: calc(100% - 1.25rem);
   }
   .floating-navbar-box {
@@ -1304,7 +1306,7 @@ a {
 
 @media (max-width: 480px) {
   .floating-navbar-wrapper {
-    top: 0.5rem;
+    top: max(0.5rem, env(safe-area-inset-top, 0.5rem));
     width: calc(100% - 1rem);
   }
   .floating-navbar-box {
@@ -1313,6 +1315,42 @@ a {
   }
   .subpage-main {
     padding-top: 4.8rem;
+  }
+  .nav-user-dropdown-panel {
+    max-width: calc(100vw - 32px) !important;
+    right: -4px !important;
+  }
+}
+
+/* 1024px–1199px Laptop Navbar Collision Guard (Prevents Centered Nav & User Profile Clashing) */
+@media (min-width: 1024px) and (max-width: 1199px) {
+  .floating-navbar-wrapper {
+    width: calc(100% - 1.5rem);
+  }
+  /* User button: avatar-only on small laptops */
+  .nav-user-name,
+  .nav-user-chevron {
+    display: none !important;
+  }
+  .nav-user-btn {
+    width: 38px !important;
+    height: 38px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+  }
+  /* Tighter centered nav so it clears logo + actions */
+  .desktop-nav {
+    gap: 0.6rem !important;
+  }
+  .desktop-nav .floating-nav-link {
+    font-size: 0.82rem !important;
+    padding: 0.3rem 0.1rem !important;
+  }
+  .navbar-actions-container {
+    gap: 0.4rem !important;
   }
 }
 
@@ -1813,10 +1851,10 @@ a {
     height: 18px;
   }
   .showcase-side-arrow.prev {
-    left: -4px;
+    left: 2px;
   }
   .showcase-side-arrow.next {
-    right: -4px;
+    right: 2px;
   }
 }
 
@@ -1834,10 +1872,10 @@ a {
     height: 16px;
   }
   .showcase-side-arrow.prev {
-    left: -8px;
+    left: 1px;
   }
   .showcase-side-arrow.next {
-    right: -8px;
+    right: 1px;
   }
 }
 
@@ -3043,6 +3081,7 @@ a {
 @media (max-width: 1180px) {
   .learning-arc-stage {
     flex-wrap: wrap;
+    justify-content: center;
     gap: 2rem;
     padding-bottom: 3rem;
   }
@@ -3391,6 +3430,14 @@ a {
     padding-top: 3.8rem !important;
     padding-bottom: 3.8rem !important;
   }
+  #gift-hampers-showcase {
+    padding-top: 3.5rem !important;
+    padding-bottom: 3.5rem !important;
+  }
+  #site-footer {
+    padding-top: 3.5rem !important;
+    padding-bottom: 2.5rem !important;
+  }
 
   /* 2. Fluid Editorial Headings (Proportional and balanced on mobile) */
   h1 {
@@ -3578,6 +3625,42 @@ a {
     padding-top: 5.8rem !important;
   }
 }
+
+/* Hamper CTA & Guarantees Mobile Alignment */
+@media (max-width: 640px) {
+  .hamper-cta-row {
+    width: 100% !important;
+    flex-direction: column !important;
+  }
+  .hamper-cta-row .btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+  .hamper-guarantee-strip {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+  }
+  .hamper-guarantee-item {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0.65rem 0 !important;
+  }
+  .hamper-guarantee-item:last-child {
+    border-bottom: none !important;
+  }
+}
+
+/* Tablet Padding Band (769px–1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  section {
+    padding-top: clamp(4rem, 6vw, 6rem) !important;
+    padding-bottom: clamp(4rem, 6vw, 6rem) !important;
+  }
+  .hero-section {
+    padding-top: clamp(5rem, 8vw, 7.8rem) !important;
+  }
+}
+
 
 
 
