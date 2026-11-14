@@ -1065,33 +1065,57 @@ export const Home: React.FC = () => {
                           )}
                         </div>
 
-                        <span
-                          onClick={(e) => {
-                            if (!isAuthenticated) {
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span
+                            onClick={(e) => {
                               e.stopPropagation();
-                              navigate('/signin', {
-                                state: {
-                                  from: `/checkout/${course.slug}`,
-                                  message: `Please sign in to enroll in "${course.title}".`
-                                }
-                              });
-                            }
-                          }}
-                          style={{
-                            fontSize: '0.8rem',
-                            fontWeight: 600,
-                            color: '#FFFFFF',
-                            backgroundColor: 'rgba(169, 87, 104, 0.85)',
-                            backdropFilter: 'blur(6px)',
-                            padding: '0.3rem 0.75rem',
-                            borderRadius: '999px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.25rem'
-                          }}
-                        >
-                          Enroll &rarr;
-                        </span>
+                              navigate(`/courses/${course.slug}`);
+                            }}
+                            style={{
+                              fontSize: '0.74rem',
+                              fontWeight: 600,
+                              color: '#FFFFFF',
+                              backgroundColor: 'rgba(87, 51, 58, 0.75)',
+                              backdropFilter: 'blur(6px)',
+                              padding: '0.3rem 0.65rem',
+                              borderRadius: '999px',
+                              cursor: 'pointer',
+                              border: '1px solid rgba(255,255,255,0.25)'
+                            }}
+                          >
+                            Details
+                          </span>
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!isAuthenticated) {
+                                navigate('/signin', {
+                                  state: {
+                                    from: `/checkout/${course.slug}`,
+                                    message: `Please sign in to enroll in "${course.title}".`
+                                  }
+                                });
+                              } else {
+                                navigate(`/checkout/${course.slug}`);
+                              }
+                            }}
+                            style={{
+                              fontSize: '0.74rem',
+                              fontWeight: 600,
+                              color: '#FFFFFF',
+                              backgroundColor: 'rgba(169, 87, 104, 0.92)',
+                              backdropFilter: 'blur(6px)',
+                              padding: '0.3rem 0.65rem',
+                              borderRadius: '999px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.2rem'
+                            }}
+                          >
+                            Enroll &rarr;
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>

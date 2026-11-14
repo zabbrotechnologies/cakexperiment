@@ -25,6 +25,7 @@ import { SignIn } from './pages/public/SignIn';
 import { SignUp } from './pages/public/SignUp';
 import { ForgotPassword } from './pages/public/ForgotPassword';
 import { NotFound } from './pages/public/NotFound';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Student Pages
 import { StudentDashboard } from './pages/student/StudentDashboard';
@@ -89,7 +90,7 @@ export const App: React.FC = () => {
             <Route path="/shop" element={<Shop />} />
             <Route path="/shop/:slug" element={<ProductDetail />} />
             <Route path="/courses" element={<Courses />} />
-            <Route path="/courses/:slug" element={<CourseDetail />} />
+            <Route path="/courses/:slug" element={<ErrorBoundary><CourseDetail /></ErrorBoundary>} />
             <Route path="/checkout/:courseId" element={<Checkout />} />
             <Route path="/about" element={<Navigate to="/#about" replace />} />
             <Route path="/signin" element={<SignIn />} />

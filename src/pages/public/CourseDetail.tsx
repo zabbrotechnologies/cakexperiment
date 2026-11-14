@@ -98,6 +98,33 @@ export const CourseDetail: React.FC = () => {
   const modules = course.modules || [];
   const relatedCourses = storageService.getCourses().filter(c => c.id !== course.id).slice(0, 3);
 
+  const learningOutcomes: string[] = Array.isArray(course.learningOutcomes) && course.learningOutcomes.length > 0
+    ? course.learningOutcomes
+    : (Array.isArray((course as any).learning_outcomes) && (course as any).learning_outcomes.length > 0
+        ? (course as any).learning_outcomes
+        : [
+            'Professional pastry formulation and precision baking ratios',
+            'Step-by-step techniques for flawless textures and structural stability',
+            'Artisanal assembly, palette knife textures, and presentation art',
+            'Troubleshooting common formulation and room climate challenges'
+          ]);
+
+  const prerequisites: string[] = Array.isArray(course.prerequisites) && course.prerequisites.length > 0
+    ? course.prerequisites
+    : ['Basic passion for baking and home kitchen oven', 'Willingness to learn French pastry foundations'];
+
+  const equipmentNeeded: string[] = Array.isArray(course.equipmentNeeded) && course.equipmentNeeded.length > 0
+    ? course.equipmentNeeded
+    : (Array.isArray((course as any).equipment_needed) && (course as any).equipment_needed.length > 0
+        ? (course as any).equipment_needed
+        : ['Standard home kitchen oven', 'Hand mixer or stand mixer', 'Mixing bowls and silicone spatulas', 'Piping bags and nozzles']);
+
+  const instructorName = course.instructorName || 'Chef Camille Laurent';
+  const instructorAvatar = course.instructorAvatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=120&q=80';
+  const instructorBio = course.instructorBio || 'Master Pastry Chef with over 12 years of Parisian culinary atelier experience.';
+  const courseDescription = course.description || course.shortDescription || 'Master professional cake artistry and pastry techniques from home.';
+  const totalDuration = course.totalDuration || '2h 30m';
+
   const toggleModule = (modId: string) => {
     setOpenModules(prev => ({ ...prev, [modId]: !prev[modId] }));
   };
@@ -140,7 +167,7 @@ export const CourseDetail: React.FC = () => {
             <span style={{ color: 'var(--color-plum)', fontWeight: 500 }}>{course.title}</span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '2.5rem', alignItems: 'center' }}>
             
             {/* Left: Course Metadata & Overview */}
             <div>
@@ -178,8 +205,8 @@ export const CourseDetail: React.FC = () => {
               {/* Instructor Capsule */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '2.5rem' }}>
                 <img
-                  src={course.instructorAvatar}
-                  alt={course.instructorName}
+                  src={instructorAvatar}
+                  alt={instructorName}
                   style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-rose)' }}
                 />
                 <div>
@@ -187,7 +214,7 @@ export const CourseDetail: React.FC = () => {
                     Taught by
                   </div>
                   <div style={{ fontSize: '0.98rem', fontWeight: 600, color: 'var(--color-plum)' }}>
-                    {course.instructorName}
+                    {instructorName}
                   </div>
                 </div>
               </div>
@@ -293,19 +320,19 @@ export const CourseDetail: React.FC = () => {
 
       {/* Main Details Body: Coursera Structured Curriculum & Outcomes */}
       <div className="container" style={{ marginTop: '3.5rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '2.5rem' }}>
           
           {/* Main Left Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
             
             {/* What you'll learn */}
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '2.5rem', border: '1px solid var(--border-subtle)' }}>
+            <div className="course-content-card" style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '2.5rem', border: '1px solid var(--border-subtle)' }}>
               <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 <ChefHat size={20} color="var(--color-berry)" />
                 What You'll Master in this Course
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-                {course.learningOutcomes.map((outcome, idx) => (
+                {learningOutcomes.map((outcome, idx) => (
                   <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', fontSize: '0.95rem', color: 'var(--color-plum)' }}>
                     <CheckCircle size={18} color="var(--color-berry)" style={{ flexShrink: 0, marginTop: '3px' }} />
                     <span>{outcome}</span>
@@ -315,7 +342,7 @@ export const CourseDetail: React.FC = () => {
             </div>
 
             {/* Expandable Course Curriculum (Coursera Inspired) */}
-            <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '2.5rem', border: '1px solid var(--border-subtle)' }}>
+            <div className="course-content-card" style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '2.5rem', border: '1px solid var(--border-subtle)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <div>
                   <h3 style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>Course Curriculum</h3>
@@ -443,13 +470,13 @@ export const CourseDetail: React.FC = () => {
             <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '2.5rem', border: '1px solid var(--border-subtle)' }}>
               <h3 style={{ fontSize: '1.5rem', marginBottom: '1.2rem' }}>About this Masterclass</h3>
               <p style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: 1.7, marginBottom: '1.5rem' }}>
-                {course.description}
+                {courseDescription}
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-subtle)' }}>
                 <div>
                   <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-plum)', marginBottom: '0.5rem' }}>Prerequisites</h4>
                   <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                    {course.prerequisites.map((prereq, i) => (
+                    {prerequisites.map((prereq, i) => (
                       <li key={i}>• {prereq}</li>
                     ))}
                   </ul>
@@ -457,7 +484,7 @@ export const CourseDetail: React.FC = () => {
                 <div>
                   <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-plum)', marginBottom: '0.5rem' }}>Required Equipment</h4>
                   <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-                    {course.equipmentNeeded.map((eq, i) => (
+                    {equipmentNeeded.map((eq, i) => (
                       <li key={i}>• {eq}</li>
                     ))}
                   </ul>
@@ -474,13 +501,13 @@ export const CourseDetail: React.FC = () => {
             <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '2rem', border: '1px solid var(--border-subtle)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.2rem' }}>
                 <img
-                  src={course.instructorAvatar}
-                  alt={course.instructorName}
+                  src={instructorAvatar}
+                  alt={instructorName}
                   style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--color-blush)' }}
                 />
                 <div>
                   <h4 style={{ fontSize: '1.15rem', color: 'var(--color-plum)', marginBottom: '0.2rem' }}>
-                    {course.instructorName}
+                    {instructorName}
                   </h4>
                   <div style={{ fontSize: '0.82rem', color: 'var(--color-berry)', fontWeight: 500 }}>
                     Instructor & Pastry Chef
@@ -488,7 +515,7 @@ export const CourseDetail: React.FC = () => {
                 </div>
               </div>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '1.2rem' }}>
-                {course.instructorBio}
+                {instructorBio}
               </p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: 'var(--color-plum)', fontWeight: 500 }}>
                 <Award size={16} color="var(--color-berry)" />
@@ -503,7 +530,7 @@ export const CourseDetail: React.FC = () => {
               </h4>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.8rem', fontSize: '0.9rem', color: 'var(--color-plum)' }}>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                  <Play size={16} color="var(--color-berry)" /> {course.totalDuration} On-Demand 4K Video Lessons
+                  <Play size={16} color="var(--color-berry)" /> {totalDuration} On-Demand 4K Video Lessons
                 </li>
                 <li style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                   <BookOpen size={16} color="var(--color-berry)" /> Downloadable Recipe Scales & Templates

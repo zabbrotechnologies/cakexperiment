@@ -60861,6 +60861,22 @@ async function handleGetCourseDetail(idOrSlug, res) {
         skillLevel: course.skill_level,
         instructorName: course.instructor_name,
         instructorBio: course.instructor_bio,
+        learningOutcomes: course.learning_outcomes || course.learningOutcomes || [
+          "Professional pastry formulation and precision baking ratios",
+          "Step-by-step techniques for flawless textures and structural stability",
+          "Artisanal assembly, palette knife textures, and presentation art",
+          "Troubleshooting common formulation and room climate challenges"
+        ],
+        prerequisites: course.prerequisites || [
+          "Basic passion for baking and home kitchen oven",
+          "Willingness to learn French pastry foundations"
+        ],
+        equipmentNeeded: course.equipment_needed || course.equipmentNeeded || [
+          "Standard home kitchen oven",
+          "Hand mixer or stand mixer",
+          "Mixing bowls and silicone spatulas",
+          "Piping bags and nozzles"
+        ],
         modules: modulesWithLessons
       }
     })

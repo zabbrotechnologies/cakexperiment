@@ -402,7 +402,7 @@ export const Courses: React.FC = () => {
             )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', maxWidth: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             {/* Mobile Filter Button (opens drawer) */}
             <button
               onClick={() => setMobileFilterOpen(true)}
@@ -417,22 +417,21 @@ export const Courses: React.FC = () => {
               <Filter size={14} /> Filter & Tracks
             </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>Sort:</span>
               <select
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value)}
                 style={{
-                  padding: '0.45rem 0.75rem',
+                  padding: '0.45rem 0.85rem',
                   borderRadius: 'var(--radius-md)',
                   border: '1px solid var(--border-subtle)',
                   backgroundColor: '#FFFFFF',
                   fontFamily: 'var(--font-sans)',
-                  fontSize: '0.82rem',
+                  fontSize: '0.85rem',
                   color: 'var(--color-plum)',
                   cursor: 'pointer',
-                  outline: 'none',
-                  maxWidth: '100%'
+                  outline: 'none'
                 }}
               >
                 <option value="recommended">Recommended</option>
@@ -447,14 +446,12 @@ export const Courses: React.FC = () => {
         </div>
 
         {/* Mobile Horizontal Swipeable Category Bar (Visible only on mobile/tablet) */}
-        <div className="mobile-category-bar" style={{ display: 'none', marginBottom: '1.25rem', width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
+        <div className="mobile-category-bar" style={{ display: 'none', marginBottom: '1.25rem' }}>
           <div
             style={{
               display: 'flex',
               gap: '0.5rem',
               overflowX: 'auto',
-              width: '100%',
-              maxWidth: '100%',
               paddingBottom: '0.35rem',
               scrollbarWidth: 'none',
               msOverflowStyle: 'none'
@@ -1007,7 +1004,10 @@ export const Courses: React.FC = () => {
                         }}
                       >
                         {/* Cover Image */}
-                        <div style={{ position: 'relative', height: '210px', overflow: 'hidden' }}>
+                        <Link
+                          to={`/courses/${course.slug}`}
+                          style={{ position: 'relative', height: '210px', overflow: 'hidden', display: 'block' }}
+                        >
                           <img
                             src={course.thumbnail}
                             alt={course.title}
@@ -1042,7 +1042,7 @@ export const Courses: React.FC = () => {
                             <Clock size={12} color="var(--color-berry)" />
                             {course.totalDuration}
                           </div>
-                        </div>
+                        </Link>
 
                         {/* Content */}
                         <div style={{ padding: '1.35rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -1141,7 +1141,9 @@ export const Courses: React.FC = () => {
                               alignItems: 'center',
                               justifyContent: 'space-between',
                               paddingTop: '1rem',
-                              borderTop: '1px solid var(--border-subtle)'
+                              borderTop: '1px solid var(--border-subtle)',
+                              gap: '0.65rem',
+                              flexWrap: 'wrap'
                             }}
                           >
                             <div>
@@ -1160,33 +1162,49 @@ export const Courses: React.FC = () => {
                               </div>
                             </div>
 
-                            {isEnrolled ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
                               <Link
-                                to={`/learn/${course.id}`}
+                                to={`/courses/${course.slug}`}
                                 className="btn btn-secondary btn-sm"
-                                style={{ borderColor: '#2E7D32', color: '#2E7D32' }}
-                              >
-                                Go to Class &rarr;
-                              </Link>
-                            ) : (
-                              <Link
-                                to={`/checkout/${course.slug}`}
-                                onClick={(e) => {
-                                  if (!isAuthenticated) {
-                                    e.preventDefault();
-                                    navigate('/signin', {
-                                      state: {
-                                        from: `/checkout/${course.slug}`,
-                                        message: `Please sign in to enroll in "${course.title}".`
-                                      }
-                                    });
-                                  }
+                                style={{
+                                  fontSize: '0.8rem',
+                                  padding: '0.45rem 0.75rem',
+                                  borderColor: 'var(--border-subtle)',
+                                  color: 'var(--color-plum)'
                                 }}
-                                className="btn btn-primary btn-sm"
                               >
-                                Enroll Now &rarr;
+                                View Details
                               </Link>
-                            )}
+
+                              {isEnrolled ? (
+                                <Link
+                                  to={`/learn/${course.id}`}
+                                  className="btn btn-primary btn-sm"
+                                  style={{ backgroundColor: '#2E7D32', borderColor: '#2E7D32', fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
+                                >
+                                  Go to Class &rarr;
+                                </Link>
+                              ) : (
+                                <Link
+                                  to={`/checkout/${course.slug}`}
+                                  onClick={(e) => {
+                                    if (!isAuthenticated) {
+                                      e.preventDefault();
+                                      navigate('/signin', {
+                                        state: {
+                                          from: `/checkout/${course.slug}`,
+                                          message: `Please sign in to enroll in "${course.title}".`
+                                        }
+                                      });
+                                    }
+                                  }}
+                                  className="btn btn-primary btn-sm"
+                                  style={{ fontSize: '0.8rem', padding: '0.45rem 0.85rem' }}
+                                >
+                                  Enroll Now &rarr;
+                                </Link>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
