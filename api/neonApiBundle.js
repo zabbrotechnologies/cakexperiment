@@ -60675,9 +60675,11 @@ async function handleCourseClassroom(courseId, req, res) {
     JSON.stringify({
       course: {
         ...course,
-        instructorName: course.instructor_name || "Chef Camille Laurent",
-        instructorBio: course.instructor_bio || "Master Pastry Chef & Atelier Instructor",
-        instructorAvatar: course.instructor_avatar || "https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=400&q=80",
+        instructorName: "Chef Anisha Arthur",
+        instructor_name: "Chef Anisha Arthur",
+        instructorBio: "Founder, Executive Pastry Chef & Creative Director at Cakexperiment.",
+        instructorAvatar: "/images/chef-anisha.jpg",
+        instructor_avatar: "/images/chef-anisha.jpg",
         shortDescription: course.short_description || course.description,
         learningOutcomes: course.learning_outcomes || defaultOutcomes,
         learning_outcomes: course.learning_outcomes || defaultOutcomes,
@@ -60792,8 +60794,11 @@ async function handleListCourses(res) {
       previewMedia: c5.preview_media,
       totalDuration: c5.total_duration,
       skillLevel: c5.skill_level,
-      instructorName: c5.instructor_name,
-      instructorBio: c5.instructor_bio
+      instructorName: "Chef Anisha Arthur",
+      instructor_name: "Chef Anisha Arthur",
+      instructorAvatar: "/images/chef-anisha.jpg",
+      instructor_avatar: "/images/chef-anisha.jpg",
+      instructorBio: "Founder, Executive Pastry Chef & Creative Director at Cakexperiment."
     };
   });
   res.statusCode = 200;
@@ -60860,8 +60865,11 @@ async function handleGetCourseDetail(idOrSlug, res) {
         previewMedia: course.preview_media,
         totalDuration: course.total_duration,
         skillLevel: course.skill_level,
-        instructorName: course.instructor_name,
-        instructorBio: course.instructor_bio,
+        instructorName: "Chef Anisha Arthur",
+        instructor_name: "Chef Anisha Arthur",
+        instructorAvatar: "/images/chef-anisha.jpg",
+        instructor_avatar: "/images/chef-anisha.jpg",
+        instructorBio: "Founder, Executive Pastry Chef & Creative Director at Cakexperiment.",
         learningOutcomes: course.learning_outcomes || course.learningOutcomes || [
           "Professional pastry formulation and precision baking ratios",
           "Step-by-step techniques for flawless textures and structural stability",
@@ -61207,8 +61215,11 @@ async function handleAdminListCourses(req, res) {
       previewMedia: c5.preview_media,
       totalDuration: c5.total_duration,
       skillLevel: c5.skill_level,
-      instructorName: c5.instructor_name,
-      instructorBio: c5.instructor_bio
+      instructorName: "Chef Anisha Arthur",
+      instructor_name: "Chef Anisha Arthur",
+      instructorAvatar: "/images/chef-anisha.jpg",
+      instructor_avatar: "/images/chef-anisha.jpg",
+      instructorBio: "Founder, Executive Pastry Chef & Creative Director at Cakexperiment."
     };
   });
   res.statusCode = 200;
@@ -61244,8 +61255,8 @@ async function handleAdminSaveCourse(targetCourseId, req, res) {
   const previewMedia = data.previewMedia || data.preview_media || "";
   const categoryId = data.categoryId || data.category_id || "cat-1";
   const categoryName = data.categoryName || data.category_name || "Cake Baking";
-  const instructorName = data.instructorName || data.instructor_name || "Chef Camille Laurent";
-  const instructorBio = data.instructorBio || data.instructor_bio || "Executive pastry chef at Cakexperiment Atelier.";
+  const instructorName = "Chef Anisha Arthur";
+  const instructorBio = "Founder, Executive Pastry Chef & Creative Director at Cakexperiment.";
   const skillLevel = data.skillLevel || data.skill_level || "All Levels";
   const price = Number(data.price) || 499;
   const originalPrice = Number(data.originalPrice || data.original_price) || 1499;
@@ -61268,7 +61279,7 @@ async function handleAdminSaveCourse(targetCourseId, req, res) {
     ) VALUES (
       ${courseId}, ${title}, ${slug}, ${tag}, ${shortDescription}, ${description},
       ${thumbnail}, ${image}, ${previewMedia}, ${categoryId}, ${categoryName},
-      ${instructorName}, ${instructorBio}, '', ${skillLevel},
+      ${instructorName}, ${instructorBio}, '/images/chef-anisha.jpg', ${skillLevel},
       ${price}, ${originalPrice}, 4.9, 0, ${status}, ${featured},
       ${totalDuration}, ${modulesCount}, ${lessonsCount}, NOW(), NOW()
     )

@@ -182,7 +182,7 @@ export const Checkout: React.FC = () => {
                     {course.title}
                   </h3>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                    Instructor: {course.instructorName || 'Chef Camille Laurent'}
+                    Instructor: Chef Anisha Arthur
                   </div>
                 </div>
               </div>

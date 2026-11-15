@@ -362,7 +362,7 @@ async function main() {
         slug: 'pro-cake-turntable-piping-kit',
         name: 'Pro Studio Turntable & Piping Kit',
         short_description: 'Weighted cast-alloy revolving cake stand with seamless Korean floral nozzles, offset spatulas, and acrylic scrapers.',
-        description: 'The exact hardware used by Chef Camille and Chef Anisha in our masterclasses. Smooth dual ball-bearing rotation ensures razor-sharp buttercream edges every single turn.',
+        description: 'The exact hardware used by Chef Anisha in our masterclasses. Smooth dual ball-bearing rotation ensures razor-sharp buttercream edges every single turn.',
         category_id: 'cat-prod-tools',
         base_price: 1899,
         compare_at_price: 2499,

@@ -26,7 +26,7 @@ export const MyLearning: React.FC = () => {
               title: c.title,
               thumbnail: c.thumbnail || c.image || '/images/hero-cake.png',
               categoryName: c.tag || 'Masterclass',
-              instructorName: c.instructor_name || 'Chef Camille Laurent',
+              instructorName: 'Chef Anisha Arthur',
               totalDuration: c.total_duration || '2h 30m',
               lessonCount: c.lessons_count || 6,
               activatedAt: c.activated_at,

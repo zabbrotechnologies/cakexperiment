@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import chefAnishaImg from '../../assets/chef-anisha.jpg';
 import {
   LayoutDashboard,
   BookOpen,
@@ -212,24 +213,24 @@ export const AdminLayout: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <div
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--color-blush)',
-                  color: 'var(--color-berry)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '2px solid var(--color-rose)'
+              <img
+                src={chefAnishaImg}
+                alt="Chef Anisha Arthur"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = '/images/chef-anisha.jpg';
                 }}
-              >
-                <User size={18} />
-              </div>
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: '2px solid var(--color-rose)',
+                  boxShadow: '0 2px 6px rgba(87, 51, 58, 0.15)'
+                }}
+              />
               <div style={{ display: 'none' }} className="admin-user-info">
-                <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-plum)' }}>{user?.name || 'Admin'}</div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{user?.email}</div>
+                <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--color-plum)' }}>Chef Anisha Arthur</div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Founder & Head Pastry Chef</div>
               </div>
             </div>
           </div>

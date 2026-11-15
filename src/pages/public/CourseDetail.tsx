@@ -5,6 +5,8 @@ import { storageService } from '../../services/storage';
 import { useAuth } from '../../context/AuthContext';
 import { Course, Review } from '../../types';
 import { CreamFlowNav, TabType } from '../../components/course/CreamFlowNav';
+import { CourseReviewForm } from '../../components/course/CourseReviewForm';
+import chefAnishaImg from '../../assets/chef-anisha.jpg';
 import {
   Star,
   Clock,
@@ -50,6 +52,7 @@ export const CourseDetail: React.FC = () => {
   const [reviewSort, setReviewSort] = useState<'relevant' | 'newest' | 'highest'>('relevant');
   const [ratingFilter, setRatingFilter] = useState<number | 'all'>('all');
   const [helpfulVotes, setHelpfulVotes] = useState<Record<string, { count: number; voted: boolean }>>({});
+  const [reviewsVersion, setReviewsVersion] = useState(0);
 
   const reviewsSectionRef = useRef<HTMLDivElement | null>(null);
 
@@ -107,7 +110,7 @@ export const CourseDetail: React.FC = () => {
   const courseReviews: Review[] = useMemo(() => {
     if (!course) return [];
     return storageService.getReviewsForCourse(course.id, course.title);
-  }, [course]);
+  }, [course, reviewsVersion]);
 
   // Initial helpful counts setup
   useEffect(() => {
@@ -237,8 +240,8 @@ export const CourseDetail: React.FC = () => {
             'Piping bags and standard open-star / round nozzle kit'
           ]);
 
-  const instructorName = course.instructorName || 'Chef Camille Laurent';
-  const instructorAvatar = course.instructorAvatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=120&q=80';
+  const instructorName = 'Chef Anisha Arthur';
+  const instructorAvatar = chefAnishaImg;
   const courseDescription = course.description || course.shortDescription || 'Master professional cake artistry and pastry techniques from home.';
   const totalDuration = course.totalDuration || '2h 30m';
 
@@ -277,6 +280,14 @@ export const CourseDetail: React.FC = () => {
         [revId]: { count: current.count + 1, voted: true }
       };
     });
+  };
+
+  const handleNewReviewSubmitted = (_newReview: Review) => {
+    setReviewsVersion(v => v + 1);
+  };
+
+  const handleReviewDeleted = (_reviewId: string) => {
+    setReviewsVersion(v => v + 1);
   };
 
   const handleTabClick = (tab: TabType) => {
@@ -1048,6 +1059,20 @@ export const CourseDetail: React.FC = () => {
             </div>
           </div>
 
+          {/* Leave a Comment & Review Division (Enrolled students can write, non-enrolled see enrollment notice) */}
+          <div style={{ marginBottom: '2.5rem' }}>
+            <CourseReviewForm
+              courseId={course.id}
+              courseTitle={course.title}
+              isEnrolled={isEnrolled}
+              user={user}
+              coursePrice={course.price}
+              onEnrollClick={handleEnrollClick}
+              onReviewSubmitted={handleNewReviewSubmitted}
+              onReviewDeleted={handleReviewDeleted}
+            />
+          </div>
+
           {/* B. Individual Reviews List (First 3–4 items) */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {courseReviews.slice(0, 3).map((review, rIdx) => {
@@ -1332,6 +1357,21 @@ export const CourseDetail: React.FC = () => {
                 gap: '1.5rem'
               }}
             >
+              {/* Leave a Comment & Review Division in Modal */}
+              <CourseReviewForm
+                courseId={course.id}
+                courseTitle={course.title}
+                isEnrolled={isEnrolled}
+                user={user}
+                coursePrice={course.price}
+                onEnrollClick={() => {
+                  setReviewsModalOpen(false);
+                  handleEnrollClick();
+                }}
+                onReviewSubmitted={handleNewReviewSubmitted}
+                onReviewDeleted={handleReviewDeleted}
+              />
+
               {modalReviews.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--text-muted)' }}>
                   No reviews match the selected filter.

@@ -585,9 +585,9 @@ const initialCourses: Course[] = [
     categoryId: 'cat-2',
     categoryName: 'Cake Decorating',
     instructorId: 'inst-1',
-    instructorName: 'Chef Camille Laurent',
-    instructorAvatar: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=400&q=80',
-    instructorBio: 'Former executive pastry chef at L\'Étoile Paris with over 14 years of bespoke wedding cake design experience.',
+    instructorName: 'Chef Anisha Arthur',
+    instructorAvatar: '/images/chef-anisha.jpg',
+    instructorBio: 'Founder, Executive Pastry Chef & Creative Director at Cakexperiment with over 10 years of bespoke artisanal pastry experience.',
     skillLevel: 'All Levels',
     learningOutcomes: [
       'Master the Swiss meringue buttercream formula for all weather climates',
@@ -631,9 +631,9 @@ const initialCourses: Course[] = [
     categoryId: 'cat-1',
     categoryName: 'Cake Baking',
     instructorId: 'inst-1',
-    instructorName: 'Chef Camille Laurent',
-    instructorAvatar: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=400&q=80',
-    instructorBio: 'Former executive pastry chef at L\'Étoile Paris with over 14 years of bespoke wedding cake design experience.',
+    instructorName: 'Chef Anisha Arthur',
+    instructorAvatar: '/images/chef-anisha.jpg',
+    instructorBio: 'Founder, Executive Pastry Chef & Creative Director at Cakexperiment with over 10 years of bespoke artisanal pastry experience.',
     skillLevel: 'Beginner',
     learningOutcomes: [
       'Understand the chemical interaction of leavening agents and flours',
@@ -673,10 +673,10 @@ const initialCourses: Course[] = [
     previewMedia: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
     categoryId: 'cat-6',
     categoryName: 'Modern Celebration Cakes',
-    instructorId: 'inst-2',
-    instructorName: 'Elena Rostova',
-    instructorAvatar: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=400&q=80',
-    instructorBio: 'International cake sculptor and gold medal recipient at the London Cake Masters Expo.',
+    instructorId: 'inst-1',
+    instructorName: 'Chef Anisha Arthur',
+    instructorAvatar: '/images/chef-anisha.jpg',
+    instructorBio: 'Founder, Executive Pastry Chef & Creative Director at Cakexperiment with over 10 years of bespoke artisanal pastry experience.',
     skillLevel: 'Intermediate',
     learningOutcomes: [
       'Construct wafer paper sails and delicate translucent butterflies',
@@ -717,9 +717,9 @@ const initialCourses: Course[] = [
     categoryId: 'cat-4',
     categoryName: 'Chocolate Techniques',
     instructorId: 'inst-1',
-    instructorName: 'Chef Camille Laurent',
-    instructorAvatar: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=400&q=80',
-    instructorBio: 'Former executive pastry chef at L\'Étoile Paris with over 14 years of bespoke wedding cake design experience.',
+    instructorName: 'Chef Anisha Arthur',
+    instructorAvatar: '/images/chef-anisha.jpg',
+    instructorBio: 'Founder, Executive Pastry Chef & Creative Director at Cakexperiment with over 10 years of bespoke artisanal pastry experience.',
     skillLevel: 'Intermediate',
     learningOutcomes: [
       'Master 1:1, 2:1 and 3:1 chocolate-to-cream ratios for every climate',
@@ -752,10 +752,10 @@ const initialCourses: Course[] = [
     previewMedia: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
     categoryId: 'cat-5',
     categoryName: 'Cupcakes & Mini Desserts',
-    instructorId: 'inst-2',
-    instructorName: 'Elena Rostova',
-    instructorAvatar: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=400&q=80',
-    instructorBio: 'International cake sculptor and gold medal recipient at the London Cake Masters Expo.',
+    instructorId: 'inst-1',
+    instructorName: 'Chef Anisha Arthur',
+    instructorAvatar: '/images/chef-anisha.jpg',
+    instructorBio: 'Founder, Executive Pastry Chef & Creative Director at Cakexperiment with over 10 years of bespoke artisanal pastry experience.',
     skillLevel: 'Beginner',
     learningOutcomes: [
       'Core cupcake sponge baking without greasy liner peel',
@@ -788,10 +788,10 @@ const initialCourses: Course[] = [
     previewMedia: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4',
     categoryId: 'cat-3',
     categoryName: 'Fondant Art',
-    instructorId: 'inst-2',
-    instructorName: 'Elena Rostova',
-    instructorAvatar: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&w=400&q=80',
-    instructorBio: 'International cake sculptor and gold medal recipient at the London Cake Masters Expo.',
+    instructorId: 'inst-1',
+    instructorName: 'Chef Anisha Arthur',
+    instructorAvatar: '/images/chef-anisha.jpg',
+    instructorBio: 'Founder, Executive Pastry Chef & Creative Director at Cakexperiment with over 10 years of bespoke artisanal pastry experience.',
     skillLevel: 'Advanced',
     learningOutcomes: [
       'Knead and condition sugarpaste for tropical humidity tolerance',
@@ -820,12 +820,12 @@ const initialCourses: Course[] = [
 const initialUsers: User[] = [
   {
     id: 'user-admin',
-    name: 'Administrator',
+    name: 'Chef Anisha Arthur',
     email: DEMO_ADMIN.email,
     role: 'admin',
-    avatar: '',
+    avatar: '/images/chef-anisha.jpg',
     status: 'active',
-    bio: 'Platform director and academy operations manager at Cakexperiment.',
+    bio: 'Founder, Executive Pastry Chef & Creative Director at Cakexperiment.',
     createdAt: '2026-01-01T00:00:00Z'
   },
   {
@@ -976,7 +976,7 @@ const initialReviews: Review[] = [
     courseId: 'course-1',
     courseTitle: 'Buttercream Decoration Masterclass',
     rating: 5,
-    comment: 'The Swiss meringue buttercream formula transformed my cakes overnight. No doming, no greasy texture, just pure silky luxury. Chef Camille explains the subtle tactile cues that books never mention!',
+    comment: 'The Swiss meringue buttercream formula transformed my cakes overnight. No doming, no greasy texture, just pure silky luxury. Chef Anisha explains the subtle tactile cues that books never mention!',
     studentCreationImg: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=600&q=80',
     status: 'approved',
     createdAt: '2026-02-10T14:00:00Z'
@@ -1519,7 +1519,16 @@ class StorageService {
 
   // --- Auth & Session ---
   public getCurrentUser(): User | null {
-    return this.get<User | null>(STORAGE_KEYS.SESSION, null);
+    const user = this.get<User | null>(STORAGE_KEYS.SESSION, null);
+    if (!user) return null;
+    if (user.role === 'admin' || user.role === 'ADMIN') {
+      return {
+        ...user,
+        name: user.name && user.name !== 'Administrator' ? user.name : 'Chef Anisha Arthur',
+        avatar: '/images/chef-anisha.jpg'
+      };
+    }
+    return user;
   }
 
   public signIn(email: string, pass: string): { success: boolean; user?: User; message?: string } {
@@ -1529,7 +1538,12 @@ class StorageService {
     // Check Admin demo credentials
     if (cleanEmail === DEMO_ADMIN.email.toLowerCase()) {
       if (pass === DEMO_ADMIN.password) {
-        const adminUser = this.getUsers().find(u => u.role === 'admin') || initialUsers[0];
+        const baseAdmin = this.getUsers().find(u => u.role === 'admin') || initialUsers[0];
+        const adminUser: User = {
+          ...baseAdmin,
+          name: 'Chef Anisha Arthur',
+          avatar: '/images/chef-anisha.jpg'
+        };
         this.set(STORAGE_KEYS.SESSION, adminUser);
         return { success: true, user: adminUser };
       }
@@ -1670,8 +1684,14 @@ class StorageService {
           mods = [];
         }
       }
+
       return {
         ...c,
+        instructorName: 'Chef Anisha Arthur',
+        instructor_name: 'Chef Anisha Arthur',
+        instructorAvatar: '/images/chef-anisha.jpg',
+        instructor_avatar: '/images/chef-anisha.jpg',
+        instructorBio: 'Founder, Executive Pastry Chef & Creative Director at Cakexperiment with over 10 years of bespoke artisanal pastry experience.',
         modules: mods
       };
     });
@@ -1733,9 +1753,9 @@ class StorageService {
       categoryId: courseData.categoryId || 'cat-1',
       categoryName: courseData.categoryName || 'Cake Baking',
       instructorId: 'inst-1',
-      instructorName: courseData.instructorName || 'Chef Camille Laurent',
-      instructorAvatar: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=400&q=80',
-      instructorBio: 'Bespoke wedding cake specialist and executive pastry instructor.',
+      instructorName: 'Chef Anisha Arthur',
+      instructorAvatar: '/images/chef-anisha.jpg',
+      instructorBio: 'Founder, Executive Pastry Chef & Creative Director at Cakexperiment.',
       skillLevel: courseData.skillLevel || 'All Levels',
       learningOutcomes: courseData.learningOutcomes || ['Master core culinary techniques', 'Create presentation-ready celebration cakes'],
       prerequisites: courseData.prerequisites || ['Basic kitchen enthusiasm'],
@@ -2197,6 +2217,60 @@ class StorageService {
   public updateReviewStatus(reviewId: string, status: 'approved' | 'pending' | 'hidden'): void {
     const reviews = this.getReviews().map(r => (r.id === reviewId ? { ...r, status } : r));
     this.set(STORAGE_KEYS.REVIEWS, reviews);
+  }
+
+  public addReview(reviewData: Omit<Review, 'id' | 'createdAt'> & { id?: string; createdAt?: string }): Review {
+    const reviews = this.getReviews();
+    const newReview: Review = {
+      id: reviewData.id || `rev-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      userId: reviewData.userId,
+      userName: reviewData.userName,
+      userAvatar: reviewData.userAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150',
+      courseId: reviewData.courseId,
+      courseTitle: reviewData.courseTitle,
+      rating: reviewData.rating,
+      comment: reviewData.comment,
+      studentCreationImg: reviewData.studentCreationImg,
+      status: reviewData.status || 'approved',
+      createdAt: reviewData.createdAt || new Date().toISOString()
+    };
+    const updated = [newReview, ...reviews];
+    this.set(STORAGE_KEYS.REVIEWS, updated);
+
+    // Sync course review count in cache
+    try {
+      const courses = this.getCourses();
+      const courseIdx = courses.findIndex(c => c.id === reviewData.courseId);
+      if (courseIdx !== -1) {
+        const currentCourse = courses[courseIdx];
+        const newCount = (currentCourse.reviewCount || currentCourse.reviewsCount || 0) + 1;
+        courses[courseIdx] = {
+          ...currentCourse,
+          reviewCount: newCount,
+          reviewsCount: newCount
+        };
+        this.set(STORAGE_KEYS.COURSES, courses);
+      }
+    } catch (e) {
+      console.warn('Failed to sync course review count', e);
+    }
+
+    return newReview;
+  }
+
+  public updateReview(reviewId: string, updates: Partial<Pick<Review, 'rating' | 'comment' | 'studentCreationImg' | 'status'>>): Review | null {
+    const reviews = this.getReviews();
+    const idx = reviews.findIndex(r => r.id === reviewId);
+    if (idx === -1) return null;
+    reviews[idx] = { ...reviews[idx], ...updates };
+    this.set(STORAGE_KEYS.REVIEWS, reviews);
+    return reviews[idx];
+  }
+
+  public getUserReviewForCourse(userId: string, courseId: string): Review | undefined {
+    const reviews = this.getReviews();
+    const cleanId = (courseId || '').trim().toLowerCase();
+    return reviews.find(r => r.userId === userId && (r.courseId || '').trim().toLowerCase() === cleanId);
   }
 
   public deleteReview(reviewId: string): void {

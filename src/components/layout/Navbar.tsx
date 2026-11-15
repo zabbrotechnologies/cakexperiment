@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import chefAnishaImg from '../../assets/chef-anisha.jpg';
 import { 
   Menu, 
   X, 
@@ -279,7 +280,18 @@ export const Navbar: React.FC = () => {
                   aria-expanded={userDropdownOpen}
                 >
                   <div className="nav-user-avatar">
-                    <UserIcon size={16} />
+                    {isAdmin || user.avatar ? (
+                      <img
+                        src={isAdmin ? chefAnishaImg : (user.avatar || chefAnishaImg)}
+                        alt={user.name}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = '/images/chef-anisha.jpg';
+                        }}
+                        style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <UserIcon size={16} />
+                    )}
                   </div>
                   <span className="nav-user-name">
                     {user.name.split(' ')[0]}

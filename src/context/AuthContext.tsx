@@ -29,6 +29,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const token = localStorage.getItem(TOKEN_KEY);
       if (!token) {
+        const offlineUser = storageService.getCurrentUser();
+        if (offlineUser) {
+          setUser(offlineUser);
+          return;
+        }
         setUser(null);
         setEnrolledCourseIds([]);
         return;

@@ -4,6 +4,7 @@ import { storageService } from '../../services/storage';
 import { useAuth } from '../../context/AuthContext';
 import { Course, Category } from '../../types';
 import { CustomerReviewMarquee } from '../../components/home/CustomerReviewMarquee';
+import chefAnishaImg from '../../assets/chef-anisha.jpg';
 import {
   Search,
   Filter,
@@ -1090,12 +1091,15 @@ export const Courses: React.FC = () => {
                           {/* Instructor Credential Row */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', marginBottom: '0.75rem' }}>
                             <img
-                              src={course.instructorAvatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=120&q=80'}
-                              alt={course.instructorName}
+                              src={chefAnishaImg}
+                              alt="Chef Anisha Arthur"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src = '/images/chef-anisha.jpg';
+                              }}
                               style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--color-rose)' }}
                             />
                             <span style={{ fontSize: '0.82rem', color: 'var(--color-plum)', fontWeight: 500 }}>
-                              {course.instructorName}
+                              Chef Anisha Arthur
                             </span>
                           </div>
 

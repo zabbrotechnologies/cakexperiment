@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { useAuth } from '../../context/AuthContext';
 import { Course, Lesson, Module } from '../../types';
+import chefAnishaImg from '../../assets/chef-anisha.jpg';
 import {
   Play,
   CheckCircle,
@@ -60,9 +61,9 @@ export const CourseClassroom: React.FC = () => {
           ];
           const formattedCourse: Course = {
             ...raw,
-            instructorName: raw.instructorName || raw.instructor_name || 'Chef Camille Laurent',
-            instructorBio: raw.instructorBio || raw.instructor_bio || 'Master Pastry Chef & Atelier Instructor',
-            instructorAvatar: raw.instructorAvatar || raw.instructor_avatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=400&q=80',
+            instructorName: 'Chef Anisha Arthur',
+            instructorBio: 'Founder, Executive Pastry Chef & Creative Director at Cakexperiment with over 10 years of bespoke artisanal pastry experience.',
+            instructorAvatar: '/images/chef-anisha.jpg',
             learningOutcomes: Array.isArray(raw.learningOutcomes) && raw.learningOutcomes.length > 0
               ? raw.learningOutcomes
               : (Array.isArray(raw.learning_outcomes) && raw.learning_outcomes.length > 0 ? raw.learning_outcomes : defaultOutcomes),
@@ -503,16 +504,19 @@ export const CourseClassroom: React.FC = () => {
               {activeTab === 'instructor' && (
                 <div style={{ display: 'flex', gap: '1.2rem', alignItems: 'flex-start' }}>
                   <img
-                    src={course.instructorAvatar || (course as any).instructor_avatar || 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=400&q=80'}
-                    alt={course.instructorName || (course as any).instructor_name || 'Chef Camille Laurent'}
+                    src={chefAnishaImg}
+                    alt="Chef Anisha Arthur"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/images/chef-anisha.jpg';
+                    }}
                     style={{ width: '54px', height: '54px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-rose)' }}
                   />
                   <div>
                     <h4 style={{ fontSize: '1.1rem', color: 'var(--color-plum)', margin: 0 }}>
-                      {course.instructorName || (course as any).instructor_name || 'Chef Camille Laurent'}
+                      Chef Anisha Arthur
                     </h4>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '0.4rem 0 0.8rem 0' }}>
-                      {course.instructorBio || (course as any).instructor_bio || 'Master Pastry Chef & Atelier Instructor'}
+                      Founder, Executive Pastry Chef & Creative Director at Cakexperiment with over 10 years of bespoke artisanal pastry experience.
                     </p>
                     <div style={{ fontSize: '0.82rem', color: 'var(--color-berry)', fontWeight: 500 }}>
                       Have questions about your batter or piping angles? Reach out via studio concierge support.
