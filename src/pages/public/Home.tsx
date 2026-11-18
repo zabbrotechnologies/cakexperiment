@@ -792,7 +792,7 @@ export const Home: React.FC = () => {
                   <div style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--color-plum)' }}>
                     {b.title}
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#111111', lineHeight: 1.45, fontWeight: 500 }}>
+                  <div className="hero-benefit-desc" style={{ fontSize: '0.75rem', color: '#111111', lineHeight: 1.45, fontWeight: 500 }}>
                     {b.desc}
                   </div>
                 </div>
