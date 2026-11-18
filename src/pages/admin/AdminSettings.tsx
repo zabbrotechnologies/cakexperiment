@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { storageService } from '../../services/storage';
 import { ecommerceApi } from '../../services/ecommerceApi';
 import { AcademySettings, StoreConfig } from '../../types';
-import { Settings, Save, Check, Database, HardDrive, RefreshCw, Server, ShieldCheck, UploadCloud, Truck } from 'lucide-react';
+import { Settings, Save, Check, Database, HardDrive, RefreshCw, Server, ShieldCheck, UploadCloud, Truck, Film } from 'lucide-react';
 import { neonService, NeonStatus } from '../../services/neonService';
 
 export const AdminSettings: React.FC = () => {
@@ -28,6 +28,44 @@ export const AdminSettings: React.FC = () => {
   const [queryOutput, setQueryOutput] = useState<string | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
+  // Google Drive Storage Status State
+  const [driveStatus, setDriveStatus] = useState<{
+    connected: boolean;
+    email?: string;
+    folderName?: string;
+    quotaUsedFormatted?: string;
+    quotaTotalFormatted?: string;
+    quotaPercentUsed?: number;
+    lastVerifiedAt?: string;
+  } | null>(null);
+  const [loadingDrive, setLoadingDrive] = useState(false);
+  const [driveNotice, setDriveNotice] = useState<string | null>(null);
+
+  const fetchDriveStatus = async () => {
+    setLoadingDrive(true);
+    try {
+      const res = await fetch('/api/admin/storage/google-drive/status', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setDriveStatus(data);
+      }
+    } catch (err: any) {
+      console.warn('Failed fetching Drive status:', err);
+    } finally {
+      setLoadingDrive(false);
+    }
+  };
+
+  const handleDisconnectDrive = async () => {
+    if (!window.confirm('Are you sure you want to disconnect this Google Drive account? Video streaming will be paused until reconnected.')) return;
+    try {
+      await fetch('/api/admin/storage/google-drive/disconnect', { method: 'POST', credentials: 'include' });
+      fetchDriveStatus();
+    } catch (err: any) {
+      alert('Failed to disconnect Google Drive: ' + err.message);
+    }
+  };
+
   const fetchNeonStatus = async () => {
     setLoadingNeon(true);
     try {
@@ -42,7 +80,14 @@ export const AdminSettings: React.FC = () => {
 
   useEffect(() => {
     fetchNeonStatus();
+    fetchDriveStatus();
     ecommerceApi.getStoreConfig().then(setStoreConfig).catch(() => {});
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('drive') === 'connected') {
+      setDriveNotice('Google Drive video storage account successfully connected!');
+      setTimeout(() => setDriveNotice(null), 6000);
+    }
   }, []);
 
   const handleSaveStoreConfig = async (e: React.FormEvent) => {
@@ -103,6 +148,23 @@ export const AdminSettings: React.FC = () => {
           Platform pricing rules, store currency, and cloud infrastructure
         </p>
       </div>
+
+      {driveNotice && (
+        <div style={{
+          backgroundColor: '#E8F5E9',
+          color: '#2E7D32',
+          border: '1px solid #C8E6C9',
+          padding: '0.9rem 1.25rem',
+          borderRadius: '10px',
+          fontSize: '0.9rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.6rem'
+        }}>
+          <Check size={18} />
+          <span>{driveNotice}</span>
+        </div>
+      )}
 
       {/* =========================================================================
           NEON CLOUD INFRASTRUCTURE (Postgres & Object Storage)
@@ -233,6 +295,91 @@ export const AdminSettings: React.FC = () => {
             >
               <UploadCloud size={14} style={{ marginRight: '0.3rem' }} /> Test Upload Asset
             </button>
+          </div>
+
+          {/* Card 3: Google Drive Private Video Storage */}
+          <div style={{
+            backgroundColor: '#FAF7F7',
+            border: '1px solid #EEDFDF',
+            borderRadius: '12px',
+            padding: '1.25rem',
+            gridColumn: '1 / -1'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Film size={18} color="#A33D59" />
+                <strong style={{ fontSize: '0.95rem', color: '#542C38' }}>Google Drive Private Video Storage</strong>
+              </div>
+              <span style={{
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                padding: '0.2rem 0.6rem',
+                borderRadius: '999px',
+                backgroundColor: driveStatus?.connected ? '#E8F5E9' : '#FFF3E0',
+                color: driveStatus?.connected ? '#2E7D32' : '#E65100'
+              }}>
+                {driveStatus?.connected ? 'Connected' : 'Not Connected'}
+              </span>
+            </div>
+
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '0 0 1rem' }}>
+              Private backend repository for student lesson videos. Neither students nor regular admins interact with Google Drive directly; videos are streamed seamlessly through the secure Cakexperiment backend proxy.
+            </p>
+
+            {driveStatus?.connected ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                <div style={{ fontSize: '0.82rem', color: '#68454D', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                  <div>Storage Account: <strong>{driveStatus.email}</strong></div>
+                  <div>Dedicated Folder: <code>{driveStatus.folderName || 'Cakexperiment Masterclass Videos'}</code></div>
+                  <div>Storage Capacity: <strong>{driveStatus.quotaUsedFormatted || '0 GB'}</strong> used of <strong>{driveStatus.quotaTotalFormatted || '15 GB'}</strong> (Free Tier)</div>
+                </div>
+
+                {/* Quota Progress Bar */}
+                <div style={{ width: '100%', height: '8px', backgroundColor: '#E0D6D2', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{
+                    width: `${driveStatus.quotaPercentUsed || 0}%`,
+                    height: '100%',
+                    backgroundColor: (driveStatus.quotaPercentUsed || 0) > 85 ? '#C62828' : 'var(--color-berry, #8B3A4A)'
+                  }} />
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={fetchDriveStatus}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
+                    disabled={loadingDrive}
+                  >
+                    <RefreshCw size={13} style={{ marginRight: '0.3rem' }} /> Refresh Quota
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDisconnectDrive}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', color: '#C62828', borderColor: '#FFCDD2' }}
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ fontSize: '0.82rem', color: '#68454D' }}>
+                  One-time admin setup: Connect the dedicated Google account to authorize private video uploads.
+                </div>
+                <div>
+                  <a
+                    href="/api/admin/storage/google-drive/auth"
+                    className="btn btn-primary"
+                    style={{ fontSize: '0.85rem', padding: '0.55rem 1.25rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                  >
+                    <UploadCloud size={16} />
+                    <span>Authorize Google Drive Storage</span>
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
 
         </div>

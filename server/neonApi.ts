@@ -18,6 +18,16 @@ import {
 } from './emailService.ts';
 import { handleCommerceRoute } from './ecommerceApi.ts';
 import { handleGoogleAuth, handleGoogleCallback } from './googleAuth.ts';
+import {
+  handleDriveAuth,
+  handleDriveCallback,
+  handleDriveStatus,
+  handleDriveDisconnect,
+  handleInitiateUpload,
+  handleUploadChunk,
+  handleDeleteVideo,
+  handleVideoStream
+} from './googleDriveStorage.ts';
 
 const S3_HOST_IPS: Record<string, string> = {
   'br-soft-queen-bdn8ofgg.storage.c-8.us-east-2.aws.neon.tech': '18.119.63.132',
@@ -389,6 +399,88 @@ export async function handleNeonApi(req: IncomingMessage, res: ServerResponse, n
     if (pathname.startsWith('/api/admin/courses/') && req.method === 'DELETE') {
       const courseId = pathname.replace('/api/admin/courses/', '');
       await handleAdminDeleteCourse(courseId, req, res);
+      return;
+    }
+
+    // -------------------------------------------------------------
+    // 4. GOOGLE DRIVE PRIVATE VIDEO STORAGE & STREAMING ENDPOINTS
+    // -------------------------------------------------------------
+    if (pathname === '/api/admin/storage/google-drive/auth' && req.method === 'GET') {
+      const adminSession = await getAuthenticatedUser(req);
+      if (!adminSession || adminSession.role !== 'ADMIN') {
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: 'Admin authentication required.' }));
+        return;
+      }
+      await handleDriveAuth(req, res, adminSession);
+      return;
+    }
+
+    if (pathname === '/api/admin/storage/google-drive/callback' && req.method === 'GET') {
+      await handleDriveCallback(rawUrl, req, res);
+      return;
+    }
+
+    if (pathname === '/api/admin/storage/google-drive/status' && req.method === 'GET') {
+      const adminSession = await getAuthenticatedUser(req);
+      if (!adminSession || adminSession.role !== 'ADMIN') {
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: 'Admin authentication required.' }));
+        return;
+      }
+      await handleDriveStatus(req, res);
+      return;
+    }
+
+    if (pathname === '/api/admin/storage/google-drive/disconnect' && req.method === 'POST') {
+      const adminSession = await getAuthenticatedUser(req);
+      if (!adminSession || adminSession.role !== 'ADMIN') {
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: 'Admin authentication required.' }));
+        return;
+      }
+      await handleDriveDisconnect(req, res);
+      return;
+    }
+
+    if (pathname === '/api/admin/videos/initiate-upload' && req.method === 'POST') {
+      const adminSession = await getAuthenticatedUser(req);
+      if (!adminSession || adminSession.role !== 'ADMIN') {
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: 'Admin authentication required.' }));
+        return;
+      }
+      const body = await readJsonBody(req);
+      await handleInitiateUpload(body, res);
+      return;
+    }
+
+    if (pathname === '/api/admin/videos/upload-chunk' && req.method === 'POST') {
+      const adminSession = await getAuthenticatedUser(req);
+      if (!adminSession || adminSession.role !== 'ADMIN') {
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: 'Admin authentication required.' }));
+        return;
+      }
+      await handleUploadChunk(req, res, parsedUrl);
+      return;
+    }
+
+    if (pathname.startsWith('/api/admin/videos/') && req.method === 'DELETE') {
+      const adminSession = await getAuthenticatedUser(req);
+      if (!adminSession || adminSession.role !== 'ADMIN') {
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: 'Admin authentication required.' }));
+        return;
+      }
+      const lessonId = pathname.replace('/api/admin/videos/', '');
+      await handleDeleteVideo(lessonId, res);
+      return;
+    }
+
+    if (pathname.startsWith('/api/videos/stream/') && req.method === 'GET') {
+      const lessonId = pathname.replace('/api/videos/stream/', '');
+      await handleVideoStream(req, res, lessonId, getAuthenticatedUser);
       return;
     }
 

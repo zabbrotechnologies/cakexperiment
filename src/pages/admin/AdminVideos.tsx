@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { Course, Module, Lesson } from '../../types';
+import { VideoUploader } from '../../components/admin/VideoUploader';
 import {
   Video,
   Play,
@@ -331,11 +332,13 @@ export const AdminVideos: React.FC = () => {
       status: 'published'
     });
     setFormError(null);
+    const generatedLessonId = `les-${Date.now()}`;
     setLessonFormModal({
       isOpen: true,
       mode: 'add',
       courseId,
-      moduleId
+      moduleId,
+      lessonId: generatedLessonId
     });
   };
 
@@ -2385,22 +2388,45 @@ export const AdminVideos: React.FC = () => {
                   />
                 </div>
 
-                {/* Video Reference Stream URL */}
+                {/* Video Upload & Stream Reference */}
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.35rem', color: 'var(--color-plum)' }}>
-                    Video Reference / Stream URL
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '0.45rem', color: 'var(--color-plum)' }}>
+                    Video Storage (Private Google Drive) *
                   </label>
-                  <input
-                    type="text"
-                    value={formData.videoReference}
-                    onChange={e => setFormData(prev => ({ ...prev, videoReference: e.target.value }))}
-                    placeholder="https://.../video.mp4 or stream reference"
-                    className="input-field"
-                    style={{ fontSize: '0.88rem' }}
+
+                  <VideoUploader
+                    lessonId={lessonFormModal.lessonId || ''}
+                    courseId={formData.courseId}
+                    moduleId={formData.moduleId}
+                    currentVideoReference={formData.videoReference}
+                    onVideoUploaded={(streamUrl) => {
+                      setFormData(prev => ({ ...prev, videoReference: streamUrl }));
+                    }}
+                    onVideoRemoved={() => {
+                      setFormData(prev => ({ ...prev, videoReference: '' }));
+                    }}
                   />
-                  <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', display: 'block', marginTop: '0.25rem' }}>
-                    Provide an MP4 video URL or media hosting reference for client preview playback.
-                  </span>
+
+                  <div style={{ marginTop: '0.75rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                        Stream Endpoint / Fallback Reference:
+                      </span>
+                      {formData.videoReference && (
+                        <span style={{ fontSize: '0.74rem', color: '#2E7D32', fontWeight: 600 }}>
+                          ✓ Ready for player stream
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.videoReference}
+                      onChange={e => setFormData(prev => ({ ...prev, videoReference: e.target.value }))}
+                      placeholder="/api/videos/stream/les-xxx or external video URL"
+                      className="input-field"
+                      style={{ fontSize: '0.82rem', padding: '0.5rem 0.75rem', fontFamily: 'monospace' }}
+                    />
+                  </div>
                 </div>
 
                 {/* Duration & Status */}

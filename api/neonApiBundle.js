@@ -38767,8 +38767,8 @@ var require_dist_cjs16 = __commonJS({
 // server/neonApi.ts
 var import_client_s32 = __toESM(require_dist_cjs16(), 1);
 var import_node_http_handler5 = __toESM(require_dist_cjs7(), 1);
-import crypto12 from "crypto";
-import https3 from "https";
+import crypto13 from "crypto";
+import https4 from "https";
 
 // server/neonDb.ts
 import https from "https";
@@ -60186,6 +60186,593 @@ async function handleGoogleCallback(rawUrl, req, res) {
   }
 }
 
+// server/googleDriveStorage.ts
+import crypto12 from "crypto";
+import https3 from "https";
+var GOOGLE_AUTH_URL2 = "https://accounts.google.com/o/oauth2/v2/auth";
+var GOOGLE_TOKEN_URL2 = "https://oauth2.googleapis.com/token";
+var GOOGLE_DRIVE_API = "https://www.googleapis.com/drive/v3";
+var GOOGLE_UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
+var DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+var FOLDER_NAME = "Cakexperiment Masterclass Videos";
+var activeUploadSessions = /* @__PURE__ */ new Map();
+setInterval(() => {
+  const cutoff = Date.now() - 2 * 3600 * 1e3;
+  for (const [key, session] of activeUploadSessions.entries()) {
+    if (session.createdAt < cutoff) {
+      activeUploadSessions.delete(key);
+    }
+  }
+}, 15 * 60 * 1e3);
+function getDriveOAuthRedirectUri(req) {
+  const host = req.headers["x-forwarded-host"] || req.headers.host || "";
+  if (host.includes("localhost") || host.includes("127.0.0.1")) {
+    return "http://localhost:5173/api/admin/storage/google-drive/callback";
+  }
+  if (host.includes("thecakexperiment.com")) {
+    return "https://thecakexperiment.com/api/admin/storage/google-drive/callback";
+  }
+  if (host.includes("vercel.app")) {
+    return `https://${host}/api/admin/storage/google-drive/callback`;
+  }
+  const appBase = process.env.APP_BASE_URL || "https://thecakexperiment.com";
+  return `${appBase.replace(/\/$/, "")}/api/admin/storage/google-drive/callback`;
+}
+async function getValidDriveAccessToken() {
+  const sql = getDb();
+  const rows = await sql`
+    SELECT id, refresh_token, access_token, token_expiry, folder_id, is_connected
+    FROM google_drive_storage
+    WHERE id = 'default';
+  `;
+  if (rows.length === 0 || !rows[0].refresh_token) {
+    throw new Error("Google Drive storage is not authorized. Please connect via Admin Settings.");
+  }
+  const record = rows[0];
+  const now = /* @__PURE__ */ new Date();
+  const expiry = record.token_expiry ? new Date(record.token_expiry) : /* @__PURE__ */ new Date(0);
+  if (record.access_token && expiry.getTime() - now.getTime() > 5 * 60 * 1e3) {
+    return { accessToken: record.access_token, folderId: record.folder_id || "" };
+  }
+  const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    throw new Error("Google Drive client credentials are not configured on the server.");
+  }
+  const params = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    refresh_token: record.refresh_token,
+    grant_type: "refresh_token"
+  });
+  const res = await fetch(GOOGLE_TOKEN_URL2, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString()
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    await sql`
+      UPDATE google_drive_storage
+      SET is_connected = FALSE, updated_at = NOW()
+      WHERE id = 'default';
+    `;
+    throw new Error(`Failed to refresh Google Drive access token: ${errText}. Please reauthorize in Admin Settings.`);
+  }
+  const data = await res.json();
+  const newExpiry = new Date(Date.now() + (data.expires_in || 3600) * 1e3);
+  let folderId = record.folder_id;
+  if (!folderId) {
+    folderId = await ensureDriveFolder(data.access_token);
+  }
+  await sql`
+    UPDATE google_drive_storage
+    SET access_token = ${data.access_token},
+        token_expiry = ${newExpiry.toISOString()},
+        folder_id = ${folderId},
+        is_connected = TRUE,
+        last_verified_at = NOW(),
+        updated_at = NOW()
+    WHERE id = 'default';
+  `;
+  return { accessToken: data.access_token, folderId };
+}
+async function ensureDriveFolder(accessToken) {
+  const query = encodeURIComponent(`name='${FOLDER_NAME}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+  const searchRes = await fetch(`${GOOGLE_DRIVE_API}/files?q=${query}&fields=files(id,name)`, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (searchRes.ok) {
+    const data = await searchRes.json();
+    if (data.files && data.files.length > 0 && data.files[0].id) {
+      return data.files[0].id;
+    }
+  }
+  const createRes = await fetch(`${GOOGLE_DRIVE_API}/files`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      name: FOLDER_NAME,
+      mimeType: "application/vnd.google-apps.folder",
+      description: "Private Cakexperiment Masterclass Video Repository"
+    })
+  });
+  if (!createRes.ok) {
+    const errText = await createRes.text();
+    throw new Error(`Failed to create Cakexperiment video folder: ${errText}`);
+  }
+  const created = await createRes.json();
+  return created.id;
+}
+async function fetchDriveQuota(accessToken) {
+  try {
+    const res = await fetch(`${GOOGLE_DRIVE_API}/about?fields=storageQuota`, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const used = parseInt(data.storageQuota?.usage || "0", 10);
+      const total = parseInt(data.storageQuota?.limit || "16106127360", 10);
+      return { used, total };
+    }
+  } catch (err) {
+    console.warn("Could not query Drive quota:", err);
+  }
+  return { used: 0, total: 16106127360 };
+}
+async function handleDriveAuth(req, res, adminUser) {
+  const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    res.statusCode = 500;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ error: "Google Drive client credentials are not configured on the server." }));
+    return;
+  }
+  const redirectUri = getDriveOAuthRedirectUri(req);
+  const nonce = crypto12.randomBytes(24).toString("hex");
+  const payload = JSON.stringify({ nonce, adminId: adminUser.userId, timestamp: Date.now() });
+  const b64 = Buffer.from(payload).toString("base64url");
+  const sig = crypto12.createHmac("sha256", clientSecret).update(b64).digest("base64url");
+  const state2 = `${b64}.${sig}`;
+  const authUrl = new URL(GOOGLE_AUTH_URL2);
+  authUrl.searchParams.set("client_id", clientId);
+  authUrl.searchParams.set("redirect_uri", redirectUri);
+  authUrl.searchParams.set("response_type", "code");
+  authUrl.searchParams.set("scope", DRIVE_SCOPE);
+  authUrl.searchParams.set("access_type", "offline");
+  authUrl.searchParams.set("prompt", "consent");
+  authUrl.searchParams.set("state", state2);
+  const isProduction = process.env.NODE_ENV === "production" || req.headers.host && !req.headers.host.includes("localhost");
+  const secureFlag = isProduction ? "; Secure" : "";
+  res.statusCode = 302;
+  res.setHeader("Location", authUrl.toString());
+  res.setHeader(
+    "Set-Cookie",
+    `cakexperiment_drive_state=${nonce}; HttpOnly; Path=/; SameSite=Lax; Max-Age=600${secureFlag}`
+  );
+  res.end();
+}
+async function handleDriveCallback(rawUrl, req, res) {
+  const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    res.statusCode = 302;
+    res.setHeader("Location", "/admin/settings?error=drive_config_missing");
+    res.end();
+    return;
+  }
+  const parsedUrl = new URL(rawUrl, "http://localhost");
+  const code = parsedUrl.searchParams.get("code");
+  const state2 = parsedUrl.searchParams.get("state");
+  const error3 = parsedUrl.searchParams.get("error");
+  if (error3 || !code || !state2) {
+    res.statusCode = 302;
+    res.setHeader("Location", `/admin/settings?error=drive_auth_cancelled&message=${encodeURIComponent(error3 || "Authorization was cancelled")}`);
+    res.end();
+    return;
+  }
+  const parts = state2.split(".");
+  if (parts.length !== 2) {
+    res.statusCode = 302;
+    res.setHeader("Location", "/admin/settings?error=invalid_drive_state");
+    res.end();
+    return;
+  }
+  const [b64Payload, sig] = parts;
+  const expectedSig = crypto12.createHmac("sha256", clientSecret).update(b64Payload).digest("base64url");
+  if (sig !== expectedSig) {
+    res.statusCode = 302;
+    res.setHeader("Location", "/admin/settings?error=drive_state_tampered");
+    res.end();
+    return;
+  }
+  const redirectUri = getDriveOAuthRedirectUri(req);
+  try {
+    const body = new URLSearchParams({
+      code,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: "authorization_code"
+    });
+    const tokenRes = await fetch(GOOGLE_TOKEN_URL2, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString()
+    });
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      throw new Error(`Token exchange failed: ${errText}`);
+    }
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) {
+      throw new Error("No access token received from Google.");
+    }
+    let connectedEmail = "storage@thecakexperiment.com";
+    try {
+      const userinfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+        headers: { Authorization: `Bearer ${tokenData.access_token}` }
+      });
+      if (userinfoRes.ok) {
+        const u = await userinfoRes.json();
+        if (u.email) connectedEmail = u.email;
+      }
+    } catch {
+    }
+    const folderId = await ensureDriveFolder(tokenData.access_token);
+    const { used, total } = await fetchDriveQuota(tokenData.access_token);
+    const expiry = new Date(Date.now() + (tokenData.expires_in || 3600) * 1e3);
+    const sql = getDb();
+    if (tokenData.refresh_token) {
+      await sql`
+        INSERT INTO google_drive_storage (
+          id, connected_email, refresh_token, access_token, token_expiry,
+          folder_id, folder_name, storage_quota_used, storage_quota_total,
+          is_connected, last_verified_at, updated_at
+        )
+        VALUES (
+          'default', ${connectedEmail}, ${tokenData.refresh_token}, ${tokenData.access_token}, ${expiry.toISOString()},
+          ${folderId}, ${FOLDER_NAME}, ${used}, ${total},
+          TRUE, NOW(), NOW()
+        )
+        ON CONFLICT (id) DO UPDATE SET
+          connected_email = EXCLUDED.connected_email,
+          refresh_token = EXCLUDED.refresh_token,
+          access_token = EXCLUDED.access_token,
+          token_expiry = EXCLUDED.token_expiry,
+          folder_id = EXCLUDED.folder_id,
+          storage_quota_used = EXCLUDED.storage_quota_used,
+          storage_quota_total = EXCLUDED.storage_quota_total,
+          is_connected = TRUE,
+          last_verified_at = NOW(),
+          updated_at = NOW();
+      `;
+    } else {
+      await sql`
+        UPDATE google_drive_storage
+        SET connected_email = ${connectedEmail},
+            access_token = ${tokenData.access_token},
+            token_expiry = ${expiry.toISOString()},
+            folder_id = ${folderId},
+            storage_quota_used = ${used},
+            storage_quota_total = ${total},
+            is_connected = TRUE,
+            last_verified_at = NOW(),
+            updated_at = NOW()
+        WHERE id = 'default';
+      `;
+    }
+    res.statusCode = 302;
+    res.setHeader("Location", "/admin/settings?drive=connected");
+    res.end();
+  } catch (err) {
+    console.error("Google Drive authorization callback exception:", err);
+    res.statusCode = 302;
+    res.setHeader("Location", `/admin/settings?error=drive_exchange_failed&message=${encodeURIComponent(err.message || "Storage authorization failed")}`);
+    res.end();
+  }
+}
+async function handleDriveStatus(_req, res) {
+  const sql = getDb();
+  const rows = await sql`
+    SELECT id, connected_email, folder_id, folder_name, storage_quota_used, storage_quota_total, is_connected, last_verified_at
+    FROM google_drive_storage
+    WHERE id = 'default';
+  `;
+  if (rows.length === 0 || !rows[0].is_connected) {
+    res.statusCode = 200;
+    res.end(JSON.stringify({
+      connected: false,
+      message: "Google Drive storage is not connected."
+    }));
+    return;
+  }
+  const record = rows[0];
+  let quotaUsed = Number(record.storage_quota_used || 0);
+  let quotaTotal = Number(record.storage_quota_total || 16106127360);
+  try {
+    const { accessToken } = await getValidDriveAccessToken();
+    const live = await fetchDriveQuota(accessToken);
+    quotaUsed = live.used;
+    quotaTotal = live.total;
+    await sql`
+      UPDATE google_drive_storage
+      SET storage_quota_used = ${quotaUsed}, storage_quota_total = ${quotaTotal}, updated_at = NOW()
+      WHERE id = 'default';
+    `;
+  } catch {
+  }
+  const quotaRemaining = Math.max(0, quotaTotal - quotaUsed);
+  res.statusCode = 200;
+  res.end(JSON.stringify({
+    connected: true,
+    email: record.connected_email || "Connected Dedicated Account",
+    folderName: record.folder_name || FOLDER_NAME,
+    quotaUsed,
+    quotaTotal,
+    quotaRemaining,
+    quotaUsedFormatted: (quotaUsed / (1024 * 1024 * 1024)).toFixed(2) + " GB",
+    quotaTotalFormatted: (quotaTotal / (1024 * 1024 * 1024)).toFixed(2) + " GB",
+    quotaPercentUsed: Math.min(100, Math.round(quotaUsed / quotaTotal * 100)),
+    lastVerifiedAt: record.last_verified_at
+  }));
+}
+async function handleDriveDisconnect(_req, res) {
+  const sql = getDb();
+  await sql`
+    UPDATE google_drive_storage
+    SET is_connected = FALSE, access_token = NULL, refresh_token = NULL, updated_at = NOW()
+    WHERE id = 'default';
+  `;
+  res.statusCode = 200;
+  res.end(JSON.stringify({ success: true, message: "Google Drive storage disconnected." }));
+}
+async function handleInitiateUpload(body, res) {
+  const { filename, fileSize, mimeType, lessonId, courseId, moduleId } = body;
+  if (!filename || !fileSize || !lessonId) {
+    res.statusCode = 400;
+    res.end(JSON.stringify({ error: "Missing required parameters: filename, fileSize, lessonId." }));
+    return;
+  }
+  const validMimes = ["video/mp4", "video/webm", "video/quicktime", "video/x-matroska", "video/ogg"];
+  const ext = filename.split(".").pop()?.toLowerCase();
+  const validExts = ["mp4", "webm", "mov", "mkv", "ogg"];
+  if (!validMimes.includes(mimeType) && (!ext || !validExts.includes(ext))) {
+    res.statusCode = 400;
+    res.end(JSON.stringify({ error: "Unsupported video format. Allowed: MP4, WebM, MOV, MKV." }));
+    return;
+  }
+  const { accessToken, folderId } = await getValidDriveAccessToken();
+  const cleanExt = ext || "mp4";
+  const internalFilename = `cakexperiment-${lessonId}-${Date.now()}.${cleanExt}`;
+  const metadata = {
+    name: internalFilename,
+    parents: folderId ? [folderId] : void 0,
+    description: `Cakexperiment Lesson Video | Original: ${filename}`
+  };
+  const initRes = await fetch(`${GOOGLE_UPLOAD_API}/files?uploadType=resumable`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json; charset=UTF-8",
+      "X-Upload-Content-Type": mimeType || "video/mp4",
+      "X-Upload-Content-Length": String(fileSize)
+    },
+    body: JSON.stringify(metadata)
+  });
+  if (!initRes.ok) {
+    const errText = await initRes.text();
+    throw new Error(`Google Drive resumable upload session creation failed: ${errText}`);
+  }
+  const resumableUrl = initRes.headers.get("location");
+  if (!resumableUrl) {
+    throw new Error("Google Drive did not return a resumable upload location header.");
+  }
+  const sessionToken = crypto12.randomBytes(24).toString("hex");
+  activeUploadSessions.set(sessionToken, {
+    resumableUrl,
+    lessonId,
+    courseId: courseId || "",
+    moduleId: moduleId || "",
+    filename,
+    fileSize: Number(fileSize),
+    mimeType: mimeType || "video/mp4",
+    createdAt: Date.now()
+  });
+  res.statusCode = 200;
+  res.end(JSON.stringify({
+    success: true,
+    uploadSessionId: sessionToken,
+    chunkSizeRecommended: 2 * 1024 * 1024
+    // 2 MB chunks (safe for Vercel serverless 4.5 MB payload limit)
+  }));
+}
+async function handleUploadChunk(req, res, parsedUrl) {
+  const sessionId = parsedUrl.searchParams.get("sessionId");
+  const start = parseInt(parsedUrl.searchParams.get("start") || "0", 10);
+  const end = parseInt(parsedUrl.searchParams.get("end") || "0", 10);
+  const total = parseInt(parsedUrl.searchParams.get("total") || "0", 10);
+  if (!sessionId || !activeUploadSessions.has(sessionId)) {
+    res.statusCode = 404;
+    res.end(JSON.stringify({ error: "Upload session not found or expired. Please retry." }));
+    return;
+  }
+  const session = activeUploadSessions.get(sessionId);
+  const chunks = [];
+  req.on("data", (c5) => chunks.push(Buffer.from(c5)));
+  await new Promise((resolve3, reject) => {
+    req.on("end", resolve3);
+    req.on("error", reject);
+  });
+  const chunkBuffer = Buffer.concat(chunks);
+  const driveRes = await fetch(session.resumableUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Length": String(chunkBuffer.length),
+      "Content-Range": `bytes ${start}-${end}/${total}`
+    },
+    body: chunkBuffer
+  });
+  if (driveRes.status === 308) {
+    const rangeHeader = driveRes.headers.get("range");
+    res.statusCode = 200;
+    res.end(JSON.stringify({
+      status: "in_progress",
+      range: rangeHeader,
+      bytesUploaded: end + 1,
+      totalBytes: total,
+      progressPercent: Math.round((end + 1) / total * 100)
+    }));
+    return;
+  }
+  if (driveRes.status === 200 || driveRes.status === 201) {
+    const fileData = await driveRes.json();
+    const driveFileId = fileData.id;
+    const sql = getDb();
+    const streamReference = `/api/videos/stream/${session.lessonId}`;
+    await sql`
+      UPDATE lessons
+      SET drive_file_id = ${driveFileId},
+          video_filename = ${session.filename},
+          video_size = ${session.fileSize},
+          video_mime = ${session.mimeType},
+          video_reference = ${streamReference},
+          video_uploaded_at = NOW()
+      WHERE id = ${session.lessonId};
+    `;
+    activeUploadSessions.delete(sessionId);
+    res.statusCode = 200;
+    res.end(JSON.stringify({
+      status: "complete",
+      success: true,
+      lessonId: session.lessonId,
+      videoReference: streamReference,
+      filename: session.filename,
+      size: session.fileSize,
+      message: "Video successfully uploaded and configured in Google Drive."
+    }));
+    return;
+  }
+  const errText = await driveRes.text();
+  res.statusCode = 502;
+  res.end(JSON.stringify({
+    error: `Google Drive rejected chunk (${driveRes.status}): ${errText}`
+  }));
+}
+async function handleDeleteVideo(lessonId, res) {
+  const sql = getDb();
+  const rows = await sql`SELECT drive_file_id FROM lessons WHERE id = ${lessonId};`;
+  if (rows.length === 0) {
+    res.statusCode = 404;
+    res.end(JSON.stringify({ error: "Lesson not found" }));
+    return;
+  }
+  const driveFileId = rows[0].drive_file_id;
+  await sql`
+    UPDATE lessons
+    SET drive_file_id = NULL,
+        video_filename = NULL,
+        video_size = NULL,
+        video_mime = NULL,
+        video_reference = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+    WHERE id = ${lessonId};
+  `;
+  if (driveFileId) {
+    try {
+      const { accessToken } = await getValidDriveAccessToken();
+      await fetch(`${GOOGLE_DRIVE_API}/files/${driveFileId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+    } catch (e5) {
+      console.warn("Could not delete file from Google Drive:", e5);
+    }
+  }
+  res.statusCode = 200;
+  res.end(JSON.stringify({ success: true, message: "Video reference removed successfully." }));
+}
+async function handleVideoStream(req, res, lessonId, getAuthenticatedUser2) {
+  const sql = getDb();
+  const rows = await sql`
+    SELECT id, course_id, title, is_preview, video_reference, drive_file_id, video_mime, video_size
+    FROM lessons
+    WHERE id = ${lessonId};
+  `;
+  if (rows.length === 0) {
+    res.statusCode = 404;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ error: "Lesson video not found." }));
+    return;
+  }
+  const lesson = rows[0];
+  if (!lesson.is_preview) {
+    const session = await getAuthenticatedUser2(req);
+    if (!session) {
+      res.statusCode = 401;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ error: "Authentication required to watch this masterclass video." }));
+      return;
+    }
+    if (session.role !== "ADMIN") {
+      const enrollments = await sql`
+        SELECT id FROM enrollments
+        WHERE user_id = ${session.userId} AND course_id = ${lesson.course_id} AND status = 'ACTIVE';
+      `;
+      if (enrollments.length === 0) {
+        res.statusCode = 403;
+        res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ error: "You are not enrolled in this masterclass." }));
+        return;
+      }
+    }
+  }
+  if (!lesson.drive_file_id) {
+    const fallbackUrl = lesson.video_reference || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+    res.statusCode = 302;
+    res.setHeader("Location", fallbackUrl);
+    res.end();
+    return;
+  }
+  const { accessToken } = await getValidDriveAccessToken();
+  const driveFileUrl = `${GOOGLE_DRIVE_API}/files/${lesson.drive_file_id}?alt=media`;
+  const driveHeaders = {
+    Authorization: `Bearer ${accessToken}`
+  };
+  const clientRange = req.headers.range;
+  if (clientRange) {
+    driveHeaders["Range"] = clientRange;
+  }
+  const driveReq = https3.request(driveFileUrl, {
+    method: "GET",
+    headers: driveHeaders
+  }, (driveRes) => {
+    res.statusCode = driveRes.statusCode || 200;
+    res.setHeader("Content-Type", driveRes.headers["content-type"] || lesson.video_mime || "video/mp4");
+    res.setHeader("Accept-Ranges", "bytes");
+    res.setHeader("Cache-Control", "private, max-age=3600");
+    if (driveRes.headers["content-range"]) {
+      res.setHeader("Content-Range", driveRes.headers["content-range"]);
+    }
+    if (driveRes.headers["content-length"]) {
+      res.setHeader("Content-Length", driveRes.headers["content-length"]);
+    }
+    driveRes.pipe(res);
+  });
+  driveReq.on("error", (err) => {
+    console.error("Error streaming video from Google Drive:", err);
+    if (!res.headersSent) {
+      res.statusCode = 502;
+      res.setHeader("Content-Type", "application/json");
+      res.end(JSON.stringify({ error: "Failed to stream video from storage server." }));
+    }
+  });
+  driveReq.end();
+}
+
 // server/neonApi.ts
 var S3_HOST_IPS = {
   "br-soft-queen-bdn8ofgg.storage.c-8.us-east-2.aws.neon.tech": "18.119.63.132",
@@ -60199,7 +60786,7 @@ function getS3() {
   if (!endpoint || !accessKeyId || !secretAccessKey) {
     throw new Error("Neon Object Storage credentials not fully configured");
   }
-  const agent = new https3.Agent({
+  const agent = new https4.Agent({
     lookup: (hostname, options, callback) => {
       const cb = typeof options === "function" ? options : callback;
       const opts = typeof options === "object" ? options : {};
@@ -60498,6 +61085,77 @@ async function handleNeonApi(req, res, next) {
       await handleAdminDeleteCourse(courseId, req, res);
       return;
     }
+    if (pathname === "/api/admin/storage/google-drive/auth" && req.method === "GET") {
+      const adminSession = await getAuthenticatedUser(req);
+      if (!adminSession || adminSession.role !== "ADMIN") {
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: "Admin authentication required." }));
+        return;
+      }
+      await handleDriveAuth(req, res, adminSession);
+      return;
+    }
+    if (pathname === "/api/admin/storage/google-drive/callback" && req.method === "GET") {
+      await handleDriveCallback(rawUrl, req, res);
+      return;
+    }
+    if (pathname === "/api/admin/storage/google-drive/status" && req.method === "GET") {
+      const adminSession = await getAuthenticatedUser(req);
+      if (!adminSession || adminSession.role !== "ADMIN") {
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: "Admin authentication required." }));
+        return;
+      }
+      await handleDriveStatus(req, res);
+      return;
+    }
+    if (pathname === "/api/admin/storage/google-drive/disconnect" && req.method === "POST") {
+      const adminSession = await getAuthenticatedUser(req);
+      if (!adminSession || adminSession.role !== "ADMIN") {
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: "Admin authentication required." }));
+        return;
+      }
+      await handleDriveDisconnect(req, res);
+      return;
+    }
+    if (pathname === "/api/admin/videos/initiate-upload" && req.method === "POST") {
+      const adminSession = await getAuthenticatedUser(req);
+      if (!adminSession || adminSession.role !== "ADMIN") {
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: "Admin authentication required." }));
+        return;
+      }
+      const body = await readJsonBody(req);
+      await handleInitiateUpload(body, res);
+      return;
+    }
+    if (pathname === "/api/admin/videos/upload-chunk" && req.method === "POST") {
+      const adminSession = await getAuthenticatedUser(req);
+      if (!adminSession || adminSession.role !== "ADMIN") {
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: "Admin authentication required." }));
+        return;
+      }
+      await handleUploadChunk(req, res, parsedUrl);
+      return;
+    }
+    if (pathname.startsWith("/api/admin/videos/") && req.method === "DELETE") {
+      const adminSession = await getAuthenticatedUser(req);
+      if (!adminSession || adminSession.role !== "ADMIN") {
+        res.statusCode = 403;
+        res.end(JSON.stringify({ error: "Admin authentication required." }));
+        return;
+      }
+      const lessonId = pathname.replace("/api/admin/videos/", "");
+      await handleDeleteVideo(lessonId, res);
+      return;
+    }
+    if (pathname.startsWith("/api/videos/stream/") && req.method === "GET") {
+      const lessonId = pathname.replace("/api/videos/stream/", "");
+      await handleVideoStream(req, res, lessonId, getAuthenticatedUser);
+      return;
+    }
     res.statusCode = 404;
     res.end(JSON.stringify({ error: "Endpoint not found" }));
   } catch (err) {
@@ -60533,7 +61191,7 @@ async function handleSignUp(req, res) {
     res.end(JSON.stringify({ error: "An account with this email address already exists." }));
     return;
   }
-  const userId = `usr_${Date.now()}_${crypto12.randomBytes(4).toString("hex")}`;
+  const userId = `usr_${Date.now()}_${crypto13.randomBytes(4).toString("hex")}`;
   const passwordHash = hashPassword(password);
   const role = "USER";
   await sql`
@@ -60545,7 +61203,7 @@ async function handleSignUp(req, res) {
     VALUES (${userId}, 'Enthusiastic baker learning with Cakexperiment.')
     ON CONFLICT (user_id) DO NOTHING;
   `;
-  const sessionToken = crypto12.randomBytes(32).toString("hex");
+  const sessionToken = crypto13.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3);
   await sql`
     INSERT INTO sessions (id, user_id, role, expires_at)
@@ -60610,7 +61268,7 @@ async function handleSignIn(req, res) {
     return;
   }
   loginRateLimitMap.delete(cleanEmail);
-  const sessionToken = crypto12.randomBytes(32).toString("hex");
+  const sessionToken = crypto13.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3);
   await sql`
     INSERT INTO sessions (id, user_id, role, expires_at)
@@ -60813,7 +61471,7 @@ async function handleCreateWhatsAppOrder(req, res) {
     const year2 = (/* @__PURE__ */ new Date()).getFullYear();
     const randPart = Math.floor(1e4 + Math.random() * 9e4);
     orderNumber = `ORD-${year2}-${randPart}`;
-    orderId = `ord_${Date.now()}_${crypto12.randomBytes(3).toString("hex")}`;
+    orderId = `ord_${Date.now()}_${crypto13.randomBytes(3).toString("hex")}`;
     await sql`
       INSERT INTO orders (id, order_number, user_id, order_type, status, total_amount, amount, course_id, course_title, payment_method)
       VALUES (${orderId}, ${orderNumber}, ${session.userId}, 'COURSE', 'PENDING', ${actualAmount}, ${actualAmount}, ${course.id}, ${course.title}, 'WHATSAPP_MANUAL');
