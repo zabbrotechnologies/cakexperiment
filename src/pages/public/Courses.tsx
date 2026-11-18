@@ -351,7 +351,7 @@ export const Courses: React.FC = () => {
       </div>
 
       {/* Customer Review Marquee Strip directly above Course Showcasing Area */}
-      <div style={{ marginTop: '1.6rem', marginBottom: '0.6rem' }}>
+      <div style={{ marginTop: '1.6rem', marginBottom: '0.6rem', overflow: 'hidden', width: '100%', maxWidth: '100vw' }}>
         <CustomerReviewMarquee speedSeconds={150} />
       </div>
 
@@ -409,7 +409,7 @@ export const Courses: React.FC = () => {
             )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
             {/* Mobile Filter Button (opens drawer) */}
             <button
               onClick={() => setMobileFilterOpen(true)}
@@ -430,15 +430,16 @@ export const Courses: React.FC = () => {
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value)}
                 style={{
-                  padding: '0.45rem 0.85rem',
+                  padding: '0.45rem 0.65rem',
                   borderRadius: 'var(--radius-md)',
                   border: '1px solid var(--border-subtle)',
                   backgroundColor: '#FFFFFF',
                   fontFamily: 'var(--font-sans)',
-                  fontSize: '0.85rem',
+                  fontSize: '0.82rem',
                   color: 'var(--color-plum)',
                   cursor: 'pointer',
-                  outline: 'none'
+                  outline: 'none',
+                  maxWidth: '140px'
                 }}
               >
                 <option value="recommended">Recommended</option>
@@ -453,7 +454,7 @@ export const Courses: React.FC = () => {
         </div>
 
         {/* Mobile Horizontal Swipeable Category Bar (Visible only on mobile/tablet) */}
-        <div className="mobile-category-bar" style={{ display: 'none', marginBottom: '1.25rem' }}>
+        <div className="mobile-category-bar" style={{ display: 'none', marginBottom: '1.25rem', width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
           <div
             style={{
               display: 'flex',
@@ -461,7 +462,8 @@ export const Courses: React.FC = () => {
               overflowX: 'auto',
               paddingBottom: '0.35rem',
               scrollbarWidth: 'none',
-              msOverflowStyle: 'none'
+              msOverflowStyle: 'none',
+              maxWidth: '100%'
             }}
           >
             <button

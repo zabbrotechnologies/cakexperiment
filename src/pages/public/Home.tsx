@@ -75,46 +75,8 @@ export const Home: React.FC = () => {
     };
   }, [location.hash, location.pathname]);
 
-  // Ultra-Smooth Hero Parallax (Lerp RAF loop, zero component re-renders on scroll)
+  // Ultra-Smooth Hero Parallax (disabled for fixed static hero view)
   const heroParallaxBgRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let targetY = 0;
-    let currentY = 0;
-    let rafId: number | null = null;
-    let isRunning = false;
-
-    const updateParallax = () => {
-      // Smooth linear interpolation (lerp) for silky fluid momentum
-      currentY += (targetY - currentY) * 0.085;
-
-      if (heroParallaxBgRef.current) {
-        heroParallaxBgRef.current.style.transform = `translate3d(0, ${(currentY * 0.52).toFixed(2)}px, 0)`;
-      }
-
-      if (Math.abs(targetY - currentY) > 0.08) {
-        rafId = requestAnimationFrame(updateParallax);
-      } else {
-        isRunning = false;
-      }
-    };
-
-    const onScroll = () => {
-      if (window.scrollY < window.innerHeight * 1.8) {
-        targetY = window.scrollY;
-        if (!isRunning) {
-          isRunning = true;
-          rafId = requestAnimationFrame(updateParallax);
-        }
-      }
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, []);
 
   // Center-Anchored Coverflow Masterclasses Carousel State
   const [courses, setCourses] = useState<Course[]>(() =>
@@ -600,7 +562,7 @@ export const Home: React.FC = () => {
           1. HERO SECTION — Online Cake-Baking Academy Introduction
           ========================================================================= */}
       <section
-        className="hero-section hero-bg-animated"
+        className="hero-section"
         style={{
           position: 'relative',
           minHeight: '100dvh',
@@ -611,12 +573,19 @@ export const Home: React.FC = () => {
           paddingBottom: '4.5rem'
         }}
       >
-        {/* Parallax Background Layer */}
+        {/* Crisp Exact Static Background Image */}
         <div
-          ref={heroParallaxBgRef}
           className="hero-parallax-bg"
+        />
+        {/* Soft elegant gradient fade on left side (text readability), right side 100% natural vivid colors */}
+        <div
+          className="hero-fade-overlay"
           style={{
-            transform: 'translate3d(0, 0, 0)'
+            position: 'absolute',
+            inset: 0,
+            zIndex: 1,
+            pointerEvents: 'none',
+            background: 'linear-gradient(to right, rgba(255, 248, 245, 0.90) 0%, rgba(255, 248, 245, 0.72) 32%, rgba(255, 248, 245, 0.28) 55%, transparent 72%)'
           }}
         />
         {/* Editorial Double-Ring Elliptical Badge (Online Masterclasses Branding) */}
@@ -732,7 +701,7 @@ export const Home: React.FC = () => {
                 fontSize: 'clamp(2.6rem, 5vw, 4.4rem)',
                 lineHeight: 1.08,
                 color: 'var(--color-plum)',
-                marginBottom: '1.2rem',
+                marginBottom: '2rem',
                 fontWeight: 600
               }}
             >
@@ -750,22 +719,6 @@ export const Home: React.FC = () => {
                 Through Online Masterclasses
               </span>
             </h1>
-
-            {/* 3. Supporting Educational Copy */}
-            <p
-              className="hero-reveal-subtitle"
-              style={{
-                fontSize: '1.1rem',
-                color: 'var(--text-muted)',
-                lineHeight: 1.68,
-                maxWidth: '540px',
-                marginBottom: '2.5rem'
-              }}
-            >
-              Step inside our digital atelier. Learn exact culinary science, fail-safe sponge formulas, silky Swiss
-              meringue buttercream, and bespoke Parisian cake art through structured, on-demand video masterclasses led
-              by master pastry chefs.
-            </p>
 
             {/* 4. Action Buttons with Micro-interactions */}
             <div
@@ -850,15 +803,27 @@ export const Home: React.FC = () => {
 
         <style>{`
           .hero-section {
-            background-image: url('/images/hero-cake.webp'), url('/images/hero-cake.png');
+            background-image: url('/images/hero-cake-workshop.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: 84% center;
+          }
+          @media (max-width: 1200px) {
+            .hero-section {
+              background-position: 88% center;
+            }
           }
           @media (max-width: 900px) {
             .hero-section {
-              background-image: url('/images/hero-cake-mobile.webp'), url('/images/hero-cake.png') !important;
-              background-position: center bottom !important;
+              background-image: url('/images/hero-cake-workshop.jpg') !important;
+              background-size: cover !important;
+              background-position: 82% center !important;
             }
             .hero-badge {
               display: none !important;
+            }
+            .hero-fade-overlay {
+              background: linear-gradient(to bottom, rgba(255, 248, 245, 0.88) 0%, rgba(255, 248, 245, 0.70) 50%, rgba(255, 248, 245, 0.35) 100%) !important;
             }
           }
         `}</style>
@@ -1188,7 +1153,16 @@ export const Home: React.FC = () => {
           3. WHY LEARN WITH CAKEXPERIMENT — A Complete Learning Experience
           (Recreated precisely from the visual design reference)
           ========================================================================= */}
-      <section id="why-learn" ref={whyLearnRef} className="experience-section" style={{ scrollMarginTop: '6rem' }}>
+      <section
+        id="why-learn"
+        ref={whyLearnRef}
+        className="experience-section"
+        style={{
+          scrollMarginTop: '6rem',
+          backgroundColor: '#FDE6EC',
+          background: '#FDE6EC'
+        }}
+      >
         {/* Subtle Organic Background Waves at Base */}
         <div className="experience-waves-bottom">
           <svg viewBox="0 0 1440 110" preserveAspectRatio="none" style={{ width: '100%', height: '100%', display: 'block' }}>
@@ -1286,99 +1260,15 @@ export const Home: React.FC = () => {
               </div>
             </div>
 
-            {/* Center Monument: The 3D Pedestal + Arched Certification Portal */}
+            {/* Center Monument: Chef Anisha showcasing Accredited Studio Certification on Mobile */}
             <div className="experience-center-monument reveal-on-scroll">
-              {/* Dusty Rose Arched Portal */}
-              <div className="experience-arch-monument">
-                {/* Graduation Cap Icon */}
-                <div className="experience-arch-cap" style={{ color: '#FFFFFF', marginBottom: '0.4rem' }}>
-                  <GraduationCap size={36} strokeWidth={1.6} />
-                </div>
-
-                <h3 className="experience-arch-title">
-                  Accredited Studio Certification
-                </h3>
-
-                <p className="experience-arch-desc">
-                  Submit your milestone cake creation to receive an official Cakexperiment Studio Diploma to showcase on your portfolio or bakery resume.
-                </p>
-
-                {/* Ornate Gold & Champagne Ribbon Seal with Laurel Wreath */}
-                <div className="experience-arch-seal-wrap" style={{ position: 'relative', width: '100%', height: '118px', marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg viewBox="0 0 200 130" style={{ width: '190px', height: '124px', overflow: 'visible' }}>
-                    <defs>
-                      <linearGradient id="sealGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#FDEEE0" />
-                        <stop offset="30%" stopColor="#E8BF96" />
-                        <stop offset="68%" stopColor="#D29E6F" />
-                        <stop offset="100%" stopColor="#BE8959" />
-                      </linearGradient>
-                      <linearGradient id="ribbonGradLeft" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#D9A87C" />
-                        <stop offset="100%" stopColor="#B9804F" />
-                      </linearGradient>
-                      <linearGradient id="ribbonGradRight" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#C8976B" />
-                        <stop offset="100%" stopColor="#A26B3D" />
-                      </linearGradient>
-                      <filter id="sealShadow" x="-20%" y="-20%" width="140%" height="140%">
-                        <feDropShadow dx="0" dy="5" stdDeviation="5" floodColor="rgba(60,25,32,0.3)" />
-                      </filter>
-                    </defs>
-
-                    {/* Left Laurel Branch */}
-                    <g stroke="rgba(248, 220, 196, 0.9)" fill="rgba(248, 220, 196, 0.85)" strokeWidth="1.2">
-                      <path d="M 62 82 C 49 68, 47 45, 57 28" fill="none" stroke="rgba(248, 220, 196, 0.95)" strokeWidth="1.6" />
-                      <ellipse cx="49" cy="70" rx="6" ry="3" transform="rotate(-35 49 70)" />
-                      <ellipse cx="43" cy="56" rx="6.5" ry="3.2" transform="rotate(-50 43 56)" />
-                      <ellipse cx="44" cy="42" rx="6.5" ry="3.2" transform="rotate(-65 44 42)" />
-                      <ellipse cx="51" cy="30" rx="6" ry="3" transform="rotate(-75 51 30)" />
-                      <ellipse cx="57" cy="24" rx="5" ry="2.6" transform="rotate(-85 57 24)" />
-                    </g>
-
-                    {/* Right Laurel Branch */}
-                    <g stroke="rgba(248, 220, 196, 0.9)" fill="rgba(248, 220, 196, 0.85)" strokeWidth="1.2">
-                      <path d="M 138 82 C 151 68, 153 45, 143 28" fill="none" stroke="rgba(248, 220, 196, 0.95)" strokeWidth="1.6" />
-                      <ellipse cx="151" cy="70" rx="6" ry="3" transform="rotate(35 151 70)" />
-                      <ellipse cx="157" cy="56" rx="6.5" ry="3.2" transform="rotate(50 157 56)" />
-                      <ellipse cx="156" cy="42" rx="6.5" ry="3.2" transform="rotate(65 156 42)" />
-                      <ellipse cx="149" cy="30" rx="6" ry="3" transform="rotate(75 149 30)" />
-                      <ellipse cx="143" cy="24" rx="5" ry="2.6" transform="rotate(85 143 24)" />
-                    </g>
-
-                    {/* Hanging Ribbon Tails */}
-                    <polygon points="90,75 80,118 92,110 100,118 94,75" fill="url(#ribbonGradLeft)" filter="url(#sealShadow)" />
-                    <polygon points="106,75 100,118 108,110 120,118 110,75" fill="url(#ribbonGradRight)" filter="url(#sealShadow)" />
-
-                    {/* Scalloped Rosette Outer Medallion */}
-                    <g filter="url(#sealShadow)">
-                      <path
-                        d="M 100 24
-                           L 105 27 L 112 25 L 115 31 L 122 32 L 123 39 L 130 43 L 129 50 L 134 56 L 130 63 L 133 70 L 127 75 L 127 83 L 120 86 L 117 93 L 110 93 L 105 99 L 98 97 L 92 101 L 88 95 L 81 97 L 78 90 L 72 89 L 71 82 L 65 79 L 67 72 L 63 65 L 67 59 L 64 52 L 70 47 L 70 40 L 77 37 L 80 30 L 87 30 L 91 24 Z"
-                        fill="url(#sealGoldGrad)"
-                        stroke="#FCE7D2"
-                        strokeWidth="1.2"
-                      />
-
-                      {/* Inner Raised Ring */}
-                      <circle cx="100" cy="62" r="24" fill="#F4D2B2" stroke="#E5B588" strokeWidth="1.5" />
-                      <circle cx="100" cy="62" r="21" fill="url(#sealGoldGrad)" />
-
-                      {/* 5-pointed Embossed Star */}
-                      <polygon
-                        points="100,48 104,57 114,57 106,64 109,74 100,68 91,74 94,64 86,57 96,57"
-                        fill="#FFFFFF"
-                        opacity="0.95"
-                      />
-                    </g>
-                  </svg>
-                </div>
-              </div>
-
-              {/* 3D Cylindrical Pedestal Base */}
-              <div className="experience-pedestal-wrap">
-                <div className="experience-pedestal-top" />
-                <div className="experience-pedestal-body" />
+              <div className="chef-phone-monument-wrap">
+                {/* Standout Composite Chef Mockup with Certificate Screen */}
+                <img
+                  src="/images/chef-certified-phone.png"
+                  alt="Chef Anisha showcasing Accredited Studio Certification"
+                  className="chef-phone-mockup-img"
+                />
               </div>
             </div>
 
@@ -1797,11 +1687,6 @@ export const Home: React.FC = () => {
                   “In baking, technique creates the canvas, but understanding culinary science brings the cake alive. I created Cakexperiment to demystify high-end French patisserie and give you actionable, repeatable formulas that you can recreate in your home kitchen.”
                 </p>
               </div>
-
-              {/* Short Passion & Vision Introduction */}
-              <p className="founder-intro-text">
-                Every creation begins with curiosity, grows with disciplined practice, and becomes truly special when shared with passionate learners. Cakexperiment was born from a vision to turn complex cake architecture into accessible, joyous masterclasses for bakers worldwide.
-              </p>
 
               {/* 4 Achievement Cards in a Balanced 2 × 2 Grid */}
               <div className="founder-cards-grid">

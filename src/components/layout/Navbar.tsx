@@ -525,9 +525,14 @@ export const Navbar: React.FC = () => {
         .navbar-brand-logo {
           height: 48px;
           width: auto;
-          max-width: 150px;
+          max-width: 185px;
           object-fit: contain;
           display: block;
+          filter: drop-shadow(0 2px 6px rgba(87, 51, 58, 0.08));
+          transition: transform 0.25s ease;
+        }
+        .navbar-brand-logo:hover {
+          transform: scale(1.03);
         }
 
         /* Nav actions container */
@@ -541,20 +546,26 @@ export const Navbar: React.FC = () => {
         /* Icon action buttons */
         .navbar-icon-btn {
           position: relative;
-          background: none;
-          border: none;
+          background: rgba(255, 255, 255, 0.45);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(255, 255, 255, 0.7);
           color: var(--color-plum);
           cursor: pointer;
-          padding: 0.45rem;
+          padding: 0.5rem;
           display: flex;
           align-items: center;
           justify-content: center;
           border-radius: 50%;
-          transition: background-color 0.2s ease, transform 0.15s ease;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 2px 8px rgba(87, 51, 58, 0.04), inset 0 1px 0.5px rgba(255, 255, 255, 0.9);
         }
         .navbar-icon-btn:hover {
-          background-color: rgba(244, 221, 224, 0.5);
-          transform: scale(1.05);
+          background-color: rgba(255, 255, 255, 0.85);
+          transform: translateY(-1px) scale(1.05);
+          border-color: rgba(255, 255, 255, 0.95);
+          box-shadow: 0 4px 12px rgba(220, 150, 165, 0.25), inset 0 1px 1px #fff;
+          color: var(--color-berry);
         }
 
         /* Badges */
@@ -585,16 +596,20 @@ export const Navbar: React.FC = () => {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          background: #FFFFFF;
-          border: 1px solid var(--border-subtle);
+          background: rgba(255, 255, 255, 0.6);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.85);
           padding: 0.35rem 0.8rem 0.35rem 0.4rem;
           border-radius: var(--radius-full);
           cursor: pointer;
-          box-shadow: var(--shadow-sm);
-          transition: border-color 0.2s ease;
+          box-shadow: 0 2px 10px rgba(87, 51, 58, 0.05), inset 0 1px 0.5px rgba(255, 255, 255, 0.95);
+          transition: all 0.25s ease;
         }
         .nav-user-btn:hover {
-          border-color: var(--color-rose);
+          background: rgba(255, 255, 255, 0.85);
+          border-color: rgba(220, 150, 165, 0.5);
+          transform: translateY(-1px);
         }
         .nav-user-avatar {
           width: 30px;

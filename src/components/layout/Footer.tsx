@@ -4,18 +4,18 @@ import { Heart, Mail, Phone, MapPin, Globe, Share2, Video } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
-    <footer id="site-footer" style={{ backgroundColor: 'var(--color-plum)', color: '#FFF8F5', paddingTop: '5rem', paddingBottom: '3rem' }}>
+    <footer id="site-footer" style={{ backgroundColor: '#000000', color: '#FFF8F5', paddingTop: '5rem', paddingBottom: '3rem' }}>
       <div className="container">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '3rem', marginBottom: '4rem' }}>
           
           {/* Brand Info */}
           <div style={{ gridColumn: 'span 1' }}>
             <div style={{ marginBottom: '1.2rem' }}>
-              <Link to="/" style={{ display: 'inline-block', backgroundColor: '#FFFFFF', padding: '0.4rem 0.8rem', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+              <Link to="/" style={{ display: 'inline-block', backgroundColor: '#FFFFFF', padding: '0.45rem 0.9rem', borderRadius: '14px', boxShadow: '0 4px 14px rgba(0,0,0,0.25)' }}>
                 <img
                   src="/images/logo.png"
                   alt="CakeXperiment"
-                  style={{ height: '42px', width: 'auto', objectFit: 'contain', display: 'block' }}
+                  style={{ height: '48px', width: 'auto', objectFit: 'contain', display: 'block' }}
                 />
               </Link>
             </div>
