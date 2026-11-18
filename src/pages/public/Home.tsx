@@ -2304,7 +2304,7 @@ export const Home: React.FC = () => {
         id="enroll"
         ref={ctaRef}
         style={{
-          padding: '7rem 0 8.5rem 0',
+          padding: '7rem 0',
           backgroundColor: 'var(--color-plum)',
           color: '#FFF8F5',
           textAlign: 'center',
@@ -2321,20 +2321,6 @@ export const Home: React.FC = () => {
             bottom: 0,
             background: 'radial-gradient(circle at center, rgba(169, 87, 104, 0.45) 0%, rgba(87, 51, 58, 0.98) 75%)',
             pointerEvents: 'none'
-          }}
-        />
-
-        {/* Smooth Gradient Blend into Black Footer */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: '180px',
-            background: 'linear-gradient(to bottom, rgba(87, 51, 58, 0) 0%, rgba(55, 30, 36, 0.4) 35%, rgba(25, 12, 16, 0.8) 70%, #000000 100%)',
-            pointerEvents: 'none',
-            zIndex: 1
           }}
         />
 
