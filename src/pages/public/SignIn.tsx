@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Cake, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { GoogleButton } from '../../components/auth/GoogleButton';
 
 export const SignIn: React.FC = () => {
   const { signIn, isAuthenticated, isAdmin } = useAuth();
@@ -18,6 +19,9 @@ export const SignIn: React.FC = () => {
   const rawFrom = (location.state as any)?.from;
   const redirectTarget = typeof rawFrom === 'string' ? rawFrom : rawFrom?.pathname;
   const gateMessage = (location.state as any)?.message as string | undefined;
+
+  const queryParams = new URLSearchParams(location.search);
+  const oauthError = queryParams.get('message') || (queryParams.get('error') ? 'Google authentication could not be completed. Please try again.' : null);
 
   // If already logged in, redirect based on intended target or role
   React.useEffect(() => {
@@ -70,19 +74,33 @@ export const SignIn: React.FC = () => {
         {/* Card */}
         <div style={{ backgroundColor: '#FFFFFF', borderRadius: 'var(--radius-lg)', padding: '2.5rem', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-card)' }}>
           
-          {gateMessage && !error && (
+          {gateMessage && !error && !oauthError && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', backgroundColor: '#FFF8F5', color: 'var(--color-plum)', padding: '0.85rem 1rem', borderRadius: 'var(--radius-md)', fontSize: '0.88rem', marginBottom: '1.5rem', border: '1px solid var(--color-rose)' }}>
               <AlertCircle size={18} color="var(--color-berry)" style={{ flexShrink: 0 }} />
               <span>{gateMessage}</span>
             </div>
           )}
 
-          {error && (
+          {(error || oauthError) && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', backgroundColor: '#FFEBEE', color: '#C62828', padding: '0.8rem 1rem', borderRadius: 'var(--radius-md)', fontSize: '0.88rem', marginBottom: '1.5rem', border: '1px solid #FFCDD2' }}>
               <AlertCircle size={18} style={{ flexShrink: 0 }} />
-              <span>{error}</span>
+              <span>{error || oauthError}</span>
             </div>
           )}
+
+          {/* Google Sign In */}
+          <GoogleButton
+            redirectTarget={redirectTarget}
+            onError={(msg) => setError(msg)}
+          />
+
+          <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0', gap: '0.85rem' }}>
+            <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-subtle, #EFE8E2)' }} />
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted, #7A6B68)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+              or sign in with email
+            </span>
+            <div style={{ flex: 1, height: '1px', backgroundColor: 'var(--border-subtle, #EFE8E2)' }} />
+          </div>
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             

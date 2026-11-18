@@ -27,25 +27,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchCurrentUser = async () => {
     try {
-      const token = localStorage.getItem(TOKEN_KEY);
-      if (!token) {
-        const offlineUser = storageService.getCurrentUser();
-        if (offlineUser) {
-          setUser(offlineUser);
-          return;
+      // 1. Detect and persist session token from OAuth redirect parameter if present
+      if (typeof window !== 'undefined' && window.location.search) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const incomingToken = urlParams.get('token') || urlParams.get('session_token');
+        if (incomingToken) {
+          localStorage.setItem(TOKEN_KEY, incomingToken);
+          urlParams.delete('token');
+          urlParams.delete('session_token');
+          urlParams.delete('auth');
+          const remainingQuery = urlParams.toString();
+          const cleanUrl = window.location.pathname + (remainingQuery ? `?${remainingQuery}` : '') + window.location.hash;
+          window.history.replaceState({}, document.title, cleanUrl);
         }
-        setUser(null);
-        setEnrolledCourseIds([]);
-        return;
+      }
+
+      let token = localStorage.getItem(TOKEN_KEY);
+
+      // 2. Fetch authenticated session from server (supports both Bearer token & HTTP-only cookie)
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
 
       const res = await fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers,
+        credentials: 'include'
       });
 
       if (res.ok) {
         const data = await res.json();
         if (data?.user) {
+          if (data.token && !token) {
+            localStorage.setItem(TOKEN_KEY, data.token);
+          }
           setUser(data.user);
           if (Array.isArray(data.user.enrolledCourseIds)) {
             setEnrolledCourseIds(data.user.enrolledCourseIds);

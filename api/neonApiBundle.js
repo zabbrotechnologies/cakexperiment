@@ -38767,7 +38767,7 @@ var require_dist_cjs16 = __commonJS({
 // server/neonApi.ts
 var import_client_s32 = __toESM(require_dist_cjs16(), 1);
 var import_node_http_handler5 = __toESM(require_dist_cjs7(), 1);
-import crypto11 from "crypto";
+import crypto12 from "crypto";
 import https3 from "https";
 
 // server/neonDb.ts
@@ -59847,6 +59847,342 @@ async function handleAdminUpdateStoreSettings(body, res) {
   sendJson(res, 200, { success: true, config });
 }
 
+// server/googleAuth.ts
+import crypto11 from "crypto";
+var GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
+var GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+var GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
+var GOOGLE_SCOPES = ["openid", "email", "profile"].join(" ");
+function parseCookies(req) {
+  const list2 = {};
+  const cookieHeader = req.headers.cookie;
+  if (!cookieHeader) return list2;
+  cookieHeader.split(";").forEach((cookie) => {
+    let [name2, ...rest] = cookie.split("=");
+    name2 = name2?.trim();
+    if (!name2) return;
+    const value = rest.join("=").trim();
+    list2[name2] = decodeURIComponent(value);
+  });
+  return list2;
+}
+function sanitizeRedirectPath(target) {
+  if (!target || typeof target !== "string") return "/learn";
+  const trimmed = target.trim();
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//") && !trimmed.startsWith("/\\")) {
+    return trimmed;
+  }
+  return "/learn";
+}
+function getGoogleOAuthRedirectUri(req) {
+  const host = req.headers["x-forwarded-host"] || req.headers.host || "";
+  if (host.includes("localhost") || host.includes("127.0.0.1")) {
+    return "http://localhost:5173/api/auth/callback/google";
+  }
+  if (host.includes("thecakexperiment.com")) {
+    return "https://thecakexperiment.com/api/auth/callback/google";
+  }
+  const appBase = process.env.APP_BASE_URL || "https://thecakexperiment.com";
+  return `${appBase.replace(/\/$/, "")}/api/auth/callback/google`;
+}
+function createOAuthState(redirectPath, secret) {
+  const nonce = crypto11.randomBytes(24).toString("hex");
+  const payload = JSON.stringify({
+    n: nonce,
+    r: sanitizeRedirectPath(redirectPath),
+    t: Date.now()
+  });
+  const b64Payload = Buffer.from(payload).toString("base64url");
+  const signature = crypto11.createHmac("sha256", secret).update(b64Payload).digest("base64url");
+  return {
+    state: `${b64Payload}.${signature}`,
+    nonce
+  };
+}
+function verifyOAuthState(stateStr, secret, cookieNonce) {
+  if (!stateStr || typeof stateStr !== "string") {
+    return { valid: false, redirect: "/learn", reason: "Missing state parameter" };
+  }
+  const parts = stateStr.split(".");
+  if (parts.length !== 2) {
+    return { valid: false, redirect: "/learn", reason: "Invalid state format" };
+  }
+  const [b64Payload, signature] = parts;
+  const expectedSig = crypto11.createHmac("sha256", secret).update(b64Payload).digest("base64url");
+  try {
+    const sigBuf = Buffer.from(signature);
+    const expBuf = Buffer.from(expectedSig);
+    if (sigBuf.length !== expBuf.length || !crypto11.timingSafeEqual(sigBuf, expBuf)) {
+      return { valid: false, redirect: "/learn", reason: "State signature verification failed" };
+    }
+    const payload = JSON.parse(Buffer.from(b64Payload, "base64url").toString("utf8"));
+    const { n: n3, r: r5, t } = payload;
+    const now = Date.now();
+    if (typeof t !== "number" || now - t > 10 * 60 * 1e3 || t - now > 60 * 1e3) {
+      return { valid: false, redirect: "/learn", reason: "State expired. Please restart sign-in." };
+    }
+    if (cookieNonce && cookieNonce !== n3) {
+      return { valid: false, redirect: "/learn", reason: "OAuth session mismatch. Possible CSRF detected." };
+    }
+    return { valid: true, redirect: sanitizeRedirectPath(r5) };
+  } catch {
+    return { valid: false, redirect: "/learn", reason: "Failed parsing state payload" };
+  }
+}
+async function exchangeGoogleCode(code, redirectUri, clientId, clientSecret) {
+  const body = new URLSearchParams({
+    code,
+    client_id: clientId,
+    client_secret: clientSecret,
+    redirect_uri: redirectUri,
+    grant_type: "authorization_code"
+  });
+  const res = await fetch(GOOGLE_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString()
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Google token exchange error (${res.status}): ${errText}`);
+  }
+  return await res.json();
+}
+async function fetchGoogleProfile(accessToken) {
+  const res = await fetch(GOOGLE_USERINFO_URL, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Google userinfo error (${res.status}): ${errText}`);
+  }
+  return await res.json();
+}
+function verifyGoogleIdToken(idToken, clientId) {
+  if (!idToken || typeof idToken !== "string") return null;
+  const parts = idToken.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
+    const nowSec = Math.floor(Date.now() / 1e3);
+    if (payload.iss !== "https://accounts.google.com" && payload.iss !== "accounts.google.com") {
+      console.warn("ID token invalid issuer:", payload.iss);
+      return null;
+    }
+    if (payload.aud !== clientId) {
+      console.warn("ID token audience mismatch:", payload.aud);
+      return null;
+    }
+    if (typeof payload.exp === "number" && payload.exp < nowSec - 30) {
+      console.warn("ID token expired:", payload.exp);
+      return null;
+    }
+    return payload;
+  } catch {
+    return null;
+  }
+}
+async function handleGoogleAuth(rawUrl, req, res) {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    res.statusCode = 500;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ error: "Google OAuth credentials are not configured on the server." }));
+    return;
+  }
+  const parsedUrl = new URL(rawUrl, "http://localhost");
+  const redirectTarget = parsedUrl.searchParams.get("redirect") || "/learn";
+  const redirectUri = getGoogleOAuthRedirectUri(req);
+  const { state: state2, nonce } = createOAuthState(redirectTarget, clientSecret);
+  const isProduction = process.env.NODE_ENV === "production" || req.headers.host && !req.headers.host.includes("localhost");
+  const cookieFlags = isProduction ? "; Secure" : "";
+  const authUrl = new URL(GOOGLE_AUTH_URL);
+  authUrl.searchParams.set("client_id", clientId);
+  authUrl.searchParams.set("redirect_uri", redirectUri);
+  authUrl.searchParams.set("response_type", "code");
+  authUrl.searchParams.set("scope", GOOGLE_SCOPES);
+  authUrl.searchParams.set("state", state2);
+  authUrl.searchParams.set("prompt", "select_account");
+  res.statusCode = 302;
+  res.setHeader("Location", authUrl.toString());
+  res.setHeader(
+    "Set-Cookie",
+    `cakexperiment_oauth_state=${nonce}; HttpOnly; Path=/; SameSite=Lax; Max-Age=600${cookieFlags}`
+  );
+  res.end();
+}
+async function handleGoogleCallback(rawUrl, req, res) {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    res.statusCode = 302;
+    res.setHeader("Location", "/signin?error=server_error&message=Google+OAuth+not+configured+on+server");
+    res.end();
+    return;
+  }
+  const parsedUrl = new URL(rawUrl, "http://localhost");
+  const code = parsedUrl.searchParams.get("code");
+  const state2 = parsedUrl.searchParams.get("state");
+  const error3 = parsedUrl.searchParams.get("error");
+  const errorDescription = parsedUrl.searchParams.get("error_description");
+  if (error3) {
+    const errorMsg = errorDescription || error3 || "Google sign-in was cancelled";
+    res.statusCode = 302;
+    res.setHeader("Location", `/signin?error=oauth_cancelled&message=${encodeURIComponent(errorMsg)}`);
+    res.end();
+    return;
+  }
+  if (!code || !state2) {
+    res.statusCode = 302;
+    res.setHeader("Location", "/signin?error=invalid_request&message=Missing+authorization+code+or+state");
+    res.end();
+    return;
+  }
+  const cookies = parseCookies(req);
+  const cookieNonce = cookies["cakexperiment_oauth_state"];
+  const stateValidation = verifyOAuthState(state2, clientSecret, cookieNonce);
+  if (!stateValidation.valid) {
+    console.warn("OAuth state verification failed:", stateValidation.reason);
+    res.statusCode = 302;
+    res.setHeader(
+      "Location",
+      `/signin?error=invalid_state&message=${encodeURIComponent(stateValidation.reason || "Security verification failed")}`
+    );
+    res.end();
+    return;
+  }
+  const redirectUri = getGoogleOAuthRedirectUri(req);
+  try {
+    const tokens = await exchangeGoogleCode(code, redirectUri, clientId, clientSecret);
+    const idClaims = verifyGoogleIdToken(tokens.id_token, clientId);
+    if (!idClaims) {
+      throw new Error("Google ID token verification failed (issuer, audience, or expiry mismatch).");
+    }
+    const profile = await fetchGoogleProfile(tokens.access_token);
+    const googleSub = String(profile.sub || idClaims.sub || "").trim();
+    const email = String(profile.email || idClaims.email || "").trim().toLowerCase();
+    const emailVerified = Boolean(profile.email_verified ?? idClaims.email_verified);
+    const name2 = String(profile.name || idClaims.name || email.split("@")[0] || "Cakexperiment Baker").trim();
+    const picture = profile.picture || idClaims.picture || "";
+    if (!googleSub) {
+      throw new Error("Missing immutable Google subject identifier (sub).");
+    }
+    if (!email) {
+      throw new Error("No email address provided by Google account.");
+    }
+    if (!emailVerified) {
+      res.statusCode = 302;
+      res.setHeader("Location", "/signin?error=unverified_email&message=Your+Google+email+is+not+verified+by+Google");
+      res.end();
+      return;
+    }
+    const sql = getDb();
+    let userRow = null;
+    const existingByGoogle = await sql`
+      SELECT id, name, email, role, status, google_id
+      FROM users
+      WHERE google_id = ${googleSub};
+    `;
+    if (existingByGoogle.length > 0) {
+      userRow = existingByGoogle[0];
+      if (userRow.email.toLowerCase() !== email) {
+        await sql`UPDATE users SET email = ${email}, updated_at = NOW() WHERE id = ${userRow.id};`;
+        userRow.email = email;
+      }
+    } else {
+      const existingByEmail = await sql`
+        SELECT id, name, email, role, status, google_id
+        FROM users
+        WHERE LOWER(email) = LOWER(${email});
+      `;
+      if (existingByEmail.length > 0) {
+        userRow = existingByEmail[0];
+        if (userRow.google_id && userRow.google_id !== googleSub) {
+          res.statusCode = 302;
+          res.setHeader(
+            "Location",
+            "/signin?error=account_conflict&message=This+email+is+already+linked+to+a+different+Google+account."
+          );
+          res.end();
+          return;
+        }
+        await sql`
+          UPDATE users
+          SET google_id = ${googleSub},
+              email_verified = TRUE,
+              updated_at = NOW()
+          WHERE id = ${userRow.id};
+        `;
+      } else {
+        const newUserId = "usr_" + crypto11.randomBytes(12).toString("hex");
+        await sql`
+          INSERT INTO users (id, name, email, google_id, auth_provider, role, status, email_verified, created_at, updated_at)
+          VALUES (${newUserId}, ${name2}, ${email}, ${googleSub}, 'google', 'USER', 'active', TRUE, NOW(), NOW());
+        `;
+        await sql`
+          INSERT INTO user_profiles (user_id, avatar, bio)
+          VALUES (${newUserId}, ${picture || ""}, 'Enthusiastic baker learning with Cakexperiment.')
+          ON CONFLICT (user_id) DO UPDATE SET avatar = COALESCE(NULLIF(user_profiles.avatar, ''), EXCLUDED.avatar);
+        `;
+        userRow = {
+          id: newUserId,
+          name: name2,
+          email,
+          role: "USER",
+          status: "active"
+        };
+        await dispatchEmailAsync(generateWelcomeEmail(email, name2));
+      }
+    }
+    if (userRow.status && userRow.status !== "active") {
+      res.statusCode = 302;
+      res.setHeader("Location", "/signin?error=account_disabled&message=Your+account+has+been+deactivated.");
+      res.end();
+      return;
+    }
+    if (picture) {
+      try {
+        await sql`
+          UPDATE user_profiles
+          SET avatar = ${picture}
+          WHERE user_id = ${userRow.id} AND (avatar IS NULL OR avatar = '');
+        `;
+      } catch (e5) {
+        console.warn("Could not update avatar for user:", e5);
+      }
+    }
+    const sessionToken = crypto11.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3);
+    await sql`
+      INSERT INTO sessions (id, user_id, role, expires_at)
+      VALUES (${sessionToken}, ${userRow.id}, ${userRow.role}, ${expiresAt.toISOString()});
+    `;
+    let finalTarget = stateValidation.redirect || (userRow.role === "ADMIN" ? "/admin/dashboard" : "/learn");
+    if (userRow.role !== "ADMIN" && finalTarget.startsWith("/admin")) {
+      finalTarget = "/learn";
+    }
+    const isProduction = process.env.NODE_ENV === "production" || req.headers.host && !req.headers.host.includes("localhost");
+    const secureFlag = isProduction ? "; Secure" : "";
+    res.statusCode = 302;
+    res.setHeader("Set-Cookie", [
+      `cakexperiment_session=${sessionToken}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${7 * 24 * 3600}${secureFlag}`,
+      `cakexperiment_oauth_state=; HttpOnly; Path=/; Max-Age=0`
+    ]);
+    const sep2 = finalTarget.includes("?") ? "&" : "?";
+    res.setHeader("Location", `${finalTarget}${sep2}token=${sessionToken}&auth=google`);
+    res.end();
+  } catch (err) {
+    console.error("Google OAuth callback processing error:", err);
+    res.statusCode = 302;
+    res.setHeader(
+      "Location",
+      `/signin?error=oauth_error&message=${encodeURIComponent(err.message || "Google authentication failed")}`
+    );
+    res.end();
+  }
+}
+
 // server/neonApi.ts
 var S3_HOST_IPS = {
   "br-soft-queen-bdn8ofgg.storage.c-8.us-east-2.aws.neon.tech": "18.119.63.132",
@@ -59885,7 +60221,7 @@ function getS3() {
   });
 }
 var loginRateLimitMap = /* @__PURE__ */ new Map();
-function parseCookies(req) {
+function parseCookies2(req) {
   const list2 = {};
   const rc = req.headers.cookie;
   if (!rc) return list2;
@@ -59903,7 +60239,7 @@ function extractSessionToken(req) {
   if (authHeader && authHeader.startsWith("Bearer ")) {
     return authHeader.substring(7).trim();
   }
-  const cookies = parseCookies(req);
+  const cookies = parseCookies2(req);
   if (cookies["cakexperiment_session"]) {
     return cookies["cakexperiment_session"].trim();
   }
@@ -60004,6 +60340,14 @@ async function handleNeonApi(req, res, next) {
       getS3
     });
     if (handledCommerce) {
+      return;
+    }
+    if (pathname === "/api/auth/google" && req.method === "GET") {
+      await handleGoogleAuth(rawUrl, req, res);
+      return;
+    }
+    if (pathname === "/api/auth/callback/google" && req.method === "GET") {
+      await handleGoogleCallback(rawUrl, req, res);
       return;
     }
     if (pathname === "/api/auth/signup" && req.method === "POST") {
@@ -60186,7 +60530,7 @@ async function handleSignUp(req, res) {
     res.end(JSON.stringify({ error: "An account with this email address already exists." }));
     return;
   }
-  const userId = `usr_${Date.now()}_${crypto11.randomBytes(4).toString("hex")}`;
+  const userId = `usr_${Date.now()}_${crypto12.randomBytes(4).toString("hex")}`;
   const passwordHash = hashPassword(password);
   const role = "USER";
   await sql`
@@ -60198,7 +60542,7 @@ async function handleSignUp(req, res) {
     VALUES (${userId}, 'Enthusiastic baker learning with Cakexperiment.')
     ON CONFLICT (user_id) DO NOTHING;
   `;
-  const sessionToken = crypto11.randomBytes(32).toString("hex");
+  const sessionToken = crypto12.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3);
   await sql`
     INSERT INTO sessions (id, user_id, role, expires_at)
@@ -60263,7 +60607,7 @@ async function handleSignIn(req, res) {
     return;
   }
   loginRateLimitMap.delete(cleanEmail);
-  const sessionToken = crypto11.randomBytes(32).toString("hex");
+  const sessionToken = crypto12.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3);
   await sql`
     INSERT INTO sessions (id, user_id, role, expires_at)
@@ -60316,6 +60660,7 @@ async function handleAuthMe(req, res) {
   const activeEnrollments = await sql`
     SELECT course_id FROM enrollments WHERE user_id = ${session.userId} AND status = 'ACTIVE';
   `;
+  const token = extractSessionToken(req);
   res.statusCode = 200;
   res.end(
     JSON.stringify({
@@ -60325,10 +60670,11 @@ async function handleAuthMe(req, res) {
         email: session.email,
         role: session.role,
         phone: prof.phone || "",
-        avatar: "",
+        avatar: prof.avatar || prof.profile_image || "",
         bio: prof.bio || "",
         enrolledCourseIds: activeEnrollments.map((e5) => e5.course_id)
-      }
+      },
+      token: token || void 0
     })
   );
 }
@@ -60464,7 +60810,7 @@ async function handleCreateWhatsAppOrder(req, res) {
     const year2 = (/* @__PURE__ */ new Date()).getFullYear();
     const randPart = Math.floor(1e4 + Math.random() * 9e4);
     orderNumber = `ORD-${year2}-${randPart}`;
-    orderId = `ord_${Date.now()}_${crypto11.randomBytes(3).toString("hex")}`;
+    orderId = `ord_${Date.now()}_${crypto12.randomBytes(3).toString("hex")}`;
     await sql`
       INSERT INTO orders (id, order_number, user_id, order_type, status, total_amount, amount, course_id, course_title, payment_method)
       VALUES (${orderId}, ${orderNumber}, ${session.userId}, 'COURSE', 'PENDING', ${actualAmount}, ${actualAmount}, ${course.id}, ${course.title}, 'WHATSAPP_MANUAL');

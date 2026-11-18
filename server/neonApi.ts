@@ -17,6 +17,7 @@ import {
   generateCourseCompletedEmail
 } from './emailService.ts';
 import { handleCommerceRoute } from './ecommerceApi.ts';
+import { handleGoogleAuth, handleGoogleCallback } from './googleAuth.ts';
 
 const S3_HOST_IPS: Record<string, string> = {
   'br-soft-queen-bdn8ofgg.storage.c-8.us-east-2.aws.neon.tech': '18.119.63.132',
@@ -217,6 +218,14 @@ export async function handleNeonApi(req: IncomingMessage, res: ServerResponse, n
     // -------------------------------------------------------------
     // 2. UNIFIED AUTHENTICATION ENDPOINTS
     // -------------------------------------------------------------
+    if (pathname === '/api/auth/google' && req.method === 'GET') {
+      await handleGoogleAuth(rawUrl, req, res);
+      return;
+    }
+    if (pathname === '/api/auth/callback/google' && req.method === 'GET') {
+      await handleGoogleCallback(rawUrl, req, res);
+      return;
+    }
     if (pathname === '/api/auth/signup' && req.method === 'POST') {
       await handleSignUp(req, res);
       return;
@@ -589,6 +598,8 @@ async function handleAuthMe(req: IncomingMessage, res: ServerResponse) {
     SELECT course_id FROM enrollments WHERE user_id = ${session.userId} AND status = 'ACTIVE';
   `;
 
+  const token = extractSessionToken(req);
+
   res.statusCode = 200;
   res.end(
     JSON.stringify({
@@ -598,10 +609,11 @@ async function handleAuthMe(req: IncomingMessage, res: ServerResponse) {
         email: session.email,
         role: session.role,
         phone: prof.phone || '',
-        avatar: '',
+        avatar: prof.avatar || prof.profile_image || '',
         bio: prof.bio || '',
         enrolledCourseIds: activeEnrollments.map((e: any) => e.course_id)
-      }
+      },
+      token: token || undefined
     })
   );
 }
