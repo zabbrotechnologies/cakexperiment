@@ -59882,6 +59882,9 @@ function getGoogleOAuthRedirectUri(req) {
   if (host.includes("thecakexperiment.com")) {
     return "https://thecakexperiment.com/api/auth/callback/google";
   }
+  if (host.includes("vercel.app")) {
+    return `https://${host}/api/auth/callback/google`;
+  }
   const appBase = process.env.APP_BASE_URL || "https://thecakexperiment.com";
   return `${appBase.replace(/\/$/, "")}/api/auth/callback/google`;
 }
