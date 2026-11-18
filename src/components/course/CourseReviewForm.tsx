@@ -519,7 +519,7 @@ export const CourseReviewForm: React.FC<CourseReviewFormProps> = ({
           rows={3}
           value={comment}
           onChange={e => setComment(e.target.value)}
-          placeholder="Share your experience with this masterclass... What techniques did you learn? How were Chef Camille's explanations?"
+          placeholder="Share your experience with this masterclass... What techniques did you learn? How were Chef Anisha's explanations?"
           style={{
             width: '100%',
             padding: '0.75rem 0.95rem',

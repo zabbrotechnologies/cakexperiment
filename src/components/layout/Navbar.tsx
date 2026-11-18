@@ -633,24 +633,25 @@ export const Navbar: React.FC = () => {
         .nav-user-dropdown-panel {
           position: absolute;
           right: 0;
-          top: calc(100% + 8px);
-          width: 220px;
+          top: calc(100% + 12px);
+          width: 230px;
           max-width: calc(100vw - 32px);
           background: linear-gradient(
             180deg,
-            rgba(255, 255, 255, 0.92) 0%,
-            rgba(255, 255, 255, 0.84) 100%
+            rgba(255, 255, 255, 0.96) 0%,
+            rgba(255, 248, 250, 0.94) 100%
           );
-          backdrop-filter: blur(24px) saturate(190%);
-          -webkit-backdrop-filter: blur(24px) saturate(190%);
-          border-radius: var(--radius-md);
+          backdrop-filter: blur(28px) saturate(210%);
+          -webkit-backdrop-filter: blur(28px) saturate(210%);
+          border-radius: 16px;
           box-shadow:
-            0 18px 45px -8px rgba(87, 51, 58, 0.12),
+            0 24px 50px -8px rgba(87, 51, 58, 0.16),
+            0 8px 20px -4px rgba(220, 150, 165, 0.14),
             inset 0 1.5px 0.5px rgba(255, 255, 255, 0.95),
             inset 0 0 18px rgba(255, 255, 255, 0.3);
-          border: 1px solid rgba(255, 255, 255, 0.85);
+          border: 1px solid rgba(255, 255, 255, 0.9);
           padding: 0.5rem 0;
-          z-index: 1000;
+          z-index: 1200;
         }
 
         /* Unauthenticated Auth Buttons */

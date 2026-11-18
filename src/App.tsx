@@ -96,6 +96,8 @@ export const App: React.FC = () => {
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/dashboard" element={<Navigate to="/learn" replace />} />
+            <Route path="/classroom/:courseId" element={<Navigate to="/learn" replace />} />
             
             {/* Redirect /admin/login to shared /signin as required */}
             <Route path="/admin/login" element={<Navigate to="/signin" replace />} />

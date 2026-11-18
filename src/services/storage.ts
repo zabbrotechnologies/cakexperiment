@@ -1115,7 +1115,7 @@ const initialReviews: Review[] = [
     courseId: 'course-3',
     courseTitle: 'Modern Celebration Cakes & Sugar Art',
     rating: 5,
-    comment: 'The gold leaf application tutorial saved me from wasting delicate 24k leaf sheets. Elena demonstrates the exact brush static technique to position leaf with zero tearing.',
+    comment: 'The gold leaf application tutorial saved me from wasting delicate 24k leaf sheets. Chef Anisha demonstrates the exact brush static technique to position leaf with zero tearing.',
     status: 'approved',
     createdAt: '2026-03-10T14:50:00Z'
   },
@@ -1161,12 +1161,12 @@ const initialReviews: Review[] = [
   {
     id: 'rev-403',
     userId: 'user-5',
-    userName: 'Elena Rostova',
+    userName: 'Elena Roberts',
     userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
     courseId: 'course-4',
     courseTitle: 'Artisan Chocolate Cake & Ganache Alchemy',
     rating: 5,
-    comment: 'The drip ratio formulation holds perfectly at room temperature without sliding down the cake board. Camille makes complex confectionery science feel approachable and effortless.',
+    comment: 'The drip ratio formulation holds perfectly at room temperature without sliding down the cake board. Chef Anisha makes complex confectionery science feel approachable and effortless.',
     status: 'approved',
     createdAt: '2026-03-06T11:20:00Z'
   },
@@ -1303,7 +1303,7 @@ const initialReviews: Review[] = [
     courseId: 'course-6',
     courseTitle: 'Fondant Art, Sculpting & Wedding Architecture',
     rating: 4,
-    comment: 'The sugar peony veining and wire ruffling techniques look breathtaking in real life. Requires practice, but Elena’s camera angles make every fold clear.',
+    comment: 'The sugar peony veining and wire ruffling techniques look breathtaking in real life. Requires practice, but Chef Anisha’s camera angles make every fold clear.',
     status: 'approved',
     createdAt: '2026-03-17T12:05:00Z'
   },

@@ -671,7 +671,7 @@ export const GiftHampers: React.FC = () => {
           </div>
 
           {/* ================= RIGHT COLUMN: LIVE SUMMARY & WHATSAPP CTA (STICKY) ================= */}
-          <div className="hamper-sticky-col" style={{ position: 'relative', height: '100%' }}>
+          <div className="hamper-sticky-col" style={{ position: 'relative', alignSelf: 'stretch' }}>
             <div
               className="hamper-sticky-card"
               style={{
