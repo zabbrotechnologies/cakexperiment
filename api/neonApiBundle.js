@@ -60607,8 +60607,8 @@ async function handleInitiateUpload(body, res) {
   res.end(JSON.stringify({
     success: true,
     uploadSessionId: sessionToken,
-    chunkSizeRecommended: 2 * 1024 * 1024
-    // 2 MB chunks (safe for Vercel serverless 4.5 MB payload limit)
+    chunkSizeRecommended: 4 * 1024 * 1024
+    // 4 MB chunks (safe for Vercel serverless 4.5 MB payload limit, 16x 256KB Google Drive blocks)
   }));
 }
 async function handleUploadChunk(req, res, parsedUrl) {
@@ -60856,6 +60856,14 @@ function extractSessionToken(req) {
   const cookies = parseCookies2(req);
   if (cookies["cakexperiment_session"]) {
     return cookies["cakexperiment_session"].trim();
+  }
+  try {
+    const url = new URL(req.url || "", "http://localhost");
+    const queryToken = url.searchParams.get("token");
+    if (queryToken && queryToken.trim().length > 0) {
+      return queryToken.trim();
+    }
+  } catch {
   }
   return null;
 }
@@ -61802,8 +61810,8 @@ async function handleListCourses(res) {
     const priceNum = Number(c5.price) || 499;
     const originalPriceNum = Number(c5.original_price) || 1499;
     const reviewsNum = Number(c5.reviews_count) || 0;
-    const modCount = Number(c5.modules_count) || 2;
-    const lesCount = Number(c5.lessons_count) || 6;
+    const modCount = c5.modules_count !== null && c5.modules_count !== void 0 ? Number(c5.modules_count) : 0;
+    const lesCount = c5.lessons_count !== null && c5.lessons_count !== void 0 ? Number(c5.lessons_count) : 0;
     return {
       ...c5,
       price: priceNum,
@@ -62226,8 +62234,8 @@ async function handleAdminListCourses(req, res) {
     const priceNum = Number(c5.price) || 499;
     const originalPriceNum = Number(c5.original_price) || 1499;
     const reviewsNum = Number(c5.reviews_count) || 0;
-    const modCount = Number(c5.modules_count) || 2;
-    const lesCount = Number(c5.lessons_count) || 6;
+    const modCount = c5.modules_count !== null && c5.modules_count !== void 0 ? Number(c5.modules_count) : 0;
+    const lesCount = c5.lessons_count !== null && c5.lessons_count !== void 0 ? Number(c5.lessons_count) : 0;
     return {
       ...c5,
       price: priceNum,
@@ -62279,8 +62287,26 @@ async function handleAdminSaveCourse(targetCourseId, req, res) {
     res.end(JSON.stringify({ error: "Course title is required." }));
     return;
   }
-  const slug = (data.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")).trim();
-  const courseId = targetCourseId || data.id || `course-${slug || Date.now()}`;
+  const lookupKey = (targetCourseId || data.id || data.slug || "").trim();
+  let existingCourse = null;
+  if (lookupKey) {
+    const existing = await sql`
+      SELECT id, slug FROM courses 
+      WHERE id = ${lookupKey} OR slug = ${lookupKey} OR LOWER(slug) = LOWER(${lookupKey}) OR LOWER(id) = LOWER(${lookupKey})
+      LIMIT 1;
+    `;
+    if (existing.length > 0) {
+      existingCourse = existing[0];
+    }
+  }
+  const courseId = existingCourse?.id || targetCourseId || data.id || `course-${Date.now()}`;
+  let slug = (data.slug || existingCourse?.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")).trim();
+  const slugOwner = await sql`
+    SELECT id FROM courses WHERE (slug = ${slug} OR LOWER(slug) = LOWER(${slug})) AND id != ${courseId} LIMIT 1;
+  `;
+  if (slugOwner.length > 0) {
+    slug = `${slug}-${Date.now().toString().slice(-4)}`;
+  }
   const tag = (data.tag || "Masterclass").trim();
   const shortDescription = (data.shortDescription || data.short_description || "").trim();
   const description = (data.description || "").trim();
@@ -62366,9 +62392,11 @@ async function handleAdminSaveCourse(targetCourseId, req, res) {
       }
     }
   }
+  const validModIds = [];
   for (let mIdx = 0; mIdx < incomingModules.length; mIdx++) {
     const mod = incomingModules[mIdx];
     const modId = mod.id || `mod-${courseId}-${mIdx + 1}`;
+    validModIds.push(modId);
     const modTitle = mod.title || `Module ${mIdx + 1}`;
     const modDesc = mod.description || "";
     const modOrder = Number(mod.order || mod.order_num || mIdx + 1);
@@ -62381,9 +62409,11 @@ async function handleAdminSaveCourse(targetCourseId, req, res) {
         order_num = EXCLUDED.order_num;
     `;
     const incomingLessons = Array.isArray(mod.lessons) ? mod.lessons : [];
+    const validLesIds = [];
     for (let lIdx = 0; lIdx < incomingLessons.length; lIdx++) {
       const les = incomingLessons[lIdx];
       const lesId = les.id || `les-${modId}-${lIdx + 1}`;
+      validLesIds.push(lesId);
       const lesTitle = les.title || `Lesson ${lIdx + 1}`;
       const lesDesc = les.description || "";
       const lesVideo = les.videoReference || les.video_reference || "";
@@ -62408,7 +62438,20 @@ async function handleAdminSaveCourse(targetCourseId, req, res) {
           video_size = COALESCE(EXCLUDED.video_size, lessons.video_size);
       `;
     }
+    if (validLesIds.length > 0) {
+      await sql`DELETE FROM lessons WHERE module_id = ${modId} AND NOT (id = ANY(${validLesIds}));`;
+    }
   }
+  if (validModIds.length > 0) {
+    await sql`DELETE FROM modules WHERE course_id = ${courseId} AND NOT (id = ANY(${validModIds}));`;
+  }
+  await sql`
+    UPDATE courses SET
+      modules_count = ${modulesCount},
+      lessons_count = ${lessonsCount},
+      updated_at = NOW()
+    WHERE id = ${courseId};
+  `;
   res.statusCode = 200;
   res.end(JSON.stringify({
     success: true,

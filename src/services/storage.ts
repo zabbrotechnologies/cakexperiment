@@ -1727,16 +1727,26 @@ class StorageService {
     const now = new Date().toISOString();
     const slug = courseData.slug || courseData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-    if (courseData.id) {
-      const idx = courses.findIndex(c => c.id === courseData.id);
+    if (courseData.id || courseData.slug) {
+      const idx = courses.findIndex(c => 
+        (courseData.id && (c.id === courseData.id || c.slug === courseData.id)) ||
+        (courseData.slug && (c.slug === courseData.slug || c.id === courseData.slug))
+      );
       if (idx !== -1) {
+        const mods = courseData.modules || courses[idx].modules || [];
+        const stats = this.calculateCourseDuration(mods);
         courses[idx] = {
           ...courses[idx],
           ...courseData,
+          modules: mods,
+          moduleCount: mods.length,
+          lessonCount: mods.reduce((acc, m) => acc + (m.lessons?.length || 0), 0),
+          totalDuration: courseData.totalDuration || stats.totalDuration,
           slug,
           updatedAt: now
         } as Course;
         this.set(STORAGE_KEYS.COURSES, courses);
+        this.notifyDataChange();
         return courses[idx];
       }
     }

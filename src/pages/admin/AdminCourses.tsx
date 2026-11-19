@@ -199,8 +199,10 @@ export const AdminCourses: React.FC = () => {
                     </td>
 
                     <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                      <div>{c.moduleCount} Modules</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>{c.lessonCount} Lessons • {c.totalDuration}</div>
+                      <div>{c.moduleCount ?? (c as any).modulesCount ?? (c as any).modules_count ?? (c.modules?.length || 0)} Modules</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>
+                        {c.lessonCount ?? (c as any).lessonsCount ?? (c as any).lessons_count ?? (c.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0) || 0)} Lessons • {c.totalDuration || (c as any).total_duration || '2h 30m'}
+                      </div>
                     </td>
 
                     <td style={{ padding: '1rem', fontWeight: 700, color: 'var(--color-plum)' }}>

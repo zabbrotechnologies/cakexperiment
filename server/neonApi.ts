@@ -96,6 +96,13 @@ function extractSessionToken(req: IncomingMessage): string | null {
   if (cookies['cakexperiment_session']) {
     return cookies['cakexperiment_session'].trim();
   }
+  try {
+    const url = new URL(req.url || '', 'http://localhost');
+    const queryToken = url.searchParams.get('token');
+    if (queryToken && queryToken.trim().length > 0) {
+      return queryToken.trim();
+    }
+  } catch {}
   return null;
 }
 
@@ -1262,8 +1269,8 @@ async function handleListCourses(res: ServerResponse) {
     const priceNum = Number(c.price) || 499;
     const originalPriceNum = Number(c.original_price) || 1499;
     const reviewsNum = Number(c.reviews_count) || 0;
-    const modCount = Number(c.modules_count) || 2;
-    const lesCount = Number(c.lessons_count) || 6;
+    const modCount = c.modules_count !== null && c.modules_count !== undefined ? Number(c.modules_count) : 0;
+    const lesCount = c.lessons_count !== null && c.lessons_count !== undefined ? Number(c.lessons_count) : 0;
 
     return {
       ...c,
@@ -1752,8 +1759,8 @@ async function handleAdminListCourses(req: IncomingMessage, res: ServerResponse)
     const priceNum = Number(c.price) || 499;
     const originalPriceNum = Number(c.original_price) || 1499;
     const reviewsNum = Number(c.reviews_count) || 0;
-    const modCount = Number(c.modules_count) || 2;
-    const lesCount = Number(c.lessons_count) || 6;
+    const modCount = c.modules_count !== null && c.modules_count !== undefined ? Number(c.modules_count) : 0;
+    const lesCount = c.lessons_count !== null && c.lessons_count !== undefined ? Number(c.lessons_count) : 0;
 
     return {
       ...c,
@@ -1811,8 +1818,31 @@ async function handleAdminSaveCourse(targetCourseId: string | null, req: Incomin
     return;
   }
 
-  const slug = (data.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')).trim();
-  const courseId = targetCourseId || data.id || `course-${slug || Date.now()}`;
+  // 1. Resolve real primary key if this course already exists by targetCourseId, id, or slug
+  const lookupKey = (targetCourseId || data.id || data.slug || '').trim();
+  let existingCourse: any = null;
+  if (lookupKey) {
+    const existing = await sql`
+      SELECT id, slug FROM courses 
+      WHERE id = ${lookupKey} OR slug = ${lookupKey} OR LOWER(slug) = LOWER(${lookupKey}) OR LOWER(id) = LOWER(${lookupKey})
+      LIMIT 1;
+    `;
+    if (existing.length > 0) {
+      existingCourse = existing[0];
+    }
+  }
+
+  const courseId = existingCourse?.id || targetCourseId || data.id || `course-${Date.now()}`;
+  let slug = (data.slug || existingCourse?.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')).trim();
+
+  // Prevent unique slug collision with any OTHER course
+  const slugOwner = await sql`
+    SELECT id FROM courses WHERE (slug = ${slug} OR LOWER(slug) = LOWER(${slug})) AND id != ${courseId} LIMIT 1;
+  `;
+  if (slugOwner.length > 0) {
+    slug = `${slug}-${Date.now().toString().slice(-4)}`;
+  }
+
   const tag = (data.tag || 'Masterclass').trim();
   const shortDescription = (data.shortDescription || data.short_description || '').trim();
   const description = (data.description || '').trim();
@@ -1906,10 +1936,12 @@ async function handleAdminSaveCourse(targetCourseId: string | null, req: Incomin
     }
   }
 
-  // Upsert modules & lessons if provided
+  // Upsert modules & lessons and clean up removed ones
+  const validModIds: string[] = [];
   for (let mIdx = 0; mIdx < incomingModules.length; mIdx++) {
     const mod = incomingModules[mIdx];
     const modId = mod.id || `mod-${courseId}-${mIdx + 1}`;
+    validModIds.push(modId);
     const modTitle = mod.title || `Module ${mIdx + 1}`;
     const modDesc = mod.description || '';
     const modOrder = Number(mod.order || mod.order_num || mIdx + 1);
@@ -1924,9 +1956,11 @@ async function handleAdminSaveCourse(targetCourseId: string | null, req: Incomin
     `;
 
     const incomingLessons = Array.isArray(mod.lessons) ? mod.lessons : [];
+    const validLesIds: string[] = [];
     for (let lIdx = 0; lIdx < incomingLessons.length; lIdx++) {
       const les = incomingLessons[lIdx];
       const lesId = les.id || `les-${modId}-${lIdx + 1}`;
+      validLesIds.push(lesId);
       const lesTitle = les.title || `Lesson ${lIdx + 1}`;
       const lesDesc = les.description || '';
       const lesVideo = les.videoReference || les.video_reference || '';
@@ -1952,7 +1986,25 @@ async function handleAdminSaveCourse(targetCourseId: string | null, req: Incomin
           video_size = COALESCE(EXCLUDED.video_size, lessons.video_size);
       `;
     }
+
+    if (validLesIds.length > 0) {
+      await sql`DELETE FROM lessons WHERE module_id = ${modId} AND NOT (id = ANY(${validLesIds}));`;
+    }
   }
+
+  // Remove any deleted modules for this course
+  if (validModIds.length > 0) {
+    await sql`DELETE FROM modules WHERE course_id = ${courseId} AND NOT (id = ANY(${validModIds}));`;
+  }
+
+  // Ensure counts are 100% accurate in courses table
+  await sql`
+    UPDATE courses SET
+      modules_count = ${modulesCount},
+      lessons_count = ${lessonsCount},
+      updated_at = NOW()
+    WHERE id = ${courseId};
+  `;
 
   res.statusCode = 200;
   res.end(JSON.stringify({

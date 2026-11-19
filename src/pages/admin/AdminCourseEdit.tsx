@@ -74,6 +74,7 @@ export const AdminCourseEdit: React.FC = () => {
 
   // Tab 3: Curriculum State
   const [modules, setModules] = useState<Module[]>([]);
+  const [courseDbId, setCourseDbId] = useState<string>('');
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -118,7 +119,7 @@ export const AdminCourseEdit: React.FC = () => {
               moduleId: `mod-${Date.now()}-1`,
               title: 'Lesson 1: Introduction and Mise en Place',
               description: 'Setting up your workstation and balancing ingredients.',
-              videoReference: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+              videoReference: '',
               duration: '15:00',
               isPreview: true,
               status: 'published',
@@ -131,6 +132,9 @@ export const AdminCourseEdit: React.FC = () => {
   }, [id]);
 
   const populateCourseFields = (existing: Course) => {
+    if (existing.id) {
+      setCourseDbId(existing.id);
+    }
     setTitle(existing.title || '');
     setSlug(existing.slug || '');
     setShortDescription(existing.shortDescription || existing.short_description || '');
@@ -251,7 +255,7 @@ export const AdminCourseEdit: React.FC = () => {
   const handleAddModule = () => {
     const newMod: Module = {
       id: `mod-${Date.now()}`,
-      courseId: id || 'new',
+      courseId: courseDbId || id || 'new',
       title: `Module ${modules.length + 1}: Advanced Finishing`,
       description: 'Technique drills and composition finishing.',
       order: modules.length + 1,
@@ -261,7 +265,7 @@ export const AdminCourseEdit: React.FC = () => {
           moduleId: `mod-${Date.now()}`,
           title: 'Lesson 1: Essential Method',
           description: 'Hands-on practice instructions.',
-          videoReference: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+          videoReference: '',
           duration: '14:20',
           isPreview: false,
           status: 'published',
@@ -289,7 +293,7 @@ export const AdminCourseEdit: React.FC = () => {
         moduleId: modId,
         title: `Lesson ${m.lessons.length + 1}: Technique Drill`,
         description: 'Step-by-step guidance.',
-        videoReference: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        videoReference: '',
         duration: '12:00',
         isPreview: false,
         status: 'published',
@@ -336,8 +340,11 @@ export const AdminCourseEdit: React.FC = () => {
     const cleanPrereqs = prerequisites.map(s => s.trim()).filter(Boolean);
     const cleanEquip = equipmentNeeded.map(s => s.trim()).filter(Boolean);
 
+    const targetCourseId = courseDbId || id;
+    const totalLessonCount = modules.reduce((acc, m) => acc + (m.lessons?.length || 0), 0);
+
     const courseData: Partial<Course> & { title: string } = {
-      id: id || undefined,
+      id: targetCourseId || undefined,
       title,
       slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       shortDescription,
@@ -352,6 +359,8 @@ export const AdminCourseEdit: React.FC = () => {
       status,
       featured,
       totalDuration,
+      moduleCount: modules.length,
+      lessonCount: totalLessonCount,
       learningOutcomes: cleanOutcomes,
       prerequisites: cleanPrereqs,
       equipmentNeeded: cleanEquip,
@@ -363,10 +372,10 @@ export const AdminCourseEdit: React.FC = () => {
 
     try {
       const token = localStorage.getItem('cakexperiment_auth_token');
-      const url = id ? `/api/admin/courses/${id}` : '/api/admin/courses';
-      const method = id ? 'PUT' : 'POST';
+      const url = targetCourseId ? `/api/admin/courses/${targetCourseId}` : '/api/admin/courses';
+      const method = targetCourseId ? 'PUT' : 'POST';
 
-      await fetch(url, {
+      const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -374,12 +383,21 @@ export const AdminCourseEdit: React.FC = () => {
         },
         body: JSON.stringify({
           ...courseData,
+          id: targetCourseId,
+          modulesCount: modules.length,
+          lessonsCount: totalLessonCount,
           learning_outcomes: cleanOutcomes,
           equipment_needed: cleanEquip
         })
       });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        throw new Error(errJson?.error || `Server responded with HTTP ${res.status}`);
+      }
     } catch (err) {
       console.error('Failed to sync course to Neon database:', err);
+      alert('Note: Changes saved locally. Server sync notice: ' + ((err as any)?.message || 'Unknown error'));
     } finally {
       setIsSaving(false);
       navigate('/admin/courses');

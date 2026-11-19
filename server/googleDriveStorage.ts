@@ -564,7 +564,7 @@ export async function handleInitiateUpload(
   res.end(JSON.stringify({
     success: true,
     uploadSessionId: sessionToken,
-    chunkSizeRecommended: 2 * 1024 * 1024 // 2 MB chunks (safe for Vercel serverless 4.5 MB payload limit)
+    chunkSizeRecommended: 4 * 1024 * 1024 // 4 MB chunks (safe for Vercel serverless 4.5 MB payload limit, 16x 256KB Google Drive blocks)
   }));
 }
 

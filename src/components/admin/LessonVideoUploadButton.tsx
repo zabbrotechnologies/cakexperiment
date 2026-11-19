@@ -43,11 +43,26 @@ export const LessonVideoUploadButton: React.FC<LessonVideoUploadButtonProps> = (
   const menuRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Consider video attached if a reference or driveFileId exists (and is not empty / sample fallback)
-  const hasExistingVideo = Boolean(
-    (currentVideoReference && currentVideoReference.trim().length > 0 && !currentVideoReference.includes('BigBuckBunny.mp4')) ||
-    (driveFileId && driveFileId.trim().length > 0)
-  );
+  // Consider video attached ONLY if a genuine Drive ID exists or genuine stream URL
+  const isRealUploadedVideo = (videoRef?: string, driveId?: string): boolean => {
+    if (driveId && driveId.trim().length > 0) return true;
+    if (!videoRef || !videoRef.trim()) return false;
+    const clean = videoRef.trim();
+    if (
+      clean.includes('commondatastorage.googleapis.com') ||
+      clean.includes('gtv-videos-bucket') ||
+      clean.includes('BigBuckBunny') ||
+      clean.includes('ForBigger') ||
+      clean.includes('ElephantsDream') ||
+      clean.includes('WeAreGoingOnBullrun') ||
+      clean.includes('WhatCarCanYouGet')
+    ) {
+      return false;
+    }
+    return clean.startsWith('/api/videos/stream/') || clean.includes('drive.google.com');
+  };
+
+  const hasExistingVideo = isRealUploadedVideo(currentVideoReference, driveFileId);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -108,7 +123,7 @@ export const LessonVideoUploadButton: React.FC<LessonVideoUploadButtonProps> = (
     setProgressPercent(0);
     setUploadedBytes(0);
 
-    const chunkSize = 2 * 1024 * 1024; // 2 MB chunks (safe for Vercel 4.5 MB payload limit)
+    const chunkSize = 4 * 1024 * 1024; // 4 MB chunks (16x 256KB for Google Drive, safe for Vercel 4.5 MB payload limit)
     const chunks = Math.ceil(file.size / chunkSize);
     setTotalChunks(chunks);
     setCurrentChunk(0);
@@ -254,33 +269,102 @@ export const LessonVideoUploadButton: React.FC<LessonVideoUploadButtonProps> = (
         disabled={disabled || uploadStatus === 'uploading'}
       />
 
-      {/* Upload Video Button */}
+      {/* Upload Video Button or Attached Video Actions */}
       {hasExistingVideo ? (
-        <button
-          type="button"
-          onClick={() => setShowMenu(!showMenu)}
-          disabled={disabled}
-          title={videoFilename ? `Video: ${videoFilename}` : 'Google Drive Video attached'}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.35rem',
-            padding: '0.28rem 0.6rem',
-            fontSize: '0.75rem',
-            fontWeight: 600,
-            borderRadius: '6px',
-            backgroundColor: '#E8F5E9',
-            color: '#2E7D32',
-            border: '1px solid #C8E6C9',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <CheckCircle2 size={13} color="#2E7D32" />
-          <span>Video Ready</span>
-          <ChevronDown size={11} color="#2E7D32" />
-        </button>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+          {/* Status Badge */}
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              padding: '0.28rem 0.55rem',
+              fontSize: '0.74rem',
+              fontWeight: 600,
+              borderRadius: '6px',
+              backgroundColor: '#E8F5E9',
+              color: '#2E7D32',
+              border: '1px solid #C8E6C9',
+              whiteSpace: 'nowrap'
+            }}
+            title={videoFilename ? `${videoFilename}${videoSize ? ` (${formatFileSize(videoSize)})` : ''}` : 'Google Drive video attached'}
+          >
+            <CheckCircle2 size={13} color="#2E7D32" />
+            <span>Video Ready</span>
+          </span>
+
+          {/* Direct Video Preview Button */}
+          <button
+            type="button"
+            onClick={() => setShowPreviewModal(true)}
+            disabled={disabled}
+            title="Watch and preview lesson video"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              padding: '0.28rem 0.55rem',
+              fontSize: '0.74rem',
+              fontWeight: 600,
+              borderRadius: '6px',
+              backgroundColor: '#FAF0F2',
+              color: 'var(--color-berry)',
+              border: '1px solid rgba(139, 58, 74, 0.25)',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <Play size={11} fill="var(--color-berry)" />
+            <span>Preview</span>
+          </button>
+
+          {/* Direct Replace Video Button */}
+          <button
+            type="button"
+            onClick={handleTriggerUpload}
+            disabled={disabled}
+            title="Upload a new video to replace current video"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              padding: '0.28rem 0.45rem',
+              fontSize: '0.72rem',
+              fontWeight: 500,
+              borderRadius: '6px',
+              backgroundColor: '#FFFFFF',
+              color: 'var(--text-muted)',
+              border: '1px solid var(--border-subtle)',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <RefreshCw size={11} />
+            <span>Replace</span>
+          </button>
+
+          {/* Direct Remove Video Button */}
+          <button
+            type="button"
+            onClick={handleRemove}
+            disabled={disabled}
+            title="Remove attached video from lesson"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '0.28rem 0.4rem',
+              fontSize: '0.72rem',
+              borderRadius: '6px',
+              backgroundColor: '#FFFFFF',
+              color: '#D32F2F',
+              border: '1px solid #FFCDD2',
+              cursor: 'pointer'
+            }}
+          >
+            <Trash2 size={12} />
+          </button>
+        </div>
       ) : (
         <button
           type="button"
@@ -291,122 +375,22 @@ export const LessonVideoUploadButton: React.FC<LessonVideoUploadButtonProps> = (
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.35rem',
-            padding: '0.28rem 0.65rem',
+            padding: '0.3rem 0.7rem',
             fontSize: '0.75rem',
             fontWeight: 600,
             borderRadius: '6px',
             backgroundColor: '#FFFFFF',
             color: 'var(--color-berry)',
-            border: '1px solid rgba(139, 58, 74, 0.3)',
+            border: '1px solid rgba(139, 58, 74, 0.35)',
             cursor: 'pointer',
             whiteSpace: 'nowrap',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
             transition: 'all 0.15s ease'
           }}
         >
           <UploadCloud size={13} />
           <span>Upload Video</span>
         </button>
-      )}
-
-      {/* Dropdown Menu for Attached Video */}
-      {showMenu && hasExistingVideo && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 4px)',
-            right: 0,
-            zIndex: 100,
-            backgroundColor: '#FFFFFF',
-            borderRadius: '8px',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-            border: '1px solid var(--border-subtle)',
-            minWidth: '220px',
-            padding: '0.4rem',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.2rem'
-          }}
-        >
-          <div style={{ padding: '0.4rem 0.6rem', borderBottom: '1px solid #F0EAE8', marginBottom: '0.2rem' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Lesson Video
-            </div>
-            <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-plum)', wordBreak: 'break-all' }}>
-              {videoFilename || `Lesson ${lessonTitle}`}
-            </div>
-            {videoSize ? (
-              <div style={{ fontSize: '0.72rem', color: '#2E7D32' }}>
-                {formatFileSize(videoSize)} • Google Drive
-              </div>
-            ) : null}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              setShowMenu(false);
-              setShowPreviewModal(true);
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.4rem 0.6rem',
-              background: 'none',
-              border: 'none',
-              textAlign: 'left',
-              fontSize: '0.8rem',
-              color: 'var(--color-plum)',
-              cursor: 'pointer',
-              borderRadius: '4px'
-            }}
-          >
-            <Play size={13} color="var(--color-berry)" />
-            <span>Preview Video</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleTriggerUpload}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.4rem 0.6rem',
-              background: 'none',
-              border: 'none',
-              textAlign: 'left',
-              fontSize: '0.8rem',
-              color: 'var(--color-plum)',
-              cursor: 'pointer',
-              borderRadius: '4px'
-            }}
-          >
-            <RefreshCw size={13} color="var(--color-berry)" />
-            <span>Replace Video</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleRemove}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.4rem 0.6rem',
-              background: 'none',
-              border: 'none',
-              textAlign: 'left',
-              fontSize: '0.8rem',
-              color: '#D32F2F',
-              cursor: 'pointer',
-              borderRadius: '4px'
-            }}
-          >
-            <Trash2 size={13} />
-            <span>Remove Video</span>
-          </button>
-        </div>
       )}
 
       {/* Video Streaming Preview Modal */}
@@ -454,7 +438,16 @@ export const LessonVideoUploadButton: React.FC<LessonVideoUploadButtonProps> = (
                 autoPlay
                 playsInline
                 style={{ width: '100%', maxHeight: '480px', display: 'block', borderRadius: '4px' }}
-                src={currentVideoReference || `/api/videos/stream/${lessonId}`}
+                src={(() => {
+                  const token = localStorage.getItem('cakexperiment_auth_token');
+                  const base = (currentVideoReference && !currentVideoReference.includes('commondatastorage.googleapis.com'))
+                    ? currentVideoReference
+                    : `/api/videos/stream/${lessonId}`;
+                  if (base.startsWith('/api/videos/stream/') && token && !base.includes('token=')) {
+                    return `${base}?token=${encodeURIComponent(token)}`;
+                  }
+                  return base;
+                })()}
               >
                 Your browser does not support the video tag.
               </video>
@@ -595,6 +588,27 @@ export const LessonVideoUploadButton: React.FC<LessonVideoUploadButtonProps> = (
                 </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                   Associated with {lessonTitle}. Click "Save Masterclass" when done to publish your course changes.
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.6rem', marginTop: '1.2rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUploadModalOpen(false);
+                      setShowPreviewModal(true);
+                    }}
+                    className="btn btn-primary btn-sm"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                  >
+                    <Play size={13} fill="#FFF" />
+                    <span>Preview Video</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUploadModalOpen(false)}
+                    className="btn btn-secondary btn-sm"
+                  >
+                    Done
+                  </button>
                 </div>
               </div>
             )}

@@ -300,7 +300,14 @@ export const CourseClassroom: React.FC = () => {
                 controls
                 autoPlay
                 poster={course.thumbnail || (course as any).image}
-                src={activeLesson.videoReference || (activeLesson as any).video_reference || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'}
+                src={(() => {
+                  const token = localStorage.getItem('cakexperiment_auth_token');
+                  const raw = activeLesson.videoReference || (activeLesson as any).video_reference || ((activeLesson as any).driveFileId || (activeLesson as any).drive_file_id ? `/api/videos/stream/${activeLesson.id}` : '');
+                  if (raw && raw.startsWith('/api/videos/stream/') && token && !raw.includes('token=')) {
+                    return `${raw}?token=${encodeURIComponent(token)}`;
+                  }
+                  return raw || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+                })()}
                 style={{
                   position: 'absolute',
                   top: 0,
