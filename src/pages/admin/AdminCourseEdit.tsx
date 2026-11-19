@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { storageService } from '../../services/storage';
 import { Course, Module, Lesson, SkillLevel, Category } from '../../types';
 import { ConfirmActionModal } from '../../components/admin/ConfirmActionModal';
+import { LessonVideoUploadButton } from '../../components/admin/LessonVideoUploadButton';
 import {
   ArrowLeft,
   Save,
@@ -1265,7 +1266,7 @@ export const AdminCourseEdit: React.FC = () => {
                               className="input-field"
                               style={{ width: '80px', padding: '0.35rem 0.6rem', fontSize: '0.85rem', backgroundColor: '#FFF' }}
                             />
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: 'var(--color-plum)', cursor: 'pointer' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: 'var(--color-plum)', cursor: 'pointer', flexShrink: 0, userSelect: 'none' }}>
                               <input
                                 type="checkbox"
                                 checked={les.isPreview}
@@ -1278,10 +1279,37 @@ export const AdminCourseEdit: React.FC = () => {
                               />
                               Preview
                             </label>
+                            <LessonVideoUploadButton
+                              lessonId={les.id}
+                              lessonTitle={les.title || `Lesson ${lIdx + 1}`}
+                              currentVideoReference={les.videoReference}
+                              driveFileId={(les as any).driveFileId}
+                              videoFilename={(les as any).videoFilename}
+                              videoSize={(les as any).videoSize}
+                              courseId={id || 'new'}
+                              moduleId={mod.id}
+                              onVideoUploaded={(streamUrl, driveFileId, filename, size) => {
+                                const updated = [...modules];
+                                updated[mIdx].lessons[lIdx].videoReference = streamUrl;
+                                (updated[mIdx].lessons[lIdx] as any).driveFileId = driveFileId;
+                                (updated[mIdx].lessons[lIdx] as any).videoFilename = filename;
+                                (updated[mIdx].lessons[lIdx] as any).videoSize = size;
+                                setModules(updated);
+                              }}
+                              onVideoRemoved={() => {
+                                const updated = [...modules];
+                                updated[mIdx].lessons[lIdx].videoReference = '';
+                                (updated[mIdx].lessons[lIdx] as any).driveFileId = undefined;
+                                (updated[mIdx].lessons[lIdx] as any).videoFilename = undefined;
+                                (updated[mIdx].lessons[lIdx] as any).videoSize = undefined;
+                                setModules(updated);
+                              }}
+                            />
                             <button
                               type="button"
                               onClick={() => handleRemoveLesson(mod.id, les.id)}
-                              style={{ background: 'none', border: 'none', color: '#D32F2F', cursor: 'pointer', padding: '0.2rem' }}
+                              style={{ background: 'none', border: 'none', color: '#D32F2F', cursor: 'pointer', padding: '0.2rem', flexShrink: 0 }}
+                              title="Delete lesson"
                             >
                               <Trash2 size={14} />
                             </button>

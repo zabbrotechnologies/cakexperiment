@@ -61829,7 +61829,7 @@ async function handleGetCourseDetail(idOrSlug, res) {
     WHERE course_id = ${course.id} ORDER BY order_num ASC;
   `;
   const lessons = await sql`
-    SELECT id, module_id, title, description, video_reference, duration, is_preview, status, order_num
+    SELECT id, module_id, title, description, video_reference, duration, is_preview, status, order_num, drive_file_id, video_filename, video_size
     FROM lessons WHERE course_id = ${course.id} ORDER BY order_num ASC;
   `;
   const modulesWithLessons = modules.map((m3) => ({
@@ -61839,7 +61839,10 @@ async function handleGetCourseDetail(idOrSlug, res) {
       ...l3,
       order: l3.order_num,
       videoReference: l3.video_reference,
-      isPreview: l3.is_preview
+      isPreview: l3.is_preview,
+      driveFileId: l3.drive_file_id,
+      videoFilename: l3.video_filename,
+      videoSize: l3.video_size ? Number(l3.video_size) : void 0
     }))
   }));
   const ratingNum = Number(course.rating) || 4.9;
@@ -62363,16 +62366,22 @@ async function handleAdminSaveCourse(targetCourseId, req, res) {
       const lesDuration = les.duration || "15:00";
       const lesIsPreview = Boolean(les.isPreview ?? les.is_preview);
       const lesOrder = Number(les.order || les.order_num || lIdx + 1);
+      const lesDriveFileId = les.driveFileId || les.drive_file_id || null;
+      const lesVideoFilename = les.videoFilename || les.video_filename || null;
+      const lesVideoSize = les.videoSize || les.video_size ? Number(les.videoSize || les.video_size) : null;
       await sql`
-        INSERT INTO lessons (id, module_id, course_id, title, description, video_reference, duration, is_preview, status, order_num)
-        VALUES (${lesId}, ${modId}, ${courseId}, ${lesTitle}, ${lesDesc}, ${lesVideo}, ${lesDuration}, ${lesIsPreview}, 'published', ${lesOrder})
+        INSERT INTO lessons (id, module_id, course_id, title, description, video_reference, duration, is_preview, status, order_num, drive_file_id, video_filename, video_size)
+        VALUES (${lesId}, ${modId}, ${courseId}, ${lesTitle}, ${lesDesc}, ${lesVideo}, ${lesDuration}, ${lesIsPreview}, 'published', ${lesOrder}, ${lesDriveFileId}, ${lesVideoFilename}, ${lesVideoSize})
         ON CONFLICT (id) DO UPDATE SET
           title = EXCLUDED.title,
           description = EXCLUDED.description,
           video_reference = EXCLUDED.video_reference,
           duration = EXCLUDED.duration,
           is_preview = EXCLUDED.is_preview,
-          order_num = EXCLUDED.order_num;
+          order_num = EXCLUDED.order_num,
+          drive_file_id = COALESCE(EXCLUDED.drive_file_id, lessons.drive_file_id),
+          video_filename = COALESCE(EXCLUDED.video_filename, lessons.video_filename),
+          video_size = COALESCE(EXCLUDED.video_size, lessons.video_size);
       `;
     }
   }

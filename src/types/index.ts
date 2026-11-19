@@ -44,6 +44,10 @@ export interface Lesson {
   status: 'published' | 'draft';
   order: number;
   resources?: ResourceAttachment[];
+  driveFileId?: string;
+  videoFilename?: string;
+  videoSize?: number;
+  videoUploadedAt?: string;
 }
 
 export interface Module {
