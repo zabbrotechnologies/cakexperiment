@@ -3,15 +3,15 @@ dotenv.config({ path: '.env.local' });
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import type { Plugin } from 'vite'
-import { handleNeonApi } from './server/neonApi.ts'
-
 function neonPlugin(): Plugin {
   return {
     name: 'neon-api-middleware',
-    configureServer(server) {
+    async configureServer(server) {
+      const { handleNeonApi } = await import('./server/neonApi.ts');
       server.middlewares.use(handleNeonApi);
     },
-    configurePreviewServer(server) {
+    async configurePreviewServer(server) {
+      const { handleNeonApi } = await import('./server/neonApi.ts');
       server.middlewares.use(handleNeonApi);
     }
   };

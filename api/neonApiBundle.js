@@ -60196,7 +60196,7 @@ var GOOGLE_UPLOAD_API = "https://www.googleapis.com/upload/drive/v3";
 var DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 var FOLDER_NAME = "Cakexperiment Masterclass Videos";
 var activeUploadSessions = /* @__PURE__ */ new Map();
-setInterval(() => {
+var cleanupTimer = setInterval(() => {
   const cutoff = Date.now() - 2 * 3600 * 1e3;
   for (const [key, session] of activeUploadSessions.entries()) {
     if (session.createdAt < cutoff) {
@@ -60204,6 +60204,9 @@ setInterval(() => {
     }
   }
 }, 15 * 60 * 1e3);
+if (typeof cleanupTimer.unref === "function") {
+  cleanupTimer.unref();
+}
 function getDriveOAuthRedirectUri(req) {
   const host = req.headers["x-forwarded-host"] || req.headers.host || "";
   if (host.includes("localhost") || host.includes("127.0.0.1")) {

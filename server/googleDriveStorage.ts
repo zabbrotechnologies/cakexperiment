@@ -27,8 +27,8 @@ const activeUploadSessions = new Map<string, {
   createdAt: number;
 }>();
 
-// Clean up stale upload sessions older than 2 hours
-setInterval(() => {
+// Clean up stale upload sessions older than 2 hours (unref to avoid hanging node builds/exits)
+const cleanupTimer = setInterval(() => {
   const cutoff = Date.now() - 2 * 3600 * 1000;
   for (const [key, session] of activeUploadSessions.entries()) {
     if (session.createdAt < cutoff) {
@@ -36,6 +36,9 @@ setInterval(() => {
     }
   }
 }, 15 * 60 * 1000);
+if (typeof cleanupTimer.unref === 'function') {
+  cleanupTimer.unref();
+}
 
 export function getDriveOAuthRedirectUri(req: IncomingMessage): string {
   const host = (req.headers['x-forwarded-host'] as string) || req.headers.host || '';
