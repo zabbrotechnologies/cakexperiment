@@ -1284,19 +1284,6 @@ export const AdminCourseEdit: React.FC = () => {
                               className="input-field"
                               style={{ width: '80px', padding: '0.35rem 0.6rem', fontSize: '0.85rem', backgroundColor: '#FFF' }}
                             />
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: 'var(--color-plum)', cursor: 'pointer', flexShrink: 0, userSelect: 'none' }}>
-                              <input
-                                type="checkbox"
-                                checked={les.isPreview}
-                                onChange={(e) => {
-                                  const updated = [...modules];
-                                  updated[mIdx].lessons[lIdx].isPreview = e.target.checked;
-                                  setModules(updated);
-                                }}
-                                style={{ accentColor: 'var(--color-berry)' }}
-                              />
-                              Preview
-                            </label>
                             <LessonVideoUploadButton
                               lessonId={les.id}
                               lessonTitle={les.title || `Lesson ${lIdx + 1}`}

@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { UploadCloud, CheckCircle2, AlertCircle, RefreshCw, Trash2, Film, X, Play, ChevronDown, Check } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { UploadCloud, CheckCircle2, AlertCircle, RefreshCw, Trash2, Film, X, Check } from 'lucide-react';
 
 interface LessonVideoUploadButtonProps {
   lessonId: string;
@@ -28,8 +28,6 @@ export const LessonVideoUploadButton: React.FC<LessonVideoUploadButtonProps> = (
   onVideoRemoved,
   disabled
 }) => {
-  const [showMenu, setShowMenu] = useState(false);
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
@@ -40,7 +38,6 @@ export const LessonVideoUploadButton: React.FC<LessonVideoUploadButtonProps> = (
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Consider video attached ONLY if a genuine Drive ID exists or genuine stream URL
@@ -63,21 +60,6 @@ export const LessonVideoUploadButton: React.FC<LessonVideoUploadButtonProps> = (
   };
 
   const hasExistingVideo = isRealUploadedVideo(currentVideoReference, driveFileId);
-
-  // Close dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setShowMenu(false);
-      }
-    };
-    if (showMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showMenu]);
 
   const formatFileSize = (bytes: number): string => {
     if (!bytes || bytes === 0) return '0 B';
@@ -246,19 +228,17 @@ export const LessonVideoUploadButton: React.FC<LessonVideoUploadButtonProps> = (
   };
 
   const handleTriggerUpload = () => {
-    setShowMenu(false);
     fileInputRef.current?.click();
   };
 
   const handleRemove = () => {
-    setShowMenu(false);
     if (confirm(`Remove the attached video from "${lessonTitle}"?`)) {
       onVideoRemoved();
     }
   };
 
   return (
-    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }} ref={menuRef}>
+    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
       {/* Hidden native file input */}
       <input
         ref={fileInputRef}
@@ -292,32 +272,6 @@ export const LessonVideoUploadButton: React.FC<LessonVideoUploadButtonProps> = (
             <CheckCircle2 size={13} color="#2E7D32" />
             <span>Video Ready</span>
           </span>
-
-          {/* Direct Video Preview Button */}
-          <button
-            type="button"
-            onClick={() => setShowPreviewModal(true)}
-            disabled={disabled}
-            title="Watch and preview lesson video"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.3rem',
-              padding: '0.28rem 0.55rem',
-              fontSize: '0.74rem',
-              fontWeight: 600,
-              borderRadius: '6px',
-              backgroundColor: '#FAF0F2',
-              color: 'var(--color-berry)',
-              border: '1px solid rgba(139, 58, 74, 0.25)',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            <Play size={11} fill="var(--color-berry)" />
-            <span>Preview</span>
-          </button>
 
           {/* Direct Replace Video Button */}
           <button
@@ -391,69 +345,6 @@ export const LessonVideoUploadButton: React.FC<LessonVideoUploadButtonProps> = (
           <UploadCloud size={13} />
           <span>Upload Video</span>
         </button>
-      )}
-
-      {/* Video Streaming Preview Modal */}
-      {showPreviewModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            backgroundColor: 'rgba(0,0,0,0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1rem'
-          }}
-          onClick={() => setShowPreviewModal(false)}
-        >
-          <div
-            style={{
-              backgroundColor: '#000',
-              borderRadius: '12px',
-              maxWidth: '800px',
-              width: '100%',
-              overflow: 'hidden',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-              position: 'relative'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', backgroundColor: '#1A1A1A', color: '#FFF' }}>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>
-                Video Preview: {lessonTitle}
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowPreviewModal(false)}
-                style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer' }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div style={{ padding: '0.5rem', backgroundColor: '#000' }}>
-              <video
-                controls
-                autoPlay
-                playsInline
-                style={{ width: '100%', maxHeight: '480px', display: 'block', borderRadius: '4px' }}
-                src={(() => {
-                  const token = localStorage.getItem('cakexperiment_auth_token');
-                  const base = (currentVideoReference && !currentVideoReference.includes('commondatastorage.googleapis.com'))
-                    ? currentVideoReference
-                    : `/api/videos/stream/${lessonId}`;
-                  if (base.startsWith('/api/videos/stream/') && token && !base.includes('token=')) {
-                    return `${base}?token=${encodeURIComponent(token)}`;
-                  }
-                  return base;
-                })()}
-              >
-                Your browser does not support the video tag.
-              </video>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Progress / Uploading Modal */}
@@ -589,23 +480,12 @@ export const LessonVideoUploadButton: React.FC<LessonVideoUploadButtonProps> = (
                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                   Associated with {lessonTitle}. Click "Save Masterclass" when done to publish your course changes.
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.6rem', marginTop: '1.2rem' }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUploadModalOpen(false);
-                      setShowPreviewModal(true);
-                    }}
-                    className="btn btn-primary btn-sm"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-                  >
-                    <Play size={13} fill="#FFF" />
-                    <span>Preview Video</span>
-                  </button>
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '1.2rem' }}>
                   <button
                     type="button"
                     onClick={() => setUploadModalOpen(false)}
-                    className="btn btn-secondary btn-sm"
+                    className="btn btn-primary btn-sm"
+                    style={{ padding: '0.4rem 1.4rem' }}
                   >
                     Done
                   </button>
