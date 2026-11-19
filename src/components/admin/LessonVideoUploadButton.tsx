@@ -626,7 +626,18 @@ export const LessonVideoUploadButton: React.FC<LessonVideoUploadButtonProps> = (
                   >
                     Dismiss
                   </button>
-                  {selectedFile && (
+                  {errorMessage?.includes('Admin Settings') ? (
+                    <a
+                      href="/api/admin/storage/google-drive/auth"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary btn-sm"
+                      style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                    >
+                      <UploadCloud size={14} />
+                      <span>Authorize Google Drive Now</span>
+                    </a>
+                  ) : selectedFile ? (
                     <button
                       type="button"
                       onClick={() => startUploadFlow(selectedFile)}
@@ -634,7 +645,7 @@ export const LessonVideoUploadButton: React.FC<LessonVideoUploadButtonProps> = (
                     >
                       Retry Upload
                     </button>
-                  )}
+                  ) : null}
                 </div>
               </div>
             )}
