@@ -60208,6 +60208,10 @@ if (typeof cleanupTimer.unref === "function") {
   cleanupTimer.unref();
 }
 function getDriveOAuthRedirectUri(req) {
+  const envUri = (process.env.GOOGLE_DRIVE_REDIRECT_URI || "").trim();
+  if (envUri) {
+    return envUri;
+  }
   const host = req.headers["x-forwarded-host"] || req.headers.host || "";
   if (host.includes("localhost") || host.includes("127.0.0.1")) {
     return "http://localhost:5173/api/admin/storage/google-drive/callback";
@@ -60426,8 +60430,21 @@ async function handleDriveCallback(rawUrl, req, res) {
       }
     } catch {
     }
-    const folderId = await ensureDriveFolder(tokenData.access_token);
-    const { used, total } = await fetchDriveQuota(tokenData.access_token);
+    let folderId = "";
+    try {
+      folderId = await ensureDriveFolder(tokenData.access_token);
+    } catch (e5) {
+      console.warn("Could not auto-create folder in Drive:", e5?.message || e5);
+    }
+    let used = 0;
+    let total = 15 * 1024 * 1024 * 1024;
+    try {
+      const q3 = await fetchDriveQuota(tokenData.access_token);
+      used = q3.used;
+      total = q3.total;
+    } catch (e5) {
+      console.warn("Could not fetch Drive quota:", e5?.message || e5);
+    }
     const expiry = new Date(Date.now() + (tokenData.expires_in || 3600) * 1e3);
     const sql = getDb();
     if (tokenData.refresh_token) {

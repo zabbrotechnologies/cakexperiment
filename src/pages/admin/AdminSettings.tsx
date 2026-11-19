@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { storageService } from '../../services/storage';
 import { ecommerceApi } from '../../services/ecommerceApi';
 import { AcademySettings, StoreConfig } from '../../types';
-import { Settings, Save, Check, Database, HardDrive, RefreshCw, Server, ShieldCheck, UploadCloud, Truck, Film } from 'lucide-react';
+import { Settings, Save, Check, Database, HardDrive, RefreshCw, Server, ShieldCheck, UploadCloud, Truck, Film, AlertCircle } from 'lucide-react';
 import { neonService, NeonStatus } from '../../services/neonService';
 
 export const AdminSettings: React.FC = () => {
@@ -40,6 +40,7 @@ export const AdminSettings: React.FC = () => {
   } | null>(null);
   const [loadingDrive, setLoadingDrive] = useState(false);
   const [driveNotice, setDriveNotice] = useState<string | null>(null);
+  const [driveError, setDriveError] = useState<string | null>(null);
 
   const fetchDriveStatus = async () => {
     setLoadingDrive(true);
@@ -86,7 +87,11 @@ export const AdminSettings: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('drive') === 'connected') {
       setDriveNotice('Google Drive video storage account successfully connected!');
-      setTimeout(() => setDriveNotice(null), 6000);
+      setTimeout(() => setDriveNotice(null), 8000);
+    } else if (params.get('error')) {
+      const err = params.get('error');
+      const msg = params.get('message') || err;
+      setDriveError(`Google Drive Connection Failed: ${decodeURIComponent(msg || '')}`);
     }
   }, []);
 
@@ -148,6 +153,23 @@ export const AdminSettings: React.FC = () => {
           Platform pricing rules, store currency, and cloud infrastructure
         </p>
       </div>
+
+      {driveError && (
+        <div style={{
+          backgroundColor: '#FFEBEE',
+          color: '#C62828',
+          border: '1px solid #FFCDD2',
+          padding: '0.9rem 1.25rem',
+          borderRadius: '10px',
+          fontSize: '0.9rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.6rem'
+        }}>
+          <AlertCircle size={18} style={{ flexShrink: 0 }} />
+          <span>{driveError}</span>
+        </div>
+      )}
 
       {driveNotice && (
         <div style={{

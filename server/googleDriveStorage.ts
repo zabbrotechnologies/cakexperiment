@@ -41,6 +41,11 @@ if (typeof cleanupTimer.unref === 'function') {
 }
 
 export function getDriveOAuthRedirectUri(req: IncomingMessage): string {
+  // If explicitly configured in environment variables, use that exact URI
+  const envUri = (process.env.GOOGLE_DRIVE_REDIRECT_URI || '').trim();
+  if (envUri) {
+    return envUri;
+  }
   const host = (req.headers['x-forwarded-host'] as string) || req.headers.host || '';
   if (host.includes('localhost') || host.includes('127.0.0.1')) {
     return 'http://localhost:5173/api/admin/storage/google-drive/callback';
@@ -335,11 +340,24 @@ export async function handleDriveCallback(
       // Non-critical
     }
 
-    // Ensure dedicated folder exists in Drive
-    const folderId = await ensureDriveFolder(tokenData.access_token);
+    // Ensure dedicated folder exists in Drive (fail-safe)
+    let folderId = '';
+    try {
+      folderId = await ensureDriveFolder(tokenData.access_token);
+    } catch (e: any) {
+      console.warn('Could not auto-create folder in Drive:', e?.message || e);
+    }
 
-    // Fetch quota
-    const { used, total } = await fetchDriveQuota(tokenData.access_token);
+    // Fetch quota (fail-safe)
+    let used = 0;
+    let total = 15 * 1024 * 1024 * 1024;
+    try {
+      const q = await fetchDriveQuota(tokenData.access_token);
+      used = q.used;
+      total = q.total;
+    } catch (e: any) {
+      console.warn('Could not fetch Drive quota:', e?.message || e);
+    }
     const expiry = new Date(Date.now() + (tokenData.expires_in || 3600) * 1000);
 
     const sql = getDb();
