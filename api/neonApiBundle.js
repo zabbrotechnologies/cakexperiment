@@ -60614,7 +60614,6 @@ async function handleInitiateUpload(body, res) {
 async function handleUploadChunk(req, res, parsedUrl) {
   const sessionId = parsedUrl.searchParams.get("sessionId");
   const start = parseInt(parsedUrl.searchParams.get("start") || "0", 10);
-  const end = parseInt(parsedUrl.searchParams.get("end") || "0", 10);
   const total = parseInt(parsedUrl.searchParams.get("total") || "0", 10);
   if (!sessionId || !activeUploadSessions.has(sessionId)) {
     res.statusCode = 404;
@@ -60629,11 +60628,14 @@ async function handleUploadChunk(req, res, parsedUrl) {
     req.on("error", reject);
   });
   const chunkBuffer = Buffer.concat(chunks);
+  const rangeStart = start;
+  const rangeEnd = start + chunkBuffer.length - 1;
+  const totalBytes = total || session.fileSize;
   const driveRes = await fetch(session.resumableUrl, {
     method: "PUT",
     headers: {
       "Content-Length": String(chunkBuffer.length),
-      "Content-Range": `bytes ${start}-${end}/${total}`
+      "Content-Range": `bytes ${rangeStart}-${rangeEnd}/${totalBytes}`
     },
     body: chunkBuffer
   });
@@ -60643,9 +60645,9 @@ async function handleUploadChunk(req, res, parsedUrl) {
     res.end(JSON.stringify({
       status: "in_progress",
       range: rangeHeader,
-      bytesUploaded: end + 1,
-      totalBytes: total,
-      progressPercent: Math.round((end + 1) / total * 100)
+      bytesUploaded: rangeEnd + 1,
+      totalBytes,
+      progressPercent: Math.round((rangeEnd + 1) / totalBytes * 100)
     }));
     return;
   }
@@ -60671,6 +60673,8 @@ async function handleUploadChunk(req, res, parsedUrl) {
       success: true,
       lessonId: session.lessonId,
       videoReference: streamReference,
+      streamUrl: streamReference,
+      driveFileId,
       filename: session.filename,
       size: session.fileSize,
       message: "Video successfully uploaded and configured in Google Drive."
