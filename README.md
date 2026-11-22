@@ -76,7 +76,7 @@ The platform features a **single unified authentication entry point** at `/signi
 - `/admin/videos` — Video streams library and duration registry.
 - `/admin/users` — Student accounts list with suspension/activation toggles.
 - `/admin/orders` — Real-time order ledger.
-- `/admin/payments` — Transaction ledger with simulated refund capabilities.
+- `/admin/payments` — Transaction ledger.
 - `/admin/reviews` — Testimonial moderation (Approve, Hide, Delete).
 - `/admin/settings` — Platform parameters, store currency, and contact info.
 

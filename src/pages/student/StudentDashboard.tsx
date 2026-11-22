@@ -15,11 +15,13 @@ import {
   Truck,
   Cake
 } from 'lucide-react';
+import { CertificateModal } from '../../components/course/CertificateModal';
 
 export const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [certModalCourse, setCertModalCourse] = useState<{ title: string; progress: number } | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -206,7 +208,24 @@ export const StudentDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={() => setCertModalCourse({ title: recentCourse.title, progress: recentCourse.enrollment.progress })}
+              className="btn btn-secondary"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                backgroundColor: '#FAF5EE',
+                borderColor: '#E2BA55',
+                color: '#5C1A29',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              <Award size={16} color="#C59B27" /> Unlock Certificate (90%+)
+            </button>
             <Link to={`/learn/${recentCourse.id}`} className="btn btn-primary btn-lg" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <Play size={16} fill="#FFF" /> Resume Lesson
             </Link>
@@ -280,12 +299,46 @@ export const StudentDashboard: React.FC = () => {
                   <Link to={`/learn/${c.id}`} className="btn btn-primary" style={{ width: '100%' }}>
                     {c.enrollment.progress === 100 ? 'Review Masterclass' : 'Continue Learning'} &rarr;
                   </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => setCertModalCourse({ title: c.title, progress: c.enrollment.progress })}
+                    className="btn btn-secondary"
+                    style={{
+                      width: '100%',
+                      marginTop: '0.5rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.45rem',
+                      fontSize: '0.82rem',
+                      padding: '0.55rem 0.9rem',
+                      backgroundColor: '#FAF5EE',
+                      borderColor: '#E2BA55',
+                      color: '#5C1A29',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Award size={15} color="#C59B27" /> Unlock Certificate (90%+)
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Certificate Modal */}
+      {certModalCourse && (
+        <CertificateModal
+          isOpen={Boolean(certModalCourse)}
+          onClose={() => setCertModalCourse(null)}
+          courseTitle={certModalCourse.title}
+          defaultName={user?.name || ''}
+          progress={certModalCourse.progress}
+        />
+      )}
 
     </div>
   );

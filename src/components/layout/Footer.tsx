@@ -94,7 +94,6 @@ export const Footer: React.FC = () => {
           <div style={{ display: 'flex', gap: '1.5rem' }}>
             <a href="#terms" style={{ color: 'var(--color-rose)' }}>Terms of Service</a>
             <a href="#privacy" style={{ color: 'var(--color-rose)' }}>Privacy Policy</a>
-            <a href="#refund" style={{ color: 'var(--color-rose)' }}>Refund Policy</a>
           </div>
         </div>
       </div>

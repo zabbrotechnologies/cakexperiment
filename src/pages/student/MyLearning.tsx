@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { storageService } from '../../services/storage';
-import { BarChart2, Award, CheckCircle, Clock, BookOpen, Download } from 'lucide-react';
+import { Award, CheckCircle } from 'lucide-react';
+import { CertificateModal } from '../../components/course/CertificateModal';
 
 export const MyLearning: React.FC = () => {
   const { user } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
+  const [certModalCourse, setCertModalCourse] = useState<{ title: string; progress: number } | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -62,7 +64,7 @@ export const MyLearning: React.FC = () => {
   }, [user]);
 
   const totalLessonsDone = courses.reduce((acc, c) => acc + (c.completedLessonIds?.length || 0), 0);
-  const completedCourses = courses.filter(c => c.progress === 100);
+  const completedCourses = courses.filter(c => (c.progress || 0) >= 90);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
@@ -98,11 +100,11 @@ export const MyLearning: React.FC = () => {
             </div>
             <div>
               <div style={{ fontSize: '1.6rem', fontWeight: 600, color: 'var(--color-plum)' }}>{completedCourses.length}</div>
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Certified Masterclasses</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Certified Masterclasses (90%+)</div>
             </div>
           </div>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            Official Cakexperiment diplomas generated upon 100% course curriculum completion.
+            Official Cakexperiment diplomas generated upon reaching 90%+ course curriculum completion.
           </p>
         </div>
       </div>
@@ -146,15 +148,34 @@ export const MyLearning: React.FC = () => {
                       <td style={{ padding: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                           <div style={{ width: '90px', height: '6px', backgroundColor: 'var(--color-blush)', borderRadius: '3px', overflow: 'hidden' }}>
-                            <div style={{ width: `${c.progress}%`, height: '100%', backgroundColor: c.progress === 100 ? '#2E7D32' : 'var(--color-berry)' }} />
+                            <div style={{ width: `${c.progress}%`, height: '100%', backgroundColor: c.progress >= 90 ? '#2E7D32' : 'var(--color-berry)' }} />
                           </div>
                           <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{c.progress}%</span>
                         </div>
                       </td>
                       <td style={{ padding: '1rem', textAlign: 'right' }}>
-                        <Link to={`/learn/${c.id}`} className="btn btn-secondary btn-sm">
-                          Continue
-                        </Link>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            onClick={() => setCertModalCourse({ title: c.title, progress: c.progress })}
+                            className="btn btn-secondary btn-sm"
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              backgroundColor: '#FAF5EE',
+                              borderColor: '#E2BA55',
+                              color: '#5C1A29',
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <Award size={14} color="#C59B27" /> Unlock Certificate (90%+)
+                          </button>
+                          <Link to={`/learn/${c.id}`} className="btn btn-secondary btn-sm">
+                            Continue
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -164,6 +185,17 @@ export const MyLearning: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Certificate Modal */}
+      {certModalCourse && (
+        <CertificateModal
+          isOpen={Boolean(certModalCourse)}
+          onClose={() => setCertModalCourse(null)}
+          courseTitle={certModalCourse.title}
+          defaultName={user?.name || ''}
+          progress={certModalCourse.progress}
+        />
+      )}
 
     </div>
   );

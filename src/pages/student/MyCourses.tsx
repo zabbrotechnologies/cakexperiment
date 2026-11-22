@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { storageService } from '../../services/storage';
-import { BookOpen, Play, Clock } from 'lucide-react';
+import { BookOpen, Play, Award } from 'lucide-react';
+import { CertificateModal } from '../../components/course/CertificateModal';
 
 export const MyCourses: React.FC = () => {
   const { user } = useAuth();
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [certModalCourse, setCertModalCourse] = useState<{ title: string; progress: number } | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -128,14 +130,50 @@ export const MyCourses: React.FC = () => {
                     </div>
                   </div>
 
-                  <Link to={`/learn/${courseId}`} className="btn btn-primary" style={{ width: '100%' }}>
-                    <Play size={15} fill="#FFF" /> Resume Lesson
-                  </Link>
+                  {/* Course Action Buttons: Resume & Unlock Certificate */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: 'auto' }}>
+                    <Link to={`/learn/${courseId}`} className="btn btn-primary" style={{ width: '100%' }}>
+                      <Play size={15} fill="#FFF" /> Resume Lesson
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => setCertModalCourse({ title: c.title, progress })}
+                      className="btn btn-secondary"
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.45rem',
+                        fontSize: '0.85rem',
+                        padding: '0.6rem 1rem',
+                        backgroundColor: '#FAF5EE',
+                        borderColor: '#E2BA55',
+                        color: '#5C1A29',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Award size={16} color="#C59B27" /> Unlock Certificate (90%+)
+                    </button>
+                  </div>
+
                 </div>
               </div>
             );
           })}
         </div>
+      )}
+
+      {/* Certificate Modal */}
+      {certModalCourse && (
+        <CertificateModal
+          isOpen={Boolean(certModalCourse)}
+          onClose={() => setCertModalCourse(null)}
+          courseTitle={certModalCourse.title}
+          defaultName={user?.name || ''}
+          progress={certModalCourse.progress}
+        />
       )}
     </div>
   );

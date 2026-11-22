@@ -549,10 +549,6 @@ export const Home: React.FC = () => {
     {
       q: 'Do I receive a certificate upon finishing a masterclass?',
       a: 'Yes. Once you complete the curriculum and upload your milestone cake photo, you will be awarded an official verified Cakexperiment Studio Certificate of Completion to showcase your skills.'
-    },
-    {
-      q: 'What is your refund policy?',
-      a: 'We offer an unconditional 14-day satisfaction guarantee. If you explore the first module and feel the course is not right for your learning style, simply reach out to our concierge for a full refund.'
     }
   ];
 

@@ -20,6 +20,7 @@ import {
   Clock,
   ExternalLink
 } from 'lucide-react';
+import { CertificateModal } from '../../components/course/CertificateModal';
 
 export const CourseClassroom: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -33,6 +34,7 @@ export const CourseClassroom: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'resources' | 'instructor'>('overview');
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
   const [isAccessDenied, setIsAccessDenied] = useState<boolean>(false);
+  const [isCertModalOpen, setIsCertModalOpen] = useState(false);
 
   useEffect(() => {
     if (!courseId) return;
@@ -257,8 +259,8 @@ export const CourseClassroom: React.FC = () => {
           </h2>
         </div>
 
-        {/* Course Progress Indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        {/* Course Progress Indicator & Certificate Unlock */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <div style={{ width: '120px', height: '6px', backgroundColor: 'var(--color-blush)', borderRadius: '3px', overflow: 'hidden' }}>
               <div style={{ width: `${progress}%`, height: '100%', backgroundColor: progress === 100 ? '#2E7D32' : 'var(--color-berry)', transition: 'width 0.3s ease' }} />
@@ -268,11 +270,25 @@ export const CourseClassroom: React.FC = () => {
             </span>
           </div>
 
-          {progress === 100 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', backgroundColor: '#E8F5E9', color: '#2E7D32', padding: '0.25rem 0.65rem', borderRadius: 'var(--radius-full)', fontSize: '0.75rem', fontWeight: 600 }}>
-              <Award size={14} /> Certificate Ready
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => setIsCertModalOpen(true)}
+            className="btn btn-secondary btn-sm"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              backgroundColor: '#FAF5EE',
+              borderColor: '#E2BA55',
+              color: '#5C1A29',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontSize: '0.8rem',
+              padding: '0.35rem 0.85rem'
+            }}
+          >
+            <Award size={15} color="#C59B27" /> Unlock Certificate (90%+)
+          </button>
         </div>
       </div>
 
@@ -461,6 +477,62 @@ export const CourseClassroom: React.FC = () => {
                       </li>
                     ))}
                   </ul>
+
+                  {/* Masterclass Certificate Unlock Box */}
+                  <div
+                    style={{
+                      marginTop: '1.8rem',
+                      backgroundColor: '#FAF5EE',
+                      border: '1px solid #E2BA55',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '1.2rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '1rem',
+                      flexWrap: 'wrap'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
+                      <div
+                        style={{
+                          width: '44px',
+                          height: '44px',
+                          borderRadius: '50%',
+                          backgroundColor: '#FFF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: '1.5px solid #E2BA55',
+                          flexShrink: 0
+                        }}
+                      >
+                        <Award size={22} color="#C59B27" />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 600, color: '#5C1A29', fontSize: '0.96rem' }}>
+                          Official Atelier Certificate of Completion
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: '#7A6B68', marginTop: '0.15rem' }}>
+                          Students completing 90%+ of the masterclass are eligible for our verified diploma. Currently unlocked for instant download.
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsCertModalOpen(true)}
+                      className="btn btn-primary btn-sm"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        backgroundColor: '#84253B',
+                        fontSize: '0.85rem'
+                      }}
+                    >
+                      <Award size={15} /> Unlock & Download Certificate
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -649,6 +721,17 @@ export const CourseClassroom: React.FC = () => {
           }
         }
       `}</style>
+
+      {/* Official Certificate Modal */}
+      {course && (
+        <CertificateModal
+          isOpen={isCertModalOpen}
+          onClose={() => setIsCertModalOpen(false)}
+          courseTitle={course.title}
+          defaultName={user?.name || ''}
+          progress={progress}
+        />
+      )}
     </div>
   );
 };

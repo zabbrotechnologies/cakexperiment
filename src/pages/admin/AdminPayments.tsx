@@ -1,24 +1,11 @@
 import React, { useState } from 'react';
 import { storageService } from '../../services/storage';
 import { Payment } from '../../types';
-import { CreditCard, Search, RotateCcw, CheckCircle, AlertCircle } from 'lucide-react';
-import { ConfirmActionModal } from '../../components/admin/ConfirmActionModal';
+import { Search } from 'lucide-react';
 
 export const AdminPayments: React.FC = () => {
-  const [payments, setPayments] = useState<Payment[]>(() => storageService.getPayments());
+  const [payments] = useState<Payment[]>(() => storageService.getPayments());
   const [search, setSearch] = useState('');
-  const [refundTarget, setRefundTarget] = useState<Payment | null>(null);
-
-  const handleRefund = (pay: Payment) => {
-    setRefundTarget(pay);
-  };
-
-  const confirmRefund = () => {
-    if (!refundTarget) return;
-    storageService.refundOrder(refundTarget.orderId);
-    setPayments(storageService.getPayments());
-    setRefundTarget(null);
-  };
 
   const filtered = payments.filter(p =>
     p.transactionReference.toLowerCase().includes(search.toLowerCase()) ||
@@ -34,7 +21,7 @@ export const AdminPayments: React.FC = () => {
           Payment Ledger & Gateway Transactions
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-          Simulated Stripe, Razorpay & UPI transactions with refund auditing
+          Simulated Stripe, Razorpay & UPI transactions
         </p>
       </div>
 
@@ -62,7 +49,6 @@ export const AdminPayments: React.FC = () => {
                 <th style={{ padding: '1rem' }}>Gateway / Method</th>
                 <th style={{ padding: '1rem' }}>Amount</th>
                 <th style={{ padding: '1rem' }}>Status</th>
-                <th style={{ padding: '1rem', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -86,24 +72,13 @@ export const AdminPayments: React.FC = () => {
                     <span
                       className="badge"
                       style={{
-                        backgroundColor: pay.status === 'successful' ? '#E8F5E9' : (pay.status === 'refunded' ? '#ECEFF1' : '#FFEBEE'),
-                        color: pay.status === 'successful' ? '#2E7D32' : (pay.status === 'refunded' ? '#546E7A' : '#C62828'),
+                        backgroundColor: pay.status === 'successful' ? '#E8F5E9' : '#FFEBEE',
+                        color: pay.status === 'successful' ? '#2E7D32' : '#C62828',
                         textTransform: 'capitalize'
                       }}
                     >
                       {pay.status}
                     </span>
-                  </td>
-                  <td style={{ padding: '1rem', textAlign: 'right' }}>
-                    {pay.status === 'successful' && (
-                      <button
-                        onClick={() => handleRefund(pay)}
-                        className="btn btn-secondary btn-sm"
-                        style={{ fontSize: '0.75rem', padding: '0.3rem 0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
-                      >
-                        <RotateCcw size={12} /> Refund
-                      </button>
-                    )}
                   </td>
                 </tr>
               ))}
@@ -111,21 +86,6 @@ export const AdminPayments: React.FC = () => {
           </table>
         </div>
       </div>
-
-      <ConfirmActionModal
-        open={Boolean(refundTarget)}
-        title="Confirm Payment Refund?"
-        itemLabel={refundTarget ? `${refundTarget.transactionReference} — ${refundTarget.userName}` : undefined}
-        description={
-          refundTarget
-            ? `This will record a refund of ${storageService.formatINR(refundTarget.amount)} for "${refundTarget.courseTitle}" and revoke associated access.`
-            : null
-        }
-        confirmLabel="Confirm Refund"
-        tone="warning"
-        onCancel={() => setRefundTarget(null)}
-        onConfirm={confirmRefund}
-      />
 
     </div>
   );

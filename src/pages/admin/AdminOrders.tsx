@@ -42,7 +42,7 @@ export const AdminOrders: React.FC = () => {
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'cancelled' | 'refunded'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'cancelled'>('all');
 
   // Selected Order for Details Modal
   const [selectedOrder, setSelectedOrder] = useState<OrderItem | null>(null);
@@ -50,7 +50,7 @@ export const AdminOrders: React.FC = () => {
   // Confirmation Dialog State
   const [confirmDialogOrder, setConfirmDialogOrder] = useState<OrderItem | null>(null);
   const [pendingAction, setPendingAction] = useState<{
-    type: 'delete' | 'cancel' | 'refund';
+    type: 'delete' | 'cancel';
     order: OrderItem;
   } | null>(null);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
@@ -211,15 +211,10 @@ export const AdminOrders: React.FC = () => {
     }
   };
 
-  // Action 2 / 3 / Delete: Cancel, Refund, or Delete Purchase Request via Confirmation Modal
+  // Action 2 / Delete: Cancel or Delete Purchase Request via Confirmation Modal
   const handleCancelOrder = (order: OrderItem) => {
     setActionErrorMsg(null);
     setPendingAction({ type: 'cancel', order });
-  };
-
-  const handleRefundOrder = (order: OrderItem) => {
-    setActionErrorMsg(null);
-    setPendingAction({ type: 'refund', order });
   };
 
   const handleDeleteOrder = (order: OrderItem) => {
@@ -253,10 +248,7 @@ export const AdminOrders: React.FC = () => {
         setPendingAction(null);
         setActionSuccessMsg(`Deleted course purchase request ${order.order_number}.`);
       } else {
-        const endpoint =
-          type === 'cancel'
-            ? `/api/admin/orders/${encodeURIComponent(order.id)}/cancel`
-            : `/api/admin/orders/${encodeURIComponent(order.id)}/refund`;
+        const endpoint = `/api/admin/orders/${encodeURIComponent(order.id)}/cancel`;
         const res = await fetch(endpoint, {
           method: 'POST',
           credentials: 'include',
@@ -264,14 +256,10 @@ export const AdminOrders: React.FC = () => {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          throw new Error(data.error || `Failed to ${type} order.`);
+          throw new Error(data.error || `Failed to cancel order.`);
         }
         setPendingAction(null);
-        setActionSuccessMsg(
-          type === 'cancel'
-            ? `Order ${order.order_number} cancelled.`
-            : `Order ${order.order_number} refunded and access revoked.`
-        );
+        setActionSuccessMsg(`Order ${order.order_number} cancelled.`);
         await fetchOrders();
         if (selectedOrder?.id === order.id) setSelectedOrder(null);
       }
@@ -303,7 +291,7 @@ export const AdminOrders: React.FC = () => {
           </h1>
         </div>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
-          Review online course manual WhatsApp payment confirmations, activate enrollments, and manage course refunds.
+          Review online course manual WhatsApp payment confirmations, activate enrollments, and manage course access.
         </p>
       </div>
 
@@ -352,8 +340,7 @@ export const AdminOrders: React.FC = () => {
             { id: 'all', label: 'All Courses' },
             { id: 'pending', label: 'Pending Confirmation' },
             { id: 'confirmed', label: 'Confirmed / Activated' },
-            { id: 'cancelled', label: 'Cancelled' },
-            { id: 'refunded', label: 'Refunded' }
+            { id: 'cancelled', label: 'Cancelled' }
           ].map(f => (
             <button
               key={f.id}
@@ -752,17 +739,6 @@ export const AdminOrders: React.FC = () => {
                   </button>
                 )}
 
-                {selectedOrder.order_status === 'COMPLETED' && (
-                  <button
-                    type="button"
-                    onClick={() => handleRefundOrder(selectedOrder)}
-                    className="btn btn-outline btn-sm"
-                    style={{ borderColor: '#FFCDD2', color: '#C62828' }}
-                  >
-                    Record Refund & Revoke Access
-                  </button>
-                )}
-
                 <button
                   type="button"
                   onClick={() => handleDeleteOrder(selectedOrder)}
@@ -785,9 +761,7 @@ export const AdminOrders: React.FC = () => {
         title={
           pendingAction?.type === 'delete'
             ? 'Delete Course Purchase Request?'
-            : pendingAction?.type === 'cancel'
-            ? 'Cancel Course Order?'
-            : 'Refund Course Order?'
+            : 'Cancel Course Order?'
         }
         itemLabel={
           pendingAction
@@ -797,16 +771,12 @@ export const AdminOrders: React.FC = () => {
         description={
           pendingAction?.type === 'delete'
             ? `This will permanently delete the course purchase request for "${pendingAction.order.course_name || 'Online Course'}" along with any enrollment linked to this request.`
-            : pendingAction?.type === 'cancel'
-            ? 'This will mark the pending course purchase request as CANCELLED.'
-            : 'This will mark the course order as REFUNDED and immediately revoke the student\'s course classroom access.'
+            : 'This will mark the pending course purchase request as CANCELLED.'
         }
         confirmLabel={
           pendingAction?.type === 'delete'
             ? 'Delete Request'
-            : pendingAction?.type === 'cancel'
-            ? 'Cancel Order'
-            : 'Record Refund'
+            : 'Cancel Order'
         }
         tone={pendingAction?.type === 'cancel' ? 'warning' : 'danger'}
         isProcessing={isProcessingAction}
