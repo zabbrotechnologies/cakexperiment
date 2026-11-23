@@ -7,6 +7,7 @@ import {
   BookOpen,
   Play,
   Award,
+  Lock,
   Clock,
   CheckCircle,
   ArrowRight,
@@ -209,23 +210,43 @@ export const StudentDashboard: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            <button
-              type="button"
-              onClick={() => setCertModalCourse({ title: recentCourse.title, progress: recentCourse.enrollment.progress })}
-              className="btn btn-secondary"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                backgroundColor: '#FAF5EE',
-                borderColor: '#E2BA55',
-                color: '#5C1A29',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              <Award size={16} color="#C59B27" /> Unlock Certificate (90%+)
-            </button>
+            {recentCourse.enrollment.progress === 100 ? (
+              <button
+                type="button"
+                onClick={() => setCertModalCourse({ title: recentCourse.title, progress: 100 })}
+                className="btn btn-secondary"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  backgroundColor: '#FAF5EE',
+                  borderColor: '#E2BA55',
+                  color: '#5C1A29',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                <Award size={16} color="#C59B27" /> Download Certificate
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setCertModalCourse({ title: recentCourse.title, progress: recentCourse.enrollment.progress })}
+                className="btn btn-secondary"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  backgroundColor: '#F7F7F7',
+                  borderColor: '#E0E0E0',
+                  color: '#757575',
+                  fontWeight: 500,
+                  cursor: 'pointer'
+                }}
+              >
+                <Lock size={14} color="#9E9E9E" /> Certificate Locked ({recentCourse.enrollment.progress}%)
+              </button>
+            )}
             <Link to={`/learn/${recentCourse.id}`} className="btn btn-primary btn-lg" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <Play size={16} fill="#FFF" /> Resume Lesson
             </Link>
@@ -300,28 +321,53 @@ export const StudentDashboard: React.FC = () => {
                     {c.enrollment.progress === 100 ? 'Review Masterclass' : 'Continue Learning'} &rarr;
                   </Link>
 
-                  <button
-                    type="button"
-                    onClick={() => setCertModalCourse({ title: c.title, progress: c.enrollment.progress })}
-                    className="btn btn-secondary"
-                    style={{
-                      width: '100%',
-                      marginTop: '0.5rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.45rem',
-                      fontSize: '0.82rem',
-                      padding: '0.55rem 0.9rem',
-                      backgroundColor: '#FAF5EE',
-                      borderColor: '#E2BA55',
-                      color: '#5C1A29',
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <Award size={15} color="#C59B27" /> Unlock Certificate (90%+)
-                  </button>
+                  {c.enrollment.progress === 100 ? (
+                    <button
+                      type="button"
+                      onClick={() => setCertModalCourse({ title: c.title, progress: 100 })}
+                      className="btn btn-secondary"
+                      style={{
+                        width: '100%',
+                        marginTop: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.45rem',
+                        fontSize: '0.82rem',
+                        padding: '0.55rem 0.9rem',
+                        backgroundColor: '#FAF5EE',
+                        borderColor: '#E2BA55',
+                        color: '#5C1A29',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Award size={15} color="#C59B27" /> Download Certificate
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setCertModalCourse({ title: c.title, progress: c.enrollment.progress })}
+                      className="btn btn-secondary"
+                      style={{
+                        width: '100%',
+                        marginTop: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.45rem',
+                        fontSize: '0.82rem',
+                        padding: '0.55rem 0.9rem',
+                        backgroundColor: '#F7F7F7',
+                        borderColor: '#E0E0E0',
+                        color: '#757575',
+                        fontWeight: 500,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Lock size={13} color="#9E9E9E" /> Certificate Locked ({c.enrollment.progress}%)
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

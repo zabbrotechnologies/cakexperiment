@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Award, Download, X, CheckCircle2, Sparkles, UserCheck } from 'lucide-react';
+import { Award, Download, X, CheckCircle2, Lock, UserCheck } from 'lucide-react';
 import {
   drawCertificateToCanvas,
   downloadCertificatePDF,
@@ -26,6 +26,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [certId, setCertId] = useState('');
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const isCompleted = Number(progress) === 100;
 
   // Sync default name and generate a certificate ID when opened
   useEffect(() => {
@@ -134,9 +136,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
               <Award size={22} color="#F5DE88" />
             </div>
             <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: '#FFFFFF' }}>
                 Unlock Official Certificate
-                <Sparkles size={16} color="#F5DE88" />
               </h2>
               <div style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.85)', marginTop: '0.15rem' }}>
                 {courseTitle}
@@ -168,8 +169,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
           {/* Requirement & Status Banner */}
           <div
             style={{
-              backgroundColor: '#FAF5EE',
-              border: '1px solid #E2BA55',
+              backgroundColor: isCompleted ? '#FAF5EE' : '#FFF9FA',
+              border: isCompleted ? '1px solid #E2BA55' : '1px solid #E2C0C7',
               borderRadius: 'var(--radius-md, 10px)',
               padding: '0.9rem 1.2rem',
               display: 'flex',
@@ -180,27 +181,33 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <CheckCircle2 size={18} color="#C59B27" />
+              {isCompleted ? (
+                <CheckCircle2 size={18} color="#2E7D32" />
+              ) : (
+                <Lock size={18} color="#84253B" />
+              )}
               <div>
-                <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#5C1A29' }}>
-                  Certificate Unlocked
+                <div style={{ fontSize: '0.88rem', fontWeight: 600, color: isCompleted ? '#2E7D32' : '#84253B' }}>
+                  {isCompleted ? 'Certificate Unlocked' : 'Certificate Locked'}
                 </div>
                 <div style={{ fontSize: '0.78rem', color: '#7A6B68' }}>
-                  Eligible for students with 90%+ course progress • Unlocked for instant download
+                  {isCompleted
+                    ? 'All lessons across each module completed • Unlocked for instant download'
+                    : 'All lessons in each module must be marked as completed to unlock this certificate.'}
                 </div>
               </div>
             </div>
             <div
               style={{
-                backgroundColor: '#E8F5E9',
-                color: '#2E7D32',
+                backgroundColor: isCompleted ? '#E8F5E9' : '#F5EBEF',
+                color: isCompleted ? '#2E7D32' : '#84253B',
                 padding: '0.25rem 0.75rem',
                 borderRadius: '999px',
                 fontSize: '0.75rem',
                 fontWeight: 600
               }}
             >
-              Active Progress: {progress}% (Unlocked)
+              {isCompleted ? '100% Completed (Unlocked)' : `Progress: ${progress}% (Locked)`}
             </div>
           </div>
 
@@ -325,7 +332,7 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
           <button
             type="button"
             onClick={handleDownload}
-            disabled={isDownloading}
+            disabled={isDownloading || !isCompleted}
             className="btn btn-primary"
             style={{
               display: 'inline-flex',
@@ -334,13 +341,15 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
               padding: '0.7rem 1.6rem',
               fontSize: '0.95rem',
               fontWeight: 600,
-              backgroundColor: 'var(--color-berry, #84253B)',
+              backgroundColor: isCompleted ? 'var(--color-berry, #84253B)' : '#A89E9F',
               color: '#FFFFFF',
-              boxShadow: '0 4px 14px rgba(132, 37, 59, 0.3)'
+              boxShadow: isCompleted ? '0 4px 14px rgba(132, 37, 59, 0.3)' : 'none',
+              cursor: isCompleted ? 'pointer' : 'not-allowed',
+              opacity: isCompleted ? 1 : 0.7
             }}
           >
-            <Download size={17} />
-            {isDownloading ? 'Generating PDF...' : 'Download Certificate (PDF)'}
+            {isCompleted ? <Download size={17} /> : <Lock size={17} />}
+            {isDownloading ? 'Generating PDF...' : isCompleted ? 'Download Certificate (PDF)' : 'Locked • Complete All Lessons'}
           </button>
         </div>
 

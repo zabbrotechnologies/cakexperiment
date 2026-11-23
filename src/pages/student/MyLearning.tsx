@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { storageService } from '../../services/storage';
-import { Award, CheckCircle } from 'lucide-react';
+import { Award, CheckCircle, Lock } from 'lucide-react';
 import { CertificateModal } from '../../components/course/CertificateModal';
 
 export const MyLearning: React.FC = () => {
@@ -148,30 +148,50 @@ export const MyLearning: React.FC = () => {
                       <td style={{ padding: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                           <div style={{ width: '90px', height: '6px', backgroundColor: 'var(--color-blush)', borderRadius: '3px', overflow: 'hidden' }}>
-                            <div style={{ width: `${c.progress}%`, height: '100%', backgroundColor: c.progress >= 90 ? '#2E7D32' : 'var(--color-berry)' }} />
+                            <div style={{ width: `${c.progress}%`, height: '100%', backgroundColor: c.progress === 100 ? '#2E7D32' : 'var(--color-berry)' }} />
                           </div>
                           <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{c.progress}%</span>
                         </div>
                       </td>
                       <td style={{ padding: '1rem', textAlign: 'right' }}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', flexWrap: 'wrap' }}>
-                          <button
-                            type="button"
-                            onClick={() => setCertModalCourse({ title: c.title, progress: c.progress })}
-                            className="btn btn-secondary btn-sm"
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.35rem',
-                              backgroundColor: '#FAF5EE',
-                              borderColor: '#E2BA55',
-                              color: '#5C1A29',
-                              fontWeight: 600,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            <Award size={14} color="#C59B27" /> Unlock Certificate (90%+)
-                          </button>
+                          {c.progress === 100 ? (
+                            <button
+                              type="button"
+                              onClick={() => setCertModalCourse({ title: c.title, progress: 100 })}
+                              className="btn btn-secondary btn-sm"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                backgroundColor: '#FAF5EE',
+                                borderColor: '#E2BA55',
+                                color: '#5C1A29',
+                                fontWeight: 600,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <Award size={14} color="#C59B27" /> Download Certificate
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setCertModalCourse({ title: c.title, progress: c.progress })}
+                              className="btn btn-secondary btn-sm"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                backgroundColor: '#F7F7F7',
+                                borderColor: '#E0E0E0',
+                                color: '#757575',
+                                fontWeight: 500,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              <Lock size={12} color="#9E9E9E" /> Certificate Locked ({c.progress}%)
+                            </button>
+                          )}
                           <Link to={`/learn/${c.id}`} className="btn btn-secondary btn-sm">
                             Continue
                           </Link>

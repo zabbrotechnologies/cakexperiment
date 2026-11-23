@@ -167,6 +167,10 @@ export const CourseClassroom: React.FC = () => {
     (m.lessons || []).forEach(l => allLessons.push(l));
   });
 
+  const totalLessons = allLessons.length;
+  const completedCount = allLessons.filter(l => completedLessonIds.includes(l.id)).length;
+  const isAllCompleted = totalLessons > 0 && completedCount === totalLessons;
+
   if (!course) {
     return (
       <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -263,32 +267,55 @@ export const CourseClassroom: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <div style={{ width: '120px', height: '6px', backgroundColor: 'var(--color-blush)', borderRadius: '3px', overflow: 'hidden' }}>
-              <div style={{ width: `${progress}%`, height: '100%', backgroundColor: progress === 100 ? '#2E7D32' : 'var(--color-berry)', transition: 'width 0.3s ease' }} />
+              <div style={{ width: `${progress}%`, height: '100%', backgroundColor: isAllCompleted ? '#2E7D32' : 'var(--color-berry)', transition: 'width 0.3s ease' }} />
             </div>
             <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-plum)' }}>
               {progress}%
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsCertModalOpen(true)}
-            className="btn btn-secondary btn-sm"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              backgroundColor: '#FAF5EE',
-              borderColor: '#E2BA55',
-              color: '#5C1A29',
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontSize: '0.8rem',
-              padding: '0.35rem 0.85rem'
-            }}
-          >
-            <Award size={15} color="#C59B27" /> Unlock Certificate (90%+)
-          </button>
+          {isAllCompleted ? (
+            <button
+              type="button"
+              onClick={() => setIsCertModalOpen(true)}
+              className="btn btn-secondary btn-sm"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                backgroundColor: '#FAF5EE',
+                borderColor: '#E2BA55',
+                color: '#5C1A29',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                padding: '0.35rem 0.85rem'
+              }}
+            >
+              <Award size={15} color="#C59B27" /> Download Certificate
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsCertModalOpen(true)}
+              className="btn btn-secondary btn-sm"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                backgroundColor: '#F7F7F7',
+                borderColor: '#E0E0E0',
+                color: '#757575',
+                fontWeight: 500,
+                fontSize: '0.78rem',
+                padding: '0.35rem 0.75rem',
+                cursor: 'pointer'
+              }}
+              title="Complete all lessons across each module to unlock your certificate"
+            >
+              <Lock size={13} color="#9E9E9E" /> Certificate Locked ({completedCount}/{totalLessons})
+            </button>
+          )}
         </div>
       </div>
 
@@ -482,8 +509,8 @@ export const CourseClassroom: React.FC = () => {
                   <div
                     style={{
                       marginTop: '1.8rem',
-                      backgroundColor: '#FAF5EE',
-                      border: '1px solid #E2BA55',
+                      backgroundColor: isAllCompleted ? '#FAF5EE' : '#FDFBFA',
+                      border: isAllCompleted ? '1px solid #E2BA55' : '1px solid #E2CBD1',
                       borderRadius: 'var(--radius-md)',
                       padding: '1.2rem',
                       display: 'flex',
@@ -499,39 +526,70 @@ export const CourseClassroom: React.FC = () => {
                           width: '44px',
                           height: '44px',
                           borderRadius: '50%',
-                          backgroundColor: '#FFF',
+                          backgroundColor: isAllCompleted ? '#FFF' : '#F5E6EB',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          border: '1.5px solid #E2BA55',
+                          border: isAllCompleted ? '1.5px solid #E2BA55' : '1.5px solid #D8C3C8',
                           flexShrink: 0
                         }}
                       >
-                        <Award size={22} color="#C59B27" />
+                        {isAllCompleted ? (
+                          <Award size={22} color="#C59B27" />
+                        ) : (
+                          <Lock size={20} color="#84253B" />
+                        )}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 600, color: '#5C1A29', fontSize: '0.96rem' }}>
+                        <div style={{ fontWeight: 600, color: '#5C1A29', fontSize: '0.96rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           Official Atelier Certificate of Completion
+                          {!isAllCompleted && (
+                            <span style={{ fontSize: '0.72rem', backgroundColor: '#F0E2E5', color: '#84253B', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
+                              Locked
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontSize: '0.8rem', color: '#7A6B68', marginTop: '0.15rem' }}>
-                          Students completing 90%+ of the masterclass are eligible for our verified diploma. Currently unlocked for instant download.
+                          {isAllCompleted
+                            ? 'All lessons across each module completed! Your verified diploma is unlocked for instant download.'
+                            : `Complete all ${totalLessons} lessons across each module to unlock this certificate (${completedCount} of ${totalLessons} completed).`}
                         </div>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsCertModalOpen(true)}
-                      className="btn btn-primary btn-sm"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.45rem',
-                        backgroundColor: '#84253B',
-                        fontSize: '0.85rem'
-                      }}
-                    >
-                      <Award size={15} /> Unlock & Download Certificate
-                    </button>
+                    {isAllCompleted ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsCertModalOpen(true)}
+                        className="btn btn-primary btn-sm"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.45rem',
+                          backgroundColor: '#84253B',
+                          fontSize: '0.85rem'
+                        }}
+                      >
+                        <Award size={15} /> Download Certificate
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsCertModalOpen(true)}
+                        className="btn btn-secondary btn-sm"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.45rem',
+                          backgroundColor: '#F5F5F5',
+                          borderColor: '#E0E0E0',
+                          color: '#757575',
+                          fontSize: '0.85rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Lock size={14} color="#9E9E9E" /> Locked • Complete All Lessons
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
